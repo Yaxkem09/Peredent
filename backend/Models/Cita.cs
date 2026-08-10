@@ -1,0 +1,1 @@
+Aquí va el modelo de Cita que almacena los detalles de cada cita como PacienteId, UsuarioId (dentista), FechaCita, HoraCita, duración, motivo, notas y estado. Este modelo conecta pacientes con dentistas y es central en el sistema.

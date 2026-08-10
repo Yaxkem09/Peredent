@@ -1,0 +1,1 @@
+Aquí va el DTO genérico que envuelve todas las respuestas de API con propiedades como Success, StatusCode, Message, Data (genérico) y Errors. Estandariza el formato de respuestas de todos los endpoints.

@@ -1,0 +1,1 @@
+Aquí va el workflow de GitHub Actions para el backend que hace build, tests, análisis de código con SonarCloud, escaneo de seguridad y genera Docker image.

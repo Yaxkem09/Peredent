@@ -1,0 +1,1 @@
+Aquí va la implementación del servicio de autenticación que maneja login, registro, refresh de tokens y logout. Usa JwtHelper para generar tokens, HashHelper para contraseñas y EmailService para notificaciones.

@@ -1,0 +1,1 @@
+Aquí va el DTO para crear un nuevo usuario con propiedades como Email, Password, FullName y Role. Se usa en el endpoint de registro y debe validar que el email sea único y la contraseña cumpla requisitos de seguridad.

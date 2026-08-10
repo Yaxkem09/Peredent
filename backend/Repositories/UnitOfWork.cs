@@ -1,0 +1,1 @@
+Aquí va la implementación de Unit of Work que agrupa todos los repositorios específicos y coordina las operaciones de guardado en la base de datos. Usa lazy initialization para evitar crear repositorios innecesarios.

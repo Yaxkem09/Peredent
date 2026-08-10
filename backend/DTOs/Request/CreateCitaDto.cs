@@ -1,0 +1,1 @@
+Aquí va el DTO para crear una nueva cita con PacienteId, UsuarioId (dentista), FechaCita, HoraCita, Duracion, Motivo y Notas. Se valida que no haya conflictos de horarios y que la fecha no sea en el pasado.

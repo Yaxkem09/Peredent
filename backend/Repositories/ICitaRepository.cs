@@ -1,0 +1,1 @@
+Aquí va la interfaz específica de Cita que hereda de IRepository<Cita> y añade métodos como GetByPacienteAsync, GetByDentistaAsync, GetByFechaAsync, GetConfirmadosAsync, CheckConflictoHorarioAsync y GetProximasAsync.

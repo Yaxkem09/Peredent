@@ -1,0 +1,1 @@
+Aquí va la interfaz genérica de repositorio con métodos abstractos como GetByIdAsync, GetAllAsync, GetAsync (con predicate), AddAsync, UpdateAsync, DeleteAsync y CountAsync. Esta interfaz es la base para todos los repositorios específicos.

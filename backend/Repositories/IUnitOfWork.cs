@@ -1,0 +1,1 @@
+Aquí va la interfaz Unit of Work que centraliza todos los repositorios (Pacientes, Citas, Usuarios, Inventarios) y proporciona métodos como SaveChangesAsync y BeginTransactionAsync para coordinar transacciones entre múltiples repositorios.

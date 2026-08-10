@@ -1,0 +1,1 @@
+Aquí va el archivo docker-compose que define servicios: SQL Server, Redis, Frontend (opcional) y Backend (opcional). Cada servicio tiene volúmenes, networks y health checks.

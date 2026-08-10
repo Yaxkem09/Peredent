@@ -1,0 +1,1 @@
+Aquí va la interfaz específica de Paciente que hereda de IRepository<Paciente> y añade métodos personalizados como GetByDNIAsync, GetByEmailAsync, GetActivosAsync, GetWithCitasAsync y ExistsByDNIAsync.

@@ -1,0 +1,1 @@
+Aquí va el controlador de autenticación con endpoints POST /login, /register, /refresh-token, /logout y GET /validate. Usa AuthService para procesar las peticiones y retorna respuestas estandarizadas.

@@ -1,0 +1,1 @@
+Aquí va la implementación del repositorio específico de Paciente que hereda de Repository<Paciente> e implementa todos los métodos personalizados definidos en IPacienteRepository usando consultas LINQ.

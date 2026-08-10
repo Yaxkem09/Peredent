@@ -1,0 +1,1 @@
+Aquí va la página que lista todos los pacientes en una tabla con columnas para nombre, email, teléfono y acciones. Incluye búsqueda, paginación, botón para crear paciente y botones para editar y eliminar.

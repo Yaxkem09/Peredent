@@ -1,0 +1,1 @@
+Aquí va la interfaz del servicio de autenticación con métodos como LoginAsync, RegisterAsync, RefreshTokenAsync, LogoutAsync y ValidateTokenAsync. Define el contrato para toda la lógica de autenticación.

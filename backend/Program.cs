@@ -1,0 +1,1 @@
+Aquí va el archivo principal que configura toda la aplicación: logging (Serilog), base de datos (EF Core), autenticación (JWT), CORS, inyección de dependencias de servicios y repositorios, AutoMapper, FluentValidation, Swagger, middleware personalizado y inicialización de BD.

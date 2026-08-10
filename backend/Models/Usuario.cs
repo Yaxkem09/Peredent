@@ -1,0 +1,1 @@
+Aquí va el modelo de Usuario con sus propiedades básicas como Id, Email, FullName, PasswordHash, Role, IsActive, CreatedAt y RefreshToken. Este modelo representa a los usuarios del sistema (admin, dentistas, usuarios normales) y tiene relaciones con Citas.

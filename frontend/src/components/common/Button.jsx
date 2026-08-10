@@ -1,0 +1,1 @@
+Aquí va un componente botón reutilizable que soporta variantes (primary, secondary, danger, ghost), estados (disabled, loading) y personalización. Se usa en formularios y acciones en toda la aplicación.

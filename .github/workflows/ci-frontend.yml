@@ -1,0 +1,1 @@
+Aquí va el workflow de GitHub Actions para el frontend que ejecuta lint, tests, build y reporta coverage. Corre en cada push y pull request.

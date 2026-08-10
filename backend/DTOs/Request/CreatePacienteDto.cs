@@ -1,0 +1,1 @@
+Aquí va el DTO para crear un paciente nuevo con campos como Nombres, Apellidos, Email, Telefono, FechaNacimiento, DNI, Direccion, Ciudad y Alergias. Se valida que el DNI sea único y los datos tengan formato correcto.

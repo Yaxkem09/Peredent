@@ -1,0 +1,1 @@
+Aquí va el modelo de Paciente que contiene la información de los pacientes del consultorio como nombres, apellidos, email, teléfono, fecha de nacimiento, DNI, dirección, ciudad, alergias y notas clínicas. Este modelo tiene una relación de uno a muchos con Citas.

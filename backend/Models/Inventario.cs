@@ -1,0 +1,1 @@
+Aquí va el modelo de Inventario que maneja los insumos del consultorio como nombre, descripción, cantidad, cantidad mínima, precio, categoría, fecha de vencimiento, proveedor y SKU. Este modelo permite gestionar qué productos hay en stock y cuáles están próximos a vencer.
