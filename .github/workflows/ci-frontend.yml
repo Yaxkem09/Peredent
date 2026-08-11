@@ -1,1 +1,45 @@
-Aquí va el workflow de GitHub Actions para el frontend que ejecuta lint, tests, build y reporta coverage. Corre en cada push y pull request.
+name: CI Frontend
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-build:
+    name: Lint and Build Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run lint
+        run: |
+          if npm run | grep -q " lint$"; then
+            npm run lint
+          else
+            echo "No lint script found, skipping."
+          fi
+
+      - name: Build
+        run: |
+          if npm run | grep -q " build$"; then
+            npm run build
+          else
+            echo "No build script found, skipping."
+          fi
