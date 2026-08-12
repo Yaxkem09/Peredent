@@ -13,19 +13,15 @@ jobs:
     defaults:
       run:
         working-directory: backend
-    strategy:
-      fail-fast: true
-      matrix:
-        dotnet-version: ["7.0.x", "8.0.x"]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET ${{ matrix.dotnet-version }}
+      - name: Setup .NET 9.0.x
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: "9.0.x"
 
       - name: Restore dependencies
         run: dotnet restore
