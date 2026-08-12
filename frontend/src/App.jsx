@@ -1,1 +1,15 @@
-Aquí va el componente raíz de la app que envuelve todo con providers (AuthProvider, NotificationProvider), configura el router, y renderiza las rutas. Decide qué layout usar según la ruta.
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Login from './pages/Login/Login';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

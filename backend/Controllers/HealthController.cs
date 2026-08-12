@@ -1,1 +1,11 @@
-Aquí va el controlador de health check con endpoint GET /health que retorna estado de la aplicación y opcionalmente estado de BD y cache (Redis).
+using Microsoft.AspNetCore.Mvc;
+
+namespace Peredent.Api.Controllers;
+
+[ApiController]
+[Route("api/health")]
+public class HealthController : ControllerBase
+{
+    [HttpGet]
+    public IActionResult Get() => Ok(new { status = "ok" });
+}

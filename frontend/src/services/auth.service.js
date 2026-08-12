@@ -1,1 +1,9 @@
-Aquí van funciones para login, register, logout, refresh token, obtener usuario actual y validar si está autenticado. Usa api.js y maneja tokens en localStorage.
+import api from './api';
+
+export const authService = {
+  login: async ({ usuario, clave }) => {
+    const { data } = await api.post('/auth/login', { usuario, clave });
+    localStorage.setItem('token', data.token);
+    return data;
+  },
+};

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Peredent.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <!--
+    Estos archivos todavía son descripciones de texto, no código C# real
+    (Data, Models, Repositories, Services, Tests y los controllers/DTOs no
+    implementados). Se excluyen de la compilación hasta que se implementen
+    de verdad; si no, el build falla porque no son C# válido.
+  -->
+  <ItemGroup>
+    <Compile Remove="Data/**/*.cs" />
+    <Compile Remove="Models/**/*.cs" />
+    <Compile Remove="Repositories/**/*.cs" />
+    <Compile Remove="Services/**/*.cs" />
+    <Compile Remove="Tests/**/*.cs" />
+    <Compile Remove="Controllers/CitasController.cs" />
+    <Compile Remove="Controllers/InventarioController.cs" />
+    <Compile Remove="Controllers/PacientesController.cs" />
+    <Compile Remove="DTOs/Request/CreateCitaDto.cs" />
+    <Compile Remove="DTOs/Request/CreatePacienteDto.cs" />
+    <Compile Remove="DTOs/Request/CreateUsuarioDto.cs" />
+    <Compile Remove="DTOs/Request/RefreshTokenDto.cs" />
+    <Compile Remove="DTOs/Response/ApiResponseDto.cs" />
+    <Compile Remove="DTOs/Response/CitaDto.cs" />
+    <Compile Remove="DTOs/Response/PacienteDto.cs" />
+    <Compile Remove="DTOs/Response/UsuarioDto.cs" />
+  </ItemGroup>
+
+</Project>
