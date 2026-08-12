@@ -101,7 +101,7 @@ const Login = () => {
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="login-field">
-              <label htmlFor="usuario">Usuario</label>
+              <label htmlFor="usuario">Ingrese el usuario</label>
               <input
                 id="usuario"
                 name="usuario"
@@ -118,7 +118,7 @@ const Login = () => {
             </div>
 
             <div className="login-field">
-              <label htmlFor="clave">Contraseña</label>
+              <label htmlFor="clave">Ingrese la contraseña</label>
               <input
                 id="clave"
                 name="clave"
