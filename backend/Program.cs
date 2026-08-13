@@ -1,4 +1,28 @@
+using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
+using Peredent.Api.Data;
+
+// Solo existe .env en local (esta gitignored); en la nube las variables de
+// entorno las inyecta la plataforma directamente, no hace falta este archivo.
+if (File.Exists(".env"))
+{
+    Env.Load();
+}
+
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = new MySqlConnectionStringBuilder
+{
+    Server = builder.Configuration["DB_HOST"] ?? "localhost",
+    Port = uint.Parse(builder.Configuration["DB_PORT"] ?? "3306"),
+    Database = builder.Configuration["DB_NAME"] ?? "Peredent",
+    UserID = builder.Configuration["DB_USER"] ?? "root",
+    Password = builder.Configuration["DB_PASSWORD"] ?? "",
+}.ConnectionString;
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

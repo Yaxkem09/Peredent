@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
@@ -18,8 +24,10 @@
     de verdad; si no, el build falla porque no son C# válido.
   -->
   <ItemGroup>
-    <Compile Remove="Data/**/*.cs" />
-    <Compile Remove="Models/**/*.cs" />
+    <Compile Remove="Data/DbInitializer.cs" />
+    <Compile Remove="Models/Cita.cs" />
+    <Compile Remove="Models/Inventario.cs" />
+    <Compile Remove="Models/Paciente.cs" />
     <Compile Remove="Repositories/**/*.cs" />
     <Compile Remove="Services/**/*.cs" />
     <Compile Remove="Tests/**/*.cs" />
