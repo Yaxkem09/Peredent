@@ -17,6 +17,7 @@
 
 .login-screen {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,7 +97,7 @@
 
 .login-brand-name {
   font-family: 'Fraunces', serif;
-  font-size: 19px;
+  font-size: 20.9px;
   font-weight: 500;
   color: var(--ink);
   margin: 0;
@@ -104,7 +105,7 @@
 
 .login-brand-sub {
   font-family: 'Inter', sans-serif;
-  font-size: 10.5px;
+  font-size: 11.6px;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -117,7 +118,7 @@
   background: var(--coral-soft);
   color: var(--coral);
   font-family: 'Inter', sans-serif;
-  font-size: 12.5px;
+  font-size: 13.75px;
   padding: 10px 12px;
   border-radius: 8px;
   margin-bottom: 14px;
@@ -140,14 +141,14 @@
 
 .login-field label {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 13.2px;
   color: var(--ink-soft);
   margin-bottom: 6px;
 }
 
 .login-field input {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
+  font-size: 14.3px;
   color: var(--ink);
   padding: 10px 12px;
   border-radius: 8px;
@@ -173,7 +174,7 @@
 .login-field-error {
   display: none;
   font-family: 'Inter', sans-serif;
-  font-size: 11.5px;
+  font-size: 12.65px;
   color: var(--coral);
   margin-top: 6px;
 }
@@ -191,7 +192,7 @@
   background: var(--teal);
   color: #ffffff;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
+  font-size: 14.3px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -211,7 +212,7 @@
   padding-top: 14px;
   border-top: 1px solid var(--line);
   font-family: 'Inter', sans-serif;
-  font-size: 11.5px;
+  font-size: 12.65px;
   color: var(--ink-faint);
   text-align: center;
   line-height: 1.6;
@@ -228,5 +229,20 @@
 
   .login-form-col {
     border-radius: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .login-screen {
+    padding: 16px;
+  }
+
+  .login-form-col {
+    padding: 28px 20px 24px;
+  }
+
+  .login-logo {
+    width: 56px;
+    height: 56px;
   }
 }
