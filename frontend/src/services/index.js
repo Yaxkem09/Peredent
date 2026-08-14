@@ -1,1 +1,5 @@
-Aquí van los exports centralizados de todos los servicios.
+export { default as api } from './api';
+export { authService } from './auth.service';
+export { pacientesService } from './pacientes.service';
+export { citasService } from './citas.service';
+export { inventarioService } from './inventario.service';

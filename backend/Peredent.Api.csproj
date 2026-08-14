@@ -13,7 +13,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
@@ -27,20 +27,16 @@
     <Compile Remove="Data/DbInitializer.cs" />
     <Compile Remove="Models/Cita.cs" />
     <Compile Remove="Models/Inventario.cs" />
-    <Compile Remove="Models/Paciente.cs" />
     <Compile Remove="Repositories/**/*.cs" />
     <Compile Remove="Services/**/*.cs" />
     <Compile Remove="Tests/**/*.cs" />
     <Compile Remove="Controllers/CitasController.cs" />
     <Compile Remove="Controllers/InventarioController.cs" />
-    <Compile Remove="Controllers/PacientesController.cs" />
     <Compile Remove="DTOs/Request/CreateCitaDto.cs" />
-    <Compile Remove="DTOs/Request/CreatePacienteDto.cs" />
     <Compile Remove="DTOs/Request/CreateUsuarioDto.cs" />
     <Compile Remove="DTOs/Request/RefreshTokenDto.cs" />
     <Compile Remove="DTOs/Response/ApiResponseDto.cs" />
     <Compile Remove="DTOs/Response/CitaDto.cs" />
-    <Compile Remove="DTOs/Response/PacienteDto.cs" />
     <Compile Remove="DTOs/Response/UsuarioDto.cs" />
   </ItemGroup>
 

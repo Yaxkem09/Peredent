@@ -1,1 +1,2 @@
-Aquí van los exports de layouts.
+export { default as MainLayout } from './MainLayout';
+export { default as AuthLayout } from './AuthLayout';

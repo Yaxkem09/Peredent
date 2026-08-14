@@ -25,7 +25,10 @@ public class AuthController : ControllerBase
         var usuario = await _db.Usuarios
             .FirstOrDefaultAsync(u => u.NombreUsuario == request.Usuario);
 
-        if (usuario is null || !usuario.Estado || HashClave(request.Clave, usuario.Salt) != usuario.ContrasenaHash)
+        var hashCoincide = usuario is not null &&
+            string.Equals(HashClave(request.Clave, usuario.Salt), usuario.ContrasenaHash, StringComparison.OrdinalIgnoreCase);
+
+        if (usuario is null || !usuario.Estado || !hashCoincide)
         {
             return Unauthorized(new { message = "Credenciales incorrectas" });
         }
@@ -40,8 +43,9 @@ public class AuthController : ControllerBase
         });
     }
 
-    // Replica SHA2(CONCAT(clave, salt), 256) en minusculas, el equivalente en MySQL
-    // del HASHBYTES('SHA2_256', ...) de SQL Server que traia el script original.
+    // Debe producir el mismo hash que HASHBYTES('SHA2_256', clave + salt) del script de
+    // creación de la base. La comparación con el valor guardado es case-insensitive porque
+    // SQL Server convierte ese binario a hexadecimal en mayúsculas.
     private static string HashClave(string clave, string salt)
     {
         var bytes = Encoding.UTF8.GetBytes(clave + salt);

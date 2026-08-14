@@ -1,6 +1,6 @@
 using DotNetEnv;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
 using Peredent.Api.Data;
 
 // Solo existe .env en local (esta gitignored); en la nube las variables de
@@ -12,17 +12,30 @@ if (File.Exists(".env"))
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = new MySqlConnectionStringBuilder
+var connectionStringBuilder = new SqlConnectionStringBuilder
 {
-    Server = builder.Configuration["DB_HOST"] ?? "localhost",
-    Port = uint.Parse(builder.Configuration["DB_PORT"] ?? "3306"),
-    Database = builder.Configuration["DB_NAME"] ?? "Peredent",
-    UserID = builder.Configuration["DB_USER"] ?? "root",
-    Password = builder.Configuration["DB_PASSWORD"] ?? "",
-}.ConnectionString;
+    DataSource = builder.Configuration["DB_HOST"] ?? "localhost",
+    InitialCatalog = builder.Configuration["DB_NAME"] ?? "Peredent",
+    TrustServerCertificate = true,
+};
+
+var dbUser = builder.Configuration["DB_USER"];
+if (string.IsNullOrWhiteSpace(dbUser))
+{
+    // Sin DB_USER en el .env, se conecta con autenticación de Windows
+    // (el modo por defecto de SSMS / LocalDB en desarrollo local).
+    connectionStringBuilder.IntegratedSecurity = true;
+}
+else
+{
+    connectionStringBuilder.UserID = dbUser;
+    connectionStringBuilder.Password = builder.Configuration["DB_PASSWORD"] ?? "";
+}
+
+var connectionString = connectionStringBuilder.ConnectionString;
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseSqlServer(connectionString));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
