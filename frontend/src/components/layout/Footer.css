@@ -1,0 +1,14 @@
+.app-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 40px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 860px) {
+  .app-footer {
+    padding: 14px 20px 20px;
+  }
+}

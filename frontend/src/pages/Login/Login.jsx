@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../../services/auth.service';
+import { useAuth } from '../../hooks/useAuth';
 import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [usuario, setUsuario] = useState('');
   const [clave, setClave] = useState('');
@@ -39,7 +40,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await authService.login({ usuario, clave });
+      await login({ usuario, clave });
       navigate('/dashboard');
     } catch (error) {
       setErrorBanner(true);
@@ -92,7 +93,7 @@ const Login = () => {
               </svg>
             </div>
             <h1 className="login-brand-name">Peredent</h1>
-            <p className="login-brand-sub">Cirugía Maxilofacial</p>
+            <p className="login-brand-sub">Odontología General · Ortodoncia · Cirugía Maxilofacial</p>
           </div>
 
           <div className={`login-error-banner${errorBanner ? ' show' : ''}`}>

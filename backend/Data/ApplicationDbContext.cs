@@ -13,6 +13,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Rol> Roles => Set<Rol>();
 
+    public DbSet<Paciente> Pacientes => Set<Paciente>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -38,6 +40,23 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(u => u.Rol)
                   .WithMany()
                   .HasForeignKey(u => u.IdRol);
+        });
+
+        modelBuilder.Entity<Paciente>(entity =>
+        {
+            entity.ToTable("Paciente");
+            entity.HasKey(p => p.IdPaciente);
+            entity.Property(p => p.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(p => p.Nombres).HasColumnName("Nombres").HasMaxLength(100).IsRequired();
+            entity.Property(p => p.Apellidos).HasColumnName("Apellidos").HasMaxLength(100).IsRequired();
+            entity.Property(p => p.Sexo).HasColumnName("Sexo").HasMaxLength(10);
+            entity.Property(p => p.FechaNacimiento).HasColumnName("Fecha_Nacimiento");
+            entity.Property(p => p.Telefono).HasColumnName("Telefono").HasMaxLength(20).IsRequired();
+            entity.Property(p => p.Correo).HasColumnName("Correo").HasMaxLength(100);
+            entity.Property(p => p.Direccion).HasColumnName("Direccion").HasMaxLength(200);
+            entity.Property(p => p.NombreEncargado).HasColumnName("Nombre_Encargado").HasMaxLength(100);
+            entity.Property(p => p.TelefonoEncargado).HasColumnName("Telefono_Encargado").HasMaxLength(20);
+            entity.Property(p => p.FechaRegistro).HasColumnName("Fecha_Registro");
         });
     }
 }

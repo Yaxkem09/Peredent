@@ -1,0 +1,37 @@
+.empty-state-block {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-faint);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  color: var(--ink-faint);
+}
+
+.empty-state-title {
+  font-size: 16px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  margin: 0 auto;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+.empty-state-action {
+  margin-top: 16px;
+}

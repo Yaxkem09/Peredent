@@ -1,1 +1,12 @@
-Aquí va un layout simple para páginas de autenticación (login, register) que solo renderiza el contenido centrado sin navbar o sidebar.
+import { Outlet } from 'react-router-dom';
+import './AuthLayout.css';
+
+const AuthLayout = () => {
+  return (
+    <div className="auth-layout">
+      <Outlet />
+    </div>
+  );
+};
+
+export default AuthLayout;

@@ -1,1 +1,2 @@
-Aquí van los exports de utilidades.
+export { formatDate, formatTime, formatCurrency } from './formatters';
+export { calcularEdadDetallada, calcularEdadTexto, esMenorDeEdad } from './edad';
