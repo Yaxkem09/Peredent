@@ -15,6 +15,12 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Paciente> Pacientes => Set<Paciente>();
 
+    public DbSet<HistoriaMedica> HistoriasMedicas => Set<HistoriaMedica>();
+
+    public DbSet<Condicion> Condiciones => Set<Condicion>();
+
+    public DbSet<HistoriaCondicion> HistoriasCondiciones => Set<HistoriaCondicion>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -58,5 +64,45 @@ public class ApplicationDbContext : DbContext
             entity.Property(p => p.TelefonoEncargado).HasColumnName("Telefono_Encargado").HasMaxLength(20);
             entity.Property(p => p.FechaRegistro).HasColumnName("Fecha_Registro");
         });
+
+        modelBuilder.Entity<HistoriaMedica>(entity =>
+        {
+            entity.ToTable("Historia_Medica");
+            entity.HasKey(h => h.IdHistoriaMedica);
+            entity.Property(h => h.IdHistoriaMedica).HasColumnName("ID_HistoriaMedica");
+            entity.Property(h => h.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(h => h.ObservacionesGenerales).HasColumnName("Observaciones_Generales").HasMaxLength(500);
+
+            entity.HasIndex(h => h.IdPaciente).IsUnique();
+        });
+
+        modelBuilder.Entity<Condicion>(entity =>
+        {
+            entity.ToTable("Condicion");
+            entity.HasKey(c => c.IdCondicion);
+            entity.Property(c => c.IdCondicion).HasColumnName("ID_Condicion");
+            entity.Property(c => c.NombreCondicion).HasColumnName("Nombre_Condicion").HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<HistoriaCondicion>(entity =>
+        {
+            entity.ToTable("Historia_Condicion");
+            entity.HasKey(hc => hc.IdHistoriaCondicion);
+            entity.Property(hc => hc.IdHistoriaCondicion).HasColumnName("ID_HistoriaCondicion");
+            entity.Property(hc => hc.IdHistoriaMedica).HasColumnName("ID_HistoriaMedica");
+            entity.Property(hc => hc.IdCondicion).HasColumnName("ID_Condicion");
+            entity.Property(hc => hc.ObservacionCondicion).HasColumnName("ObservacionCondicion").HasMaxLength(300);
+
+            entity.HasIndex(hc => new { hc.IdHistoriaMedica, hc.IdCondicion }).IsUnique();
+
+            entity.HasOne(hc => hc.Condicion)
+                  .WithMany()
+                  .HasForeignKey(hc => hc.IdCondicion);
+        });
+
+        modelBuilder.Entity<HistoriaMedica>()
+            .HasMany(h => h.Condiciones)
+            .WithOne()
+            .HasForeignKey(hc => hc.IdHistoriaMedica);
     }
 }
