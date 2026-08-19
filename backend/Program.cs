@@ -12,9 +12,15 @@ if (File.Exists(".env"))
 
 var builder = WebApplication.CreateBuilder(args);
 
+var dbHost = builder.Configuration["DB_HOST"];
+if (string.IsNullOrWhiteSpace(dbHost))
+{
+    throw new InvalidOperationException("DB_HOST no está configurada");
+}
+
 var connectionStringBuilder = new SqlConnectionStringBuilder
 {
-    DataSource = builder.Configuration["DB_HOST"] ?? "localhost",
+    DataSource = dbHost,
     InitialCatalog = builder.Configuration["DB_NAME"] ?? "Peredent",
     TrustServerCertificate = true,
 };
@@ -46,7 +52,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCorsPolicy, policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        var allowedOrigins = new List<string> { "https://peredent.netlify.app" };
+        if (builder.Environment.IsDevelopment())
+        {
+            allowedOrigins.Add("http://localhost:5173");
+        }
+
+        policy.WithOrigins(allowedOrigins.ToArray())
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
