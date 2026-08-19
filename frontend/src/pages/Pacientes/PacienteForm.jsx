@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { pacientesService } from '../../services/pacientes.service';
+import { historiaMedicaService } from '../../services/historia-medica.service';
 import { calcularEdadTexto, esMenorDeEdad } from '../../utils/edad';
 import { useNotification } from '../../hooks/useNotification';
-import { Alert, Button, EmptyState } from '../../components/common';
+import { Alert, Button, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
 import '../../styles/page-header.css';
 import './PacienteForm.css';
@@ -27,6 +28,21 @@ const mensajeError = (err) => {
   return err?.response?.data?.message || 'No se pudo guardar el paciente. Intenta de nuevo.';
 };
 
+const mensajeErrorHistoria = (err, idPaciente) => {
+  const detalle = err?.response?.data?.message || 'No se pudo guardar la historia médica.';
+  return `El paciente se guardó correctamente (id ${idPaciente}), pero ${detalle} Revisá las condiciones marcadas y volvé a intentar — no hace falta volver a completar los datos personales.`;
+};
+
+const construirPayloadHistoria = (seleccionadas, observacionesGenerales) => ({
+  observacionesGenerales: observacionesGenerales.trim() === '' ? null : observacionesGenerales,
+  condiciones: Object.entries(seleccionadas)
+    .filter(([, seleccion]) => seleccion.marcada)
+    .map(([idCondicion, seleccion]) => ({
+      idCondicion: Number(idCondicion),
+      observacion: seleccion.observacion?.trim() === '' ? null : seleccion.observacion,
+    })),
+});
+
 const PacienteForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -37,6 +53,60 @@ const PacienteForm = () => {
   const [errores, setErrores] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
+
+  // --- Historia médica: estado independiente del de datos personales de arriba ---
+  const [condiciones, setCondiciones] = useState([]);
+  const [cargandoCondiciones, setCargandoCondiciones] = useState(true);
+  const [errorCondiciones, setErrorCondiciones] = useState(null);
+
+  // { [idCondicion]: { marcada: boolean, observacion: string } }
+  const [seleccionadas, setSeleccionadas] = useState({});
+  const [observacionesGenerales, setObservacionesGenerales] = useState('');
+
+  // Id del paciente ya creado, si el PUT de historia médica falló y estamos reintentando.
+  const [pacienteCreadoId, setPacienteCreadoId] = useState(null);
+  const [errorHistoria, setErrorHistoria] = useState(null);
+
+  useEffect(() => {
+    let activo = true;
+
+    historiaMedicaService
+      .getCondiciones()
+      .then((data) => {
+        if (activo) setCondiciones(data);
+      })
+      .catch(() => {
+        if (activo) {
+          setErrorCondiciones(
+            'No se pudo cargar el catálogo de condiciones. Podés guardar los datos personales igual, pero la historia médica no va a estar disponible hasta que recargues la página.',
+          );
+        }
+      })
+      .finally(() => {
+        if (activo) setCargandoCondiciones(false);
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  const toggleCondicion = (idCondicion) => {
+    setSeleccionadas((prev) => {
+      const actual = prev[idCondicion];
+      return {
+        ...prev,
+        [idCondicion]: { marcada: !actual?.marcada, observacion: actual?.observacion || '' },
+      };
+    });
+  };
+
+  const cambiarObservacionCondicion = (idCondicion, observacion) => {
+    setSeleccionadas((prev) => ({
+      ...prev,
+      [idCondicion]: { marcada: true, observacion },
+    }));
+  };
 
   const esMenor = esMenorDeEdad(datos.fechaNacimiento);
   const edadTexto = calcularEdadTexto(datos.fechaNacimiento);
@@ -52,41 +122,62 @@ const PacienteForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setErrorHistoria(null);
 
-    const camposRequeridos = ['nombres', 'apellidos', 'fechaNacimiento', 'telefono'];
-    if (esMenor) camposRequeridos.push('encargadoNombre', 'encargadoTelefono');
+    // Si ya creamos el paciente en un intento anterior y solo falló la historia
+    // médica, reintentamos directo con ese id — no volvemos a crear el paciente.
+    let idPaciente = pacienteCreadoId;
+    let payload = null;
 
-    const nuevosErrores = {};
-    let esValido = true;
-    camposRequeridos.forEach((campo) => {
-      const vacio = datos[campo].trim() === '';
-      nuevosErrores[campo] = vacio;
-      if (vacio) esValido = false;
-    });
-    setErrores(nuevosErrores);
+    if (!idPaciente) {
+      const camposRequeridos = ['nombres', 'apellidos', 'fechaNacimiento', 'telefono'];
+      if (esMenor) camposRequeridos.push('encargadoNombre', 'encargadoTelefono');
 
-    if (!esValido) {
-      setError(
-        esMenor
-          ? 'Completa nombre, apellidos, fecha de nacimiento, teléfono y los datos del encargado antes de guardar.'
-          : 'No se puede guardar sin nombre, apellidos, fecha de nacimiento y al menos un teléfono.',
-      );
-      return;
-    }
+      const nuevosErrores = {};
+      let esValido = true;
+      camposRequeridos.forEach((campo) => {
+        const vacio = datos[campo].trim() === '';
+        nuevosErrores[campo] = vacio;
+        if (vacio) esValido = false;
+      });
+      setErrores(nuevosErrores);
 
-    const payload = { ...datos };
-    if (!esMenor) {
-      delete payload.encargadoNombre;
-      delete payload.encargadoTelefono;
+      if (!esValido) {
+        setError(
+          esMenor
+            ? 'Completa nombre, apellidos, fecha de nacimiento, teléfono y los datos del encargado antes de guardar.'
+            : 'No se puede guardar sin nombre, apellidos, fecha de nacimiento y al menos un teléfono.',
+        );
+        return;
+      }
+
+      payload = { ...datos };
+      if (!esMenor) {
+        delete payload.encargadoNombre;
+        delete payload.encargadoTelefono;
+      }
     }
 
     setGuardando(true);
+
+    if (!idPaciente) {
+      try {
+        const pacienteCreado = await pacientesService.create(payload);
+        idPaciente = pacienteCreado.id;
+        setPacienteCreadoId(idPaciente);
+      } catch (err) {
+        setError(mensajeError(err));
+        setGuardando(false);
+        return;
+      }
+    }
+
     try {
-      await pacientesService.create(payload);
+      await historiaMedicaService.guardar(idPaciente, construirPayloadHistoria(seleccionadas, observacionesGenerales));
       notify('Paciente guardado exitosamente.');
       navigate(ROUTES.PACIENTES);
     } catch (err) {
-      setError(mensajeError(err));
+      setErrorHistoria(mensajeErrorHistoria(err, idPaciente));
     } finally {
       setGuardando(false);
     }
@@ -127,6 +218,7 @@ const PacienteForm = () => {
       </div>
 
       {error && <Alert type="error">{error}</Alert>}
+      {errorHistoria && <Alert type="error">{errorHistoria}</Alert>}
 
       <form className="form-card" onSubmit={handleSubmit} noValidate>
         <div className="section-label">Datos personales</div>
@@ -246,12 +338,71 @@ const PacienteForm = () => {
           </>
         )}
 
+        <div className="section-label">Historia médica</div>
+        {cargandoCondiciones ? (
+          <div className="hm-loading">
+            <Loader label="Cargando catálogo de condiciones…" />
+            <span>Cargando catálogo de condiciones…</span>
+          </div>
+        ) : errorCondiciones ? (
+          <Alert type="error">{errorCondiciones}</Alert>
+        ) : (
+          <div className="hm-grid">
+            {condiciones.map((condicion) => {
+              const seleccion = seleccionadas[condicion.idCondicion];
+              const marcada = Boolean(seleccion?.marcada);
+              const checkboxId = `hm-${condicion.idCondicion}`;
+              const observacionId = `hm-obs-${condicion.idCondicion}`;
+              return (
+                <div className="hm-item" key={condicion.idCondicion}>
+                  <div className="hm-check">
+                    <input
+                      type="checkbox"
+                      id={checkboxId}
+                      checked={marcada}
+                      onChange={() => toggleCondicion(condicion.idCondicion)}
+                    />
+                    <label htmlFor={checkboxId}>
+                      {condicion.idCondicion}. {condicion.nombreCondicion}
+                    </label>
+                  </div>
+                  {marcada && (
+                    <div className="hm-obs">
+                      <label htmlFor={observacionId} className="hm-obs-label">
+                        Observación ({condicion.nombreCondicion})
+                      </label>
+                      <input
+                        id={observacionId}
+                        type="text"
+                        autoFocus
+                        placeholder="Detalle (opcional)"
+                        value={seleccion?.observacion || ''}
+                        onChange={(e) => cambiarObservacionCondicion(condicion.idCondicion, e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="field full hm-observaciones">
+          <label htmlFor="observacionesGenerales">Observaciones generales</label>
+          <textarea
+            id="observacionesGenerales"
+            placeholder="Notas adicionales relevantes para el tratamiento"
+            value={observacionesGenerales}
+            onChange={(e) => setObservacionesGenerales(e.target.value)}
+          />
+        </div>
+
         <div className="form-actions">
           <Button type="button" variant="secondary" onClick={() => navigate(ROUTES.PACIENTES)}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary" loading={guardando}>
-            Guardar paciente
+            {pacienteCreadoId ? 'Reintentar guardar historia médica' : 'Guardar paciente'}
           </Button>
         </div>
       </form>

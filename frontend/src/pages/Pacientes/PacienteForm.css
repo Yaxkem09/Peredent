@@ -84,8 +84,104 @@
   flex-wrap: wrap;
 }
 
+.field textarea {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 70px;
+  resize: vertical;
+}
+
+.field textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.hm-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 2px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.hm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.hm-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.hm-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hm-check input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--teal);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.hm-check label {
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* Input de observación: fondo/borde propios (no el gris neutro de .field)
+   para que se note de inmediato al aparecer justo debajo del checkbox marcado. */
+.hm-obs {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hm-obs-label {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.hm-obs input {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.hm-obs input:focus {
+  outline: none;
+  border-color: var(--teal);
+  background: var(--surface);
+}
+
+.hm-observaciones {
+  margin-top: 18px;
+}
+
 @media (max-width: 560px) {
-  .field-grid {
+  .field-grid,
+  .hm-grid {
     grid-template-columns: 1fr;
   }
 }
