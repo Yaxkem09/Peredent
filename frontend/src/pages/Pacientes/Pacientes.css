@@ -28,10 +28,15 @@
   justify-content: space-between;
   padding: 14px;
   border-bottom: 1px solid var(--line);
+  cursor: pointer;
 }
 
 .patient-row:last-child {
   border-bottom: none;
+}
+
+.patient-row:hover {
+  background: var(--surface-alt);
 }
 
 .patient-info {

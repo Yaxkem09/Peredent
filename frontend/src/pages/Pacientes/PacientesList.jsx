@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { pacientesService } from '../../services/pacientes.service';
 import { formatDate } from '../../utils/formatters';
 import { Alert, EmptyState, Loader } from '../../components/common';
@@ -11,6 +11,7 @@ const inicialesDe = (nombres, apellidos) =>
   `${(nombres || '').charAt(0)}${(apellidos || '').charAt(0)}`.toUpperCase() || '—';
 
 const PacientesList = () => {
+  const navigate = useNavigate();
   const [pacientes, setPacientes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
@@ -67,7 +68,16 @@ const PacientesList = () => {
       ) : (
         <div className="patient-list">
           {pacientes.map((paciente) => (
-            <div className="patient-row" key={paciente.id}>
+            <div
+              className="patient-row"
+              key={paciente.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(ROUTES.PACIENTE_DETALLE(paciente.id))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') navigate(ROUTES.PACIENTE_DETALLE(paciente.id));
+              }}
+            >
               <div className="patient-info">
                 <div className="patient-avatar">{inicialesDe(paciente.nombres, paciente.apellidos)}</div>
                 <div>
