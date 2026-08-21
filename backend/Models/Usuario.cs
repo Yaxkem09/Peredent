@@ -1,1 +1,20 @@
-Aquí va el modelo de Usuario con sus propiedades básicas como Id, Email, FullName, PasswordHash, Role, IsActive, CreatedAt y RefreshToken. Este modelo representa a los usuarios del sistema (admin, dentistas, usuarios normales) y tiene relaciones con Citas.
+namespace Peredent.Api.Models;
+
+public class Usuario
+{
+    public int IdUsuario { get; set; }
+
+    public string NombreUsuario { get; set; } = string.Empty;
+
+    public string Salt { get; set; } = string.Empty;
+
+    public string ContrasenaHash { get; set; } = string.Empty;
+
+    public int IdRol { get; set; }
+
+    public bool Estado { get; set; }
+
+    public DateTime? UltimoAcceso { get; set; }
+
+    public Rol? Rol { get; set; }
+}

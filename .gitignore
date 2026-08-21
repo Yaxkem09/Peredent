@@ -1,0 +1,33 @@
+# === Node / Vite (frontend) ===
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === .NET (backend) ===
+bin/
+obj/
+*.user
+*.suo
+
+# === Variables de entorno ===
+.env
+.env.*
+!.env.example
+
+# === Editores / IDE ===
+.vs/
+.idea/
+*.swp
+
+# === Sistema operativo ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+logs/
+*.log

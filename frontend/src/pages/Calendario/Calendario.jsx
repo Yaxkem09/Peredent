@@ -1,1 +1,23 @@
-Aquí va una página con calendario mensual que muestra las citas como eventos. Permite click en un día para crear cita o click en evento para ver detalles. Tiene filtros por dentista y estado.
+import { EmptyState } from '../../components/common';
+import '../../styles/page-header.css';
+
+const Calendario = () => {
+  return (
+    <div className="page-block">
+      <div className="page-head">
+        <div>
+          <div className="eyebrow">Agenda</div>
+          <h2>Calendario de citas</h2>
+          <p>Vista mensual de citas confirmadas y pendientes.</p>
+        </div>
+      </div>
+
+      <EmptyState
+        title="Calendario en construcción"
+        description="La vista de agenda con citas por día, semana y mes se implementa en una próxima iteración."
+      />
+    </div>
+  );
+};
+
+export default Calendario;

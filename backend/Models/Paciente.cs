@@ -1,1 +1,26 @@
-Aquí va el modelo de Paciente que contiene la información de los pacientes del consultorio como nombres, apellidos, email, teléfono, fecha de nacimiento, DNI, dirección, ciudad, alergias y notas clínicas. Este modelo tiene una relación de uno a muchos con Citas.
+namespace Peredent.Api.Models;
+
+public class Paciente
+{
+    public int IdPaciente { get; set; }
+
+    public string Nombres { get; set; } = string.Empty;
+
+    public string Apellidos { get; set; } = string.Empty;
+
+    public string? Sexo { get; set; }
+
+    public DateTime FechaNacimiento { get; set; }
+
+    public string Telefono { get; set; } = string.Empty;
+
+    public string? Correo { get; set; }
+
+    public string? Direccion { get; set; }
+
+    public string? NombreEncargado { get; set; }
+
+    public string? TelefonoEncargado { get; set; }
+
+    public DateTime FechaRegistro { get; set; }
+}

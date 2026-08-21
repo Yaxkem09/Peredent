@@ -1,1 +1,10 @@
-Aquí va un custom hook que usa AuthContext para obtener usuario actual, si está autenticado, métodos login, logout y register. Lanza error si se usa fuera de AuthProvider.
+import { useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth debe usarse dentro de un AuthProvider');
+  }
+  return context;
+};

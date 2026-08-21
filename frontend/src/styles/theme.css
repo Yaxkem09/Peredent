@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #f5f7f6;
+  --surface: #ffffff;
+  --surface-alt: #eef3f1;
+  --ink: #1b2825;
+  --ink-soft: #5b6e68;
+  --ink-faint: #93a39d;
+  --line: #dfe7e4;
+  --teal: #0a264b;
+  --teal-soft: #e7ebf1;
+  --accent: #15939c;
+  --accent-soft: #e1f2f3;
+  --coral: #c85a3c;
+  --coral-soft: #fbeae4;
+  --amber: #b4791a;
+  --amber-soft: #fbf0dd;
+  --radius: 10px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

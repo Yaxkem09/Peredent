@@ -1,0 +1,27 @@
+.alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.alert-info {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.alert-success {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.alert-warning {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.alert-error {
+  background: var(--coral-soft);
+  color: var(--coral);
+}

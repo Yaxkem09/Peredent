@@ -1,1 +1,2 @@
-Aquí van los exports de rutas.
+export { ROUTES } from './routes';
+export { default as ProtectedRoute } from './ProtectedRoute';

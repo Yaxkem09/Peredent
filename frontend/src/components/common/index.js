@@ -1,1 +1,4 @@
-Aquí van los exports de todos los componentes comunes para importarlos fácilmente desde otros lugares de la aplicación.
+export { default as Button } from './Button';
+export { default as Loader } from './Loader';
+export { default as Alert } from './Alert';
+export { default as EmptyState } from './EmptyState';

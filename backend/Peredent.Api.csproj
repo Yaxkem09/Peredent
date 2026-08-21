@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Peredent.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <!--
+    Estos archivos todavía son descripciones de texto, no código C# real
+    (Data, Models, Repositories, Services, Tests y los controllers/DTOs no
+    implementados). Se excluyen de la compilación hasta que se implementen
+    de verdad; si no, el build falla porque no son C# válido.
+  -->
+  <!--
+    Tests/ es la carpeta del proyecto Peredent.Api.Tests.csproj (otro proyecto,
+    con su propio bin/obj anidado). Los excludes automaticos del SDK solo cubren
+    el bin/obj de ESTE proyecto, no los anidados en subcarpetas: sin este
+    exclude explicito, el build de Peredent.Api.csproj recopia el bin de Tests/
+    dentro del suyo en cada pasada, cada vez mas profundo, hasta fallar.
+  -->
+  <ItemGroup>
+    <Content Remove="Tests/**" />
+    <None Remove="Tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Data/DbInitializer.cs" />
+    <Compile Remove="Models/Cita.cs" />
+    <Compile Remove="Models/Inventario.cs" />
+    <Compile Remove="Repositories/**/*.cs" />
+    <Compile Remove="Services/**/*.cs" />
+    <Compile Remove="Tests/**/*.cs" />
+    <Compile Remove="Controllers/CitasController.cs" />
+    <Compile Remove="Controllers/InventarioController.cs" />
+    <Compile Remove="DTOs/Request/CreateCitaDto.cs" />
+    <Compile Remove="DTOs/Request/CreateUsuarioDto.cs" />
+    <Compile Remove="DTOs/Request/RefreshTokenDto.cs" />
+    <Compile Remove="DTOs/Response/ApiResponseDto.cs" />
+    <Compile Remove="DTOs/Response/CitaDto.cs" />
+    <Compile Remove="DTOs/Response/UsuarioDto.cs" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,42 @@
+.loader {
+  display: inline-block;
+  border-radius: 50%;
+  border: 2.5px solid var(--line);
+  border-top-color: var(--teal);
+  animation: loader-spin 0.7s linear infinite;
+}
+
+.loader-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.loader-md {
+  width: 26px;
+  height: 26px;
+}
+
+.loader-lg {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+.loader-fullscreen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--ink-soft);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
