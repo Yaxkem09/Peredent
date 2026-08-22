@@ -48,17 +48,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 const string FrontendCorsPolicy = "Frontend";
+
+// CORS_ALLOWED_ORIGINS (coma-separado) permite sobreescribir los orígenes sin
+// tocar código, igual que DB_HOST; si no está definida se usa Cors:AllowedOrigins
+// de appsettings.json / appsettings.{Environment}.json.
+var corsEnvOverride = builder.Configuration["CORS_ALLOWED_ORIGINS"];
+var allowedOrigins = !string.IsNullOrWhiteSpace(corsEnvOverride)
+    ? corsEnvOverride.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    : builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCorsPolicy, policy =>
     {
-        var allowedOrigins = new List<string> { "https://peredent.netlify.app" };
-        if (builder.Environment.IsDevelopment())
-        {
-            allowedOrigins.Add("http://localhost:5173");
-        }
-
-        policy.WithOrigins(allowedOrigins.ToArray())
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
