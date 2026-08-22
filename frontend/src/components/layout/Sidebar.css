@@ -12,36 +12,18 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-bottom: 36px;
   padding: 0 6px;
 }
 
 .brand-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--teal);
-  flex-shrink: 0;
+  width: 130px;
 }
 
-.brand-name {
-  font-family: 'Fraunces', serif;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.brand-sub {
-  font-size: 10px;
-  color: var(--accent);
-  font-weight: 600;
-  line-height: 1.4;
+.brand-mark img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 nav {

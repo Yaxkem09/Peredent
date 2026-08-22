@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import logo from '../../assets/logo.png';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -58,17 +59,7 @@ const Sidebar = ({ open, onNavigate }) => {
     <aside className={`sidebar${open ? ' sidebar-open' : ''}`}>
       <div className="brand">
         <div className="brand-mark">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 3c-2.5 0-5 1.2-5 4.2 0 2.6.7 5 1.3 7.3.4 1.6.7 3 1.6 4.4.3.5 1 .5 1.3 0 .6-1 .6-2.5.8-3.7.1-.7.5-1.2 1-1.2s.9.5 1 1.2c.2 1.2.2 2.7.8 3.7.3.5 1 .5 1.3 0 .9-1.4 1.2-2.8 1.6-4.4.6-2.3 1.3-4.7 1.3-7.3C19 4.2 16.5 3 14 3"
-            />
-          </svg>
-        </div>
-        <div>
-          <div className="brand-name">Peredent</div>
-          <div className="brand-sub">Odontología General · Ortodoncia · Cirugía Maxilofacial</div>
+          <img src={logo} alt="Peredent - Odontología General · Ortodoncia · Cirugía Maxilofacial" />
         </div>
       </div>
 
