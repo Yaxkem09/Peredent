@@ -11,6 +11,8 @@ yarn-error.log*
 # === .NET (backend) ===
 bin/
 obj/
+publish/
+web.config
 *.user
 *.suo
 

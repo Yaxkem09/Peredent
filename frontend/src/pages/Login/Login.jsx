@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import logo from '../../assets/logo.png';
 import './Login.css';
 
 const Login = () => {
@@ -76,24 +77,8 @@ const Login = () => {
         <div className="login-form-col">
           <div className="login-brand">
             <div className="login-logo">
-              <svg
-                width="30"
-                height="30"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 3c-2.5 0-5 1.2-5 4.2 0 2.6.7 5 1.3 7.3.4 1.6.7 3 1.6 4.4.3.5 1 .5 1.3 0 .6-1 .6-2.5.8-3.7.1-.7.5-1.2 1-1.2s.9.5 1 1.2c.2 1.2.2 2.7.8 3.7.3.5 1 .5 1.3 0 .9-1.4 1.2-2.8 1.6-4.4.6-2.3 1.3-4.7 1.3-7.3C19 4.2 16.5 3 14 3"
-                />
-              </svg>
+              <img src={logo} alt="Peredent - Odontología General · Ortodoncia · Cirugía Maxilofacial" />
             </div>
-            <h1 className="login-brand-name">Peredent</h1>
-            <p className="login-brand-sub">Odontología General · Ortodoncia · Cirugía Maxilofacial</p>
           </div>
 
           <div className={`login-error-banner${errorBanner ? ' show' : ''}`}>
