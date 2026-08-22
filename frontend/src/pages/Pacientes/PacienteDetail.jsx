@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { pacientesService } from '../../services/pacientes.service';
 import { historiaMedicaService } from '../../services/historia-medica.service';
 import { calcularEdadTexto } from '../../utils/edad';
@@ -83,36 +83,147 @@ const DatosTab = ({ paciente, idPaciente }) => (
   </div>
 );
 
-const HistoriaTab = ({ historia, cargando, error }) => {
+const HistoriaTab = ({ historia: historiaInicial, cargando, error, idPaciente }) => {
+  const [editando, setEditando] = useState(false);
+  const [historia, setHistoria] = useState(historiaInicial);
+  const [guardando, setGuardando] = useState(false);
+  const [errorGuardar, setErrorGuardar] = useState(null);
+
+  useEffect(() => { setHistoria(historiaInicial); }, [historiaInicial]);
+
   if (cargando) return <Loader />;
   if (error) return <Alert type="error">{error}</Alert>;
+  if (!historia) return null;
+
+  const toggleCondicion = (idCondicion) =>
+    setHistoria((h) => ({
+      ...h,
+      condiciones: h.condiciones.map((c) =>
+        c.idCondicion === idCondicion ? { ...c, marcada: !c.marcada } : c
+      ),
+    }));
+
+  const cambiarObservacion = (idCondicion, valor) =>
+    setHistoria((h) => ({
+      ...h,
+      condiciones: h.condiciones.map((c) =>
+        c.idCondicion === idCondicion ? { ...c, observacion: valor } : c
+      ),
+    }));
+
+  const guardar = async () => {
+    setGuardando(true);
+    setErrorGuardar(null);
+    try {
+      const payload = {
+        observacionesGenerales: historia.observacionesGenerales,
+        condiciones: historia.condiciones
+          .filter((c) => c.marcada)
+          .map((c) => ({ idCondicion: c.idCondicion, observacion: c.observacion || null })),
+      };
+      const actualizada = await historiaMedicaService.guardar(idPaciente, payload);
+      setHistoria(actualizada);
+      setEditando(false);
+    } catch {
+      setErrorGuardar('No se pudo guardar la historia médica. Intenta de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const cancelar = () => {
+    setHistoria(historiaInicial);
+    setEditando(false);
+    setErrorGuardar(null);
+  };
+
+  if (!editando) {
+    return (
+      <div>
+        <div className="hm-list">
+          {historia.condiciones.map((condicion) => (
+            <div className="hm-row" key={condicion.idCondicion}>
+              <div className="hm-row-main">
+                <div className="hm-row-name">
+                  {condicion.idCondicion}. {condicion.nombreCondicion}
+                </div>
+                {condicion.marcada && condicion.observacion && (
+                  <div className="hm-row-obs">{condicion.observacion}</div>
+                )}
+              </div>
+              <span className={`tag ${condicion.marcada ? 'tag-pending' : 'tag-ok'}`}>
+                {condicion.marcada ? 'Presenta' : 'Sin antecedente'}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="hm-observaciones-card">
+          <div className="hm-observaciones-label">Observaciones generales</div>
+          {historia.observacionesGenerales ? (
+            <p className="hm-observaciones-texto">{historia.observacionesGenerales}</p>
+          ) : (
+            <p className="hm-observaciones-vacio">Sin observaciones adicionales.</p>
+          )}
+        </div>
+        <div className="detail-actions">
+          <button type="button" className="btn btn-secondary btn-md" onClick={() => setEditando(true)}>
+            Editar historia médica
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
+      {errorGuardar && <Alert type="error">{errorGuardar}</Alert>}
       <div className="hm-list">
         {historia.condiciones.map((condicion) => (
-          <div className="hm-row" key={condicion.idCondicion}>
-            <div className="hm-row-main">
-              <div className="hm-row-name">
+          <div className="hm-row hm-row-edit" key={condicion.idCondicion}>
+            <label className="hm-label-edit">
+              <input
+                type="checkbox"
+                checked={condicion.marcada}
+                onChange={() => toggleCondicion(condicion.idCondicion)}
+              />
+              <span className="hm-row-name">
                 {condicion.idCondicion}. {condicion.nombreCondicion}
-              </div>
-              {condicion.marcada && condicion.observacion && (
-                <div className="hm-row-obs">{condicion.observacion}</div>
-              )}
-            </div>
-            <span className={`tag ${condicion.marcada ? 'tag-pending' : 'tag-ok'}`}>
-              {condicion.marcada ? 'Presenta' : 'Sin antecedente'}
-            </span>
+              </span>
+            </label>
+            {condicion.marcada && (
+              <input
+                className="hm-obs-input"
+                type="text"
+                placeholder="Observación (opcional)"
+                value={condicion.observacion || ''}
+                onChange={(e) => cambiarObservacion(condicion.idCondicion, e.target.value)}
+              />
+            )}
           </div>
         ))}
       </div>
       <div className="hm-observaciones-card">
         <div className="hm-observaciones-label">Observaciones generales</div>
-        {historia.observacionesGenerales ? (
-          <p className="hm-observaciones-texto">{historia.observacionesGenerales}</p>
-        ) : (
-          <p className="hm-observaciones-vacio">Sin observaciones adicionales.</p>
-        )}
+        <textarea
+          className="hm-obs-textarea"
+          rows={4}
+          value={historia.observacionesGenerales || ''}
+          onChange={(e) => setHistoria((h) => ({ ...h, observacionesGenerales: e.target.value }))}
+          placeholder="Observaciones generales del paciente"
+        />
+      </div>
+      <div className="detail-actions">
+        <button
+          type="button"
+          className="btn btn-primary btn-md"
+          onClick={guardar}
+          disabled={guardando}
+        >
+          {guardando ? 'Guardando…' : 'Guardar cambios'}
+        </button>
+        <button type="button" className="btn btn-secondary btn-md" onClick={cancelar} disabled={guardando}>
+          Cancelar
+        </button>
       </div>
     </div>
   );
@@ -120,9 +231,10 @@ const HistoriaTab = ({ historia, cargando, error }) => {
 
 const PacienteDetail = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('datos');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'datos');
 
   const [paciente, setPaciente] = useState(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(true);
@@ -199,7 +311,7 @@ const PacienteDetail = () => {
 
           {activeTab === 'datos' && <DatosTab paciente={paciente} idPaciente={id} />}
           {activeTab === 'historia' && (
-            <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} />
+            <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState

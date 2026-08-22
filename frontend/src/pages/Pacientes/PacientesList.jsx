@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useDebounce } from '../../hooks';
 import { Link, useNavigate } from 'react-router-dom';
 import { pacientesService } from '../../services/pacientes.service';
 import { formatDate } from '../../utils/formatters';
@@ -10,31 +11,38 @@ import './Pacientes.css';
 const inicialesDe = (nombres, apellidos) =>
   `${(nombres || '').charAt(0)}${(apellidos || '').charAt(0)}`.toUpperCase() || '—';
 
-const PacientesList = () => {
-  const navigate = useNavigate();
+  const PacientesList = () => {
   const [pacientes, setPacientes] = useState([]);
+  const [termino, setTermino] = useState('');
+  const terminoDebounced = useDebounce(termino, 400);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let activo = true;
+useEffect(() => {
+  let activo = true;
+  setCargando(true);
+  setError(null);
 
-    pacientesService
-      .getAll()
-      .then((data) => {
-        if (activo) setPacientes(data);
+  const promesa = terminoDebounced.trim()
+    ? pacientesService.search(terminoDebounced.trim())
+    : pacientesService.getAll();
+
+  promesa
+    .then((data) => {
+      if (activo)
+        setPacientes(data);
+    })
+    .catch(() => {
+      if (activo)
+        setError('No se pudo cargar la lista de pacientes.');
       })
-      .catch(() => {
-        if (activo) setError('No se pudo cargar la lista de pacientes.');
-      })
-      .finally(() => {
-        if (activo) setCargando(false);
+    .finally(() => {
+      if (activo)
+        setCargando(false);
       });
 
-    return () => {
-      activo = false;
-    };
-  }, []);
+  return () => { activo = false; };
+}, [terminoDebounced]);
 
   return (
     <div className="page-block">
@@ -54,6 +62,8 @@ const PacientesList = () => {
         className="search-input"
         type="text"
         placeholder="Buscar por nombre, apellido o teléfono"
+        value={termino}
+        onChange={(e) => setTermino(e.target.value)}
       />
 
       {cargando ? (
@@ -89,6 +99,22 @@ const PacientesList = () => {
                   </div>
                 </div>
               </div>
+              <div className="patient-quick-actions">        {/* ← agrega aquí */}
+              <Link
+                to={`${ROUTES.PACIENTE_DETALLE(paciente.id)}?tab=datos`}
+                className="btn btn-secondary btn-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Ficha
+              </Link>
+              <Link
+                to={`${ROUTES.PACIENTE_DETALLE(paciente.id)}?tab=plan`}
+                className="btn btn-secondary btn-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Plan
+              </Link>
+            </div>
             </div>
           ))}
         </div>
