@@ -10,33 +10,35 @@ import './Pacientes.css';
 const inicialesDe = (nombres, apellidos) =>
   `${(nombres || '').charAt(0)}${(apellidos || '').charAt(0)}`.toUpperCase() || '—';
 
-const PacientesList = () => {
-  const navigate = useNavigate();
+  const PacientesList = () => {
+    const navigate = useNavigate();
   const [pacientes, setPacientes] = useState([]);
+  const [termino, setTermino] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let activo = true;
+useEffect(() => {
+  let activo = true;
+  setCargando(true);
+  setError(null);
 
-    pacientesService
-      .getAll()
-      .then((data) => {
-        if (activo) setPacientes(data);
-      })
-      .catch(() => {
-        if (activo) setError('No se pudo cargar la lista de pacientes.');
-      })
-      .finally(() => {
-        if (activo) setCargando(false);
-      });
+  const timer = setTimeout(() => {
+    const promesa = termino.trim()
+      ? pacientesService.search(termino.trim())
+      : pacientesService.getAll();
 
-    return () => {
-      activo = false;
-    };
-  }, []);
+    promesa
+      .then((data) => { if (activo) setPacientes(data); })
+      .catch(() => { if (activo) setError('No se pudo cargar la lista de pacientes.'); })
+      .finally(() => { if (activo) setCargando(false); });
+  }, 400);
 
-  return (
+  return () => {
+    activo = false;
+    clearTimeout(timer);
+  };
+}, [termino]);
+return (
     <div className="page-block">
       <div className="page-head">
         <div>
@@ -49,11 +51,12 @@ const PacientesList = () => {
         </Link>
       </div>
 
-      {/* Búsqueda visual únicamente; el filtrado lo implementa SCRUM-21. */}
       <input
         className="search-input"
         type="text"
         placeholder="Buscar por nombre, apellido o teléfono"
+        value={termino}
+        onChange={(e) => setTermino(e.target.value)}
       />
 
       {cargando ? (
@@ -88,6 +91,22 @@ const PacientesList = () => {
                     {paciente.telefono || 'Sin teléfono'} · Registrado el {formatDate(paciente.fechaRegistro)}
                   </div>
                 </div>
+              </div>
+              <div className="patient-quick-actions">
+                <Link
+                  to={`${ROUTES.PACIENTE_DETALLE(paciente.id)}?tab=datos`}
+                  className="btn btn-secondary btn-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Ficha
+                </Link>
+                <Link
+                  to={`${ROUTES.PACIENTE_DETALLE(paciente.id)}?tab=plan`}
+                  className="btn btn-secondary btn-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Plan
+                </Link>
               </div>
             </div>
           ))}

@@ -69,3 +69,10 @@
   color: var(--ink-faint);
   margin-top: 2px;
 }
+
+.patient-quick-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
