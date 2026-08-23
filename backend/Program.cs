@@ -57,11 +57,27 @@ var allowedOrigins = !string.IsNullOrWhiteSpace(corsEnvOverride)
     ? corsEnvOverride.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
     : builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 
+// Además de los orígenes fijos, se permite cualquier branch deploy de Netlify
+// del sitio "peredent" (https://{branch}--peredent.netlify.app).
+const string NetlifyBranchDeploySuffix = "--peredent.netlify.app";
+
+bool IsOriginAllowed(string origin)
+{
+    if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+    {
+        return true;
+    }
+
+    return Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps
+        && uri.Host.EndsWith(NetlifyBranchDeploySuffix, StringComparison.OrdinalIgnoreCase);
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCorsPolicy, policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(IsOriginAllowed)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
