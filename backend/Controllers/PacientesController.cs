@@ -37,9 +37,9 @@ public class PacientesController : ControllerBase
         if (!string.IsNullOrEmpty(texto))
         {
             query = query.Where(p =>
-                EF.Functions.Like(p.Nombres, $"%{texto}%") ||
-                EF.Functions.Like(p.Apellidos, $"%{texto}%") ||
-                EF.Functions.Like(p.Telefono, $"%{texto}%"));
+                EF.Functions.Like(EF.Functions.Collate(p.Nombres, "Latin1_General_CI_AI"), $"%{texto}%") ||
+                EF.Functions.Like(EF.Functions.Collate(p.Apellidos, "Latin1_General_CI_AI"), $"%{texto}%") ||
+                EF.Functions.Like(EF.Functions.Collate(p.Telefono, "Latin1_General_CI_AI"), $"%{texto}%"));
         }
 
         var pacientes = await query.OrderBy(p => p.Apellidos).ToListAsync();

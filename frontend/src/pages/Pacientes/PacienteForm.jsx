@@ -91,6 +91,34 @@ const PacienteForm = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!esEdicion) return;
+    let activo = true;
+
+    pacientesService
+      .getById(id)
+      .then((data) => {
+        if (!activo) return;
+        setDatos({
+          nombres: data.nombres || '',
+          apellidos: data.apellidos || '',
+          fechaNacimiento: data.fechaNacimiento?.slice(0, 10) || '',
+          sexo: data.sexo || 'Femenino',
+          telefono: data.telefono || '',
+          correo: data.correo || '',
+          direccion: data.direccion || '',
+          encargadoNombre: data.encargadoNombre || '',
+          encargadoTelefono: data.encargadoTelefono || '',
+        });
+      })
+      .catch(() => {
+        setError('No se pudo cargar los datos del paciente.');
+      });
+      return () => {
+        activo = false;
+      }
+  }, [id, esEdicion]);
+
   const toggleCondicion = (idCondicion) => {
     setSeleccionadas((prev) => {
       const actual = prev[idCondicion];
@@ -160,6 +188,19 @@ const PacienteForm = () => {
 
     setGuardando(true);
 
+    if(esEdicion) {
+      try {
+        await pacientesService.update(id, payload);
+        notify('Paciente actualizado exitosamente.');
+        navigate(ROUTES.PACIENTE_DETALLE(id));
+      } catch (err) {
+        setError(mensajeError(err));
+      } finally {
+        setGuardando(false);
+      }
+      return;
+    }
+
     if (!idPaciente) {
       try {
         const pacienteCreado = await pacientesService.create(payload);
@@ -183,37 +224,13 @@ const PacienteForm = () => {
     }
   };
 
-  if (esEdicion) {
-    return (
-      <div className="page-block">
-        <div className="page-head">
-          <div>
-            <div className="eyebrow">Base de pacientes</div>
-            <h2>Editar paciente</h2>
-            <p>Actualiza los datos personales y de contacto del paciente.</p>
-          </div>
-        </div>
-
-        <EmptyState
-          title="Edición en construcción"
-          description="La edición de pacientes existentes (historia SCRUM-20 / SCRUM-22) se implementa en una próxima iteración."
-          action={
-            <Button variant="secondary" onClick={() => navigate(-1)}>
-              Volver
-            </Button>
-          }
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="page-block">
       <div className="page-head">
         <div>
           <div className="eyebrow">Base de pacientes</div>
-          <h2>Nuevo paciente</h2>
-          <p>Registra los datos personales y de contacto del paciente.</p>
+          <h2>{esEdicion ? 'Editar paciente' : 'Nuevo paciente'}</h2>
+          <p>{esEdicion ? 'Actualiza los datos personales y de contacto del paciente.' : 'Registra los datos personales y de contacto del paciente.'}</p>
         </div>
       </div>
 
@@ -338,64 +355,68 @@ const PacienteForm = () => {
           </>
         )}
 
-        <div className="section-label">Historia médica</div>
-        {cargandoCondiciones ? (
-          <div className="hm-loading">
-            <Loader label="Cargando catálogo de condiciones…" />
-            <span>Cargando catálogo de condiciones…</span>
-          </div>
-        ) : errorCondiciones ? (
-          <Alert type="error">{errorCondiciones}</Alert>
-        ) : (
-          <div className="hm-grid">
-            {condiciones.map((condicion) => {
-              const seleccion = seleccionadas[condicion.idCondicion];
-              const marcada = Boolean(seleccion?.marcada);
-              const checkboxId = `hm-${condicion.idCondicion}`;
-              const observacionId = `hm-obs-${condicion.idCondicion}`;
-              return (
-                <div className="hm-item" key={condicion.idCondicion}>
-                  <div className="hm-check">
-                    <input
-                      type="checkbox"
-                      id={checkboxId}
-                      checked={marcada}
-                      onChange={() => toggleCondicion(condicion.idCondicion)}
-                    />
-                    <label htmlFor={checkboxId}>
-                      {condicion.idCondicion}. {condicion.nombreCondicion}
-                    </label>
-                  </div>
-                  {marcada && (
-                    <div className="hm-obs">
-                      <label htmlFor={observacionId} className="hm-obs-label">
-                        Observación ({condicion.nombreCondicion})
-                      </label>
-                      <input
-                        id={observacionId}
-                        type="text"
-                        autoFocus
-                        placeholder="Detalle (opcional)"
-                        value={seleccion?.observacion || ''}
-                        onChange={(e) => cambiarObservacionCondicion(condicion.idCondicion, e.target.value)}
-                      />
+        {!esEdicion && (
+          <>
+            <div className="section-label">Historia médica</div>
+            {cargandoCondiciones ? (
+              <div className="hm-loading">
+                <Loader label="Cargando catálogo de condiciones…" />
+                <span>Cargando catálogo de condiciones…</span>
+              </div>
+            ) : errorCondiciones ? (
+              <Alert type="error">{errorCondiciones}</Alert>
+            ) : (
+              <div className="hm-grid">
+                {condiciones.map((condicion) => {
+                  const seleccion = seleccionadas[condicion.idCondicion];
+                  const marcada = Boolean(seleccion?.marcada);
+                  const checkboxId = `hm-${condicion.idCondicion}`;
+                  const observacionId = `hm-obs-${condicion.idCondicion}`;
+                  return (
+                    <div className="hm-item" key={condicion.idCondicion}>
+                      <div className="hm-check">
+                        <input
+                          type="checkbox"
+                          id={checkboxId}
+                          checked={marcada}
+                          onChange={() => toggleCondicion(condicion.idCondicion)}
+                        />
+                        <label htmlFor={checkboxId}>
+                          {condicion.idCondicion}. {condicion.nombreCondicion}
+                        </label>
+                      </div>
+                      {marcada && (
+                        <div className="hm-obs">
+                          <label htmlFor={observacionId} className="hm-obs-label">
+                            Observación ({condicion.nombreCondicion})
+                          </label>
+                          <input
+                            id={observacionId}
+                            type="text"
+                            autoFocus
+                            placeholder="Detalle (opcional)"
+                            value={seleccion?.observacion || ''}
+                            onChange={(e) => cambiarObservacionCondicion(condicion.idCondicion, e.target.value)}
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  );
+                })}
+              </div>
+            )}
 
-        <div className="field full hm-observaciones">
-          <label htmlFor="observacionesGenerales">Observaciones generales</label>
-          <textarea
-            id="observacionesGenerales"
-            placeholder="Notas adicionales relevantes para el tratamiento"
-            value={observacionesGenerales}
-            onChange={(e) => setObservacionesGenerales(e.target.value)}
-          />
-        </div>
+            <div className="field full hm-observaciones">
+              <label htmlFor="observacionesGenerales">Observaciones generales</label>
+              <textarea
+                id="observacionesGenerales"
+                placeholder="Notas adicionales relevantes para el tratamiento"
+                value={observacionesGenerales}
+                onChange={(e) => setObservacionesGenerales(e.target.value)}
+              />
+            </div>
+          </>
+        )}
 
         <div className="form-actions">
           <Button type="button" variant="secondary" onClick={() => navigate(ROUTES.PACIENTES)}>
