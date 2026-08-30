@@ -37,12 +37,22 @@ GO
 CREATE TABLE PresupuestoPlan (
     ID_PresupuestoPlan INT IDENTITY(1,1) PRIMARY KEY,
     ID_Paciente         INT NOT NULL,
-    FechaPresupuesto    DATE NOT NULL,
+    FechaInicioPlan     DATE NOT NULL,
     CantidadDescuento   DECIMAL(10,2) NULL,
+    FechaCierre         DATE NULL, -- NULL = plan activo (en edición); con fecha = plan cerrado, pasa al historial
 
     CONSTRAINT FK_PresupuestoPlan_Paciente
         FOREIGN KEY (ID_Paciente) REFERENCES Paciente(ID_Paciente)
 );
+GO
+
+-- Un paciente solo puede tener un plan activo (FechaCierre NULL) a la vez;
+-- puede tener muchos planes ya cerrados (historial), por eso el índice va filtrado.
+-- SQL Server exige QUOTED_IDENTIFIER ON para crear índices filtrados.
+SET QUOTED_IDENTIFIER ON;
+CREATE UNIQUE INDEX UQ_PresupuestoPlan_PlanActivoPorPaciente
+    ON PresupuestoPlan (ID_Paciente)
+    WHERE FechaCierre IS NULL;
 GO
 
 -- ============================================================
@@ -145,7 +155,7 @@ GO
 -- ---------- PresupuestoPlan ----------
 DECLARE @idPresupuesto INT;
 
-INSERT INTO PresupuestoPlan (ID_Paciente, FechaPresupuesto, CantidadDescuento)
+INSERT INTO PresupuestoPlan (ID_Paciente, FechaInicioPlan, CantidadDescuento)
 VALUES (1, GETDATE(), 0);
 
 SET @idPresupuesto = SCOPE_IDENTITY();

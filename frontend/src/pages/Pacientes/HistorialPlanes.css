@@ -1,0 +1,140 @@
+.historial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historial-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.historial-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 10px rgba(10, 38, 75, 0.07);
+}
+
+.historial-card-fecha {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.historial-card-meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 3px;
+}
+
+.historial-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.historial-detalle-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+
+.historial-detalle-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.historial-detalle-fecha {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.historial-detalle-sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+.historial-detalle-total {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.historial-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.06);
+}
+
+.historial-table th {
+  text-align: left;
+  padding: 11px 12px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.historial-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.historial-table tbody tr:not(.plan-subtotal-row):nth-child(even) {
+  background: var(--surface-alt);
+}
+
+.historial-table tbody tr:not(.plan-subtotal-row):hover {
+  background: var(--accent-soft);
+}
+
+.historial-table .plan-subtotal-row td:nth-child(3) {
+  text-align: right;
+}
+
+.historial-valor {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.historial-resumen {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+@media (max-width: 560px) {
+  .historial-detalle-head {
+    flex-direction: column;
+  }
+
+  .historial-detalle-total {
+    text-align: left;
+  }
+}
