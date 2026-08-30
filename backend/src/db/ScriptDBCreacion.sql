@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS Usuario (
     ID_Rol          INT NOT NULL,
     Estado          BIT NOT NULL DEFAULT 1,          -- activo/inactivo
     UltimoAcceso    DATETIME NULL,
+    EsAdmin         BIT NOT NULL DEFAULT 0,          -- permiso admin (menu de usuarios), independiente del Rol clinico
     CONSTRAINT FK_Usuario_Rol FOREIGN KEY (ID_Rol) REFERENCES Rol(ID_Rol)
 );
 
@@ -84,8 +85,12 @@ INSERT INTO Condicion (Nombre_Condicion) VALUES
 DECLARE @salt VARCHAR(36) = CONVERT(VARCHAR(36), NEWID());
 DECLARE @hash VARCHAR(64) = CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', 'admin123' + @salt), 2);
 
-INSERT INTO Usuario (NombreUsuario, Salt, Contrasena_Hash, ID_Rol)
-VALUES ('admin', @salt, @hash, 4);
+-- ID_Rol = 1 (Odontologo); EsAdmin = 1 para que el admin de prueba vea el menu admin.
+-- Si ya tenes una base creada con este script, aplica a mano:
+--   ALTER TABLE Usuario ADD EsAdmin BIT NOT NULL DEFAULT 0;
+--   UPDATE Usuario SET EsAdmin = 1 WHERE NombreUsuario IN ('<usuario_sergio_pereira>', '<usuario_sergio_pereira_torres>', 'admin');
+INSERT INTO Usuario (NombreUsuario, Salt, Contrasena_Hash, ID_Rol, EsAdmin)
+VALUES ('admin', @salt, @hash, 1, 1);
 
 -- Paciente de prueba (mayor de edad, sin encargado)
 INSERT INTO Paciente (Nombres, Apellidos, Sexo, Fecha_Nacimiento, Telefono, Correo)

@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async ({ usuario, clave }) => {
     const data = await authService.login({ usuario, clave });
-    setUser({ usuario: data.usuario });
+    setUser({ usuario: data.usuario, rol: data.rol, esAdmin: data.esAdmin });
     return data;
   };
 

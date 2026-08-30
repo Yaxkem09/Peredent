@@ -23,6 +23,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto request)
     {
         var usuario = await _db.Usuarios
+            .Include(u => u.Rol)
             .FirstOrDefaultAsync(u => u.NombreUsuario == request.Usuario);
 
         var hashCoincide = usuario is not null &&
@@ -40,6 +41,8 @@ public class AuthController : ControllerBase
         {
             Token = Guid.NewGuid().ToString("N"),
             Usuario = usuario.NombreUsuario,
+            Rol = usuario.Rol?.NombreRol ?? string.Empty,
+            EsAdmin = usuario.EsAdmin,
         });
     }
 
