@@ -16,5 +16,7 @@ public class Usuario
 
     public DateTime? UltimoAcceso { get; set; }
 
+    public bool EsAdmin { get; set; }
+
     public Rol? Rol { get; set; }
 }

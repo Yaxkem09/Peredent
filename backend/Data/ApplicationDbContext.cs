@@ -48,10 +48,12 @@ public class ApplicationDbContext : DbContext
             entity.Property(u => u.IdRol).HasColumnName("ID_Rol");
             entity.Property(u => u.Estado).HasColumnName("Estado");
             entity.Property(u => u.UltimoAcceso).HasColumnName("UltimoAcceso");
+            entity.Property(u => u.EsAdmin).HasColumnName("EsAdmin");
 
             entity.HasOne(u => u.Rol)
                   .WithMany()
-                  .HasForeignKey(u => u.IdRol);
+                  .HasForeignKey(u => u.IdRol)
+                  .IsRequired(false);
         });
 
         modelBuilder.Entity<Paciente>(entity =>

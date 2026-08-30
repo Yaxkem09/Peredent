@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ROUTES } from '../../routes/routes';
 import logo from '../../assets/logo.png';
 import './Login.css';
 
@@ -42,7 +43,7 @@ const Login = () => {
     setLoading(true);
     try {
       await login({ usuario, clave });
-      navigate('/dashboard');
+      navigate(ROUTES.PACIENTES);
     } catch (error) {
       setErrorBanner(true);
     } finally {
