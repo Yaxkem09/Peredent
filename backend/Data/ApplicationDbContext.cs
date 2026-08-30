@@ -21,6 +21,12 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<HistoriaCondicion> HistoriasCondiciones => Set<HistoriaCondicion>();
 
+    public DbSet<EstadoTratamiento> EstadosTratamiento => Set<EstadoTratamiento>();
+
+    public DbSet<PresupuestoPlan> PresupuestosPlan => Set<PresupuestoPlan>();
+
+    public DbSet<PlanTratamiento> PlanesTratamiento => Set<PlanTratamiento>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -106,5 +112,56 @@ public class ApplicationDbContext : DbContext
             .HasMany(h => h.Condiciones)
             .WithOne()
             .HasForeignKey(hc => hc.IdHistoriaMedica);
+
+        modelBuilder.Entity<EstadoTratamiento>(entity =>
+        {
+            entity.ToTable("EstadoTratamiento");
+            entity.HasKey(e => e.IdEstadoTratamiento);
+            entity.Property(e => e.IdEstadoTratamiento).HasColumnName("ID_EstadoTratamiento");
+            entity.Property(e => e.Nombre).HasColumnName("EstadoTratamiento").HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<PresupuestoPlan>(entity =>
+        {
+            entity.ToTable("PresupuestoPlan");
+            entity.HasKey(p => p.IdPresupuestoPlan);
+            entity.Property(p => p.IdPresupuestoPlan).HasColumnName("ID_PresupuestoPlan");
+            entity.Property(p => p.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(p => p.FechaInicioPlan).HasColumnName("FechaInicioPlan");
+            entity.Property(p => p.CantidadDescuento).HasColumnName("CantidadDescuento").HasColumnType("decimal(10,2)");
+            entity.Property(p => p.FechaCierre).HasColumnName("FechaCierre");
+
+            // Un paciente puede tener muchos planes cerrados (historial), pero solo
+            // uno activo (FechaCierre NULL) a la vez — reforzado también en la BD
+            // con un índice único filtrado (ver PeredentScript_Sprint2.sql).
+            entity.HasIndex(p => p.IdPaciente)
+                  .HasFilter("[FechaCierre] IS NULL")
+                  .IsUnique();
+        });
+
+        modelBuilder.Entity<PlanTratamiento>(entity =>
+        {
+            entity.ToTable("PlanTratamiento");
+            entity.HasKey(pt => pt.IdPlanTratamiento);
+            entity.Property(pt => pt.IdPlanTratamiento).HasColumnName("ID_PlanTratamiento");
+            entity.Property(pt => pt.IdPresupuestoPlan).HasColumnName("ID_PresupuestoPlan");
+            entity.Property(pt => pt.IdEstadoTratamiento).HasColumnName("ID_EstadoTratamiento");
+            entity.Property(pt => pt.Pieza).HasColumnName("Pieza").HasMaxLength(20).IsRequired();
+            entity.Property(pt => pt.Tratamiento).HasColumnName("Tratamiento").HasMaxLength(255).IsRequired();
+            entity.Property(pt => pt.Valor).HasColumnName("valor").HasColumnType("decimal(10,2)");
+            entity.Property(pt => pt.FechaRegistroPlan).HasColumnName("FechaRegistroPlan");
+            entity.Property(pt => pt.FechaFinTratamiento).HasColumnName("FechaFinTratamiento");
+
+            entity.HasIndex(pt => new { pt.IdPresupuestoPlan, pt.Pieza }).IsUnique();
+
+            entity.HasOne(pt => pt.EstadoTratamiento)
+                  .WithMany()
+                  .HasForeignKey(pt => pt.IdEstadoTratamiento);
+        });
+
+        modelBuilder.Entity<PresupuestoPlan>()
+            .HasMany(p => p.Piezas)
+            .WithOne()
+            .HasForeignKey(pt => pt.IdPresupuestoPlan);
     }
 }

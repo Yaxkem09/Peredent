@@ -125,11 +125,6 @@ const Login = () => {
               {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
           </form>
-
-          <p className="login-note">
-            Acceso de demostración: demo@peredent.com / 123456. Las contraseñas se guardan
-            cifradas y la sesión se cierra sola tras un periodo de inactividad.
-          </p>
         </div>
       </div>
     </div>

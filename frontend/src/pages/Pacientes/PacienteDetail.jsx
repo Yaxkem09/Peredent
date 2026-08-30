@@ -6,6 +6,8 @@ import { calcularEdadTexto } from '../../utils/edad';
 import { formatDate } from '../../utils/formatters';
 import { Alert, Button, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
+import PlanTratamientoTab from './PlanTratamientoTab';
+import HistorialPlanesTab from './HistorialPlanesTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -14,6 +16,7 @@ const TABS = [
   { id: 'historia', label: 'Historia médica' },
   { id: 'citas', label: 'Citas' },
   { id: 'plan', label: 'Plan de tratamiento' },
+  { id: 'historial-planes', label: 'Historial de planes' },
   { id: 'endodoncia', label: 'Endodoncia y restauración' },
   { id: 'pendientes', label: 'Tratamiento pendiente' },
   { id: 'historial', label: 'Historial' },
@@ -23,60 +26,61 @@ const TABS = [
   { id: 'recetario', label: 'Recetario' },
 ];
 
-const TABS_DISPONIBLES = new Set(['datos', 'historia']);
+const TABS_DISPONIBLES = new Set(['datos', 'historia', 'plan', 'historial-planes']);
+
+const inicialesDe = (nombres, apellidos) =>
+  `${(nombres || '').charAt(0)}${(apellidos || '').charAt(0)}`.toUpperCase() || '—';
 
 const DatosTab = ({ paciente, idPaciente }) => (
   <div>
-    <div className="detail-card">
-      <table className="detail-table">
-        <tbody>
-          <tr>
-            <td>Nombre completo</td>
-            <td>
-              {paciente.nombres} {paciente.apellidos}
-            </td>
-          </tr>
-          <tr>
-            <td>Edad</td>
-            <td>
-              {calcularEdadTexto(paciente.fechaNacimiento?.slice(0, 10)) || '—'} (
-              {formatDate(paciente.fechaNacimiento)})
-            </td>
-          </tr>
-          <tr>
-            <td>Sexo</td>
-            <td>{paciente.sexo || '—'}</td>
-          </tr>
-          <tr>
-            <td>Teléfono</td>
-            <td>{paciente.telefono || '—'}</td>
-          </tr>
-          <tr>
-            <td>Correo</td>
-            <td>{paciente.correo || '—'}</td>
-          </tr>
-          <tr>
-            <td>Dirección</td>
-            <td>{paciente.direccion || '—'}</td>
-          </tr>
-          {paciente.encargadoNombre && (
-            <tr>
-              <td>Encargado (menor de edad)</td>
-              <td>
-                {paciente.encargadoNombre}
-                {paciente.encargadoTelefono ? ` · ${paciente.encargadoTelefono}` : ''}
-              </td>
-            </tr>
-          )}
-          <tr>
-            <td>Registrado el</td>
-            <td>{formatDate(paciente.fechaRegistro)}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div className="info-card">
+      <div className="info-header">
+        <div className="info-avatar">{inicialesDe(paciente.nombres, paciente.apellidos)}</div>
+        <div>
+          <div className="info-name">
+            {paciente.nombres} {paciente.apellidos}
+          </div>
+          <div className="info-subtitle">
+            <span className="info-badge">{calcularEdadTexto(paciente.fechaNacimiento?.slice(0, 10)) || '—'}</span>
+            <span className="info-badge info-badge-sexo">{paciente.sexo || '—'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="info-grid">
+        <div className="info-item">
+          <span className="info-label">Fecha de nacimiento</span>
+          <span className="info-value">{formatDate(paciente.fechaNacimiento)}</span>
+        </div>
+        <div className="info-item">
+          <span className="info-label">Teléfono</span>
+          <span className="info-value">{paciente.telefono || '—'}</span>
+        </div>
+        <div className="info-item">
+          <span className="info-label">Correo</span>
+          <span className="info-value">{paciente.correo || '—'}</span>
+        </div>
+        <div className="info-item">
+          <span className="info-label">Registrado el</span>
+          <span className="info-value">{formatDate(paciente.fechaRegistro)}</span>
+        </div>
+        <div className="info-item info-item-full">
+          <span className="info-label">Dirección</span>
+          <span className="info-value">{paciente.direccion || '—'}</span>
+        </div>
+        {paciente.encargadoNombre && (
+          <div className="info-item info-item-full">
+            <span className="info-label">Encargado (menor de edad)</span>
+            <span className="info-value">
+              {paciente.encargadoNombre}
+              {paciente.encargadoTelefono ? ` · ${paciente.encargadoTelefono}` : ''}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
     <div className="detail-actions">
-      <Link to={ROUTES.PACIENTE_EDITAR(idPaciente)} className="btn btn-secondary btn-md">
+      <Link to={ROUTES.PACIENTE_EDITAR(idPaciente)} className="btn btn-outline-teal btn-md">
         Editar datos personales
       </Link>
     </div>
@@ -166,7 +170,7 @@ const HistoriaTab = ({ historia: historiaInicial, cargando, error, idPaciente })
           )}
         </div>
         <div className="detail-actions">
-          <button type="button" className="btn btn-secondary btn-md" onClick={() => setEditando(true)}>
+          <button type="button" className="btn btn-outline-teal btn-md" onClick={() => setEditando(true)}>
             Editar historia médica
           </button>
         </div>
@@ -313,6 +317,8 @@ const PacienteDetail = () => {
           {activeTab === 'historia' && (
             <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
+          {activeTab === 'plan' && <PlanTratamientoTab idPaciente={id} />}
+          {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"

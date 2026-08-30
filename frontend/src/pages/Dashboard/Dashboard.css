@@ -87,16 +87,3 @@
   color: var(--ink-soft);
   white-space: nowrap;
 }
-
-.tag {
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.tag.pending {
-  background: var(--amber-soft);
-  color: var(--amber);
-}
