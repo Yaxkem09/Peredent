@@ -88,21 +88,34 @@ return (
                     {paciente.nombres} {paciente.apellidos}
                   </div>
                   <div className="patient-meta">
-                    {paciente.telefono || 'Sin teléfono'} · Registrado el {formatDate(paciente.fechaRegistro)}
+                    <span className="patient-meta-item">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4.5 3.5h3.5l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3.5a1.5 1.5 0 0 1-1.6 1.5C10.5 19 5 13.5 3 6.1A1.5 1.5 0 0 1 4.5 3.5Z" />
+                      </svg>
+                      {paciente.telefono || 'Sin teléfono'}
+                    </span>
+                    <span className="patient-meta-item">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <rect x="3.5" y="5" width="17" height="15" rx="2" />
+                        <path d="M3.5 9.5h17" />
+                        <path d="M8 3v4M16 3v4" />
+                      </svg>
+                      Registrado el {formatDate(paciente.fechaRegistro)}
+                    </span>
                   </div>
                 </div>
               </div>
               <div className="patient-quick-actions">
                 <Link
                   to={`${ROUTES.PACIENTE_DETALLE(paciente.id)}?tab=datos`}
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-ficha btn-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Ficha
                 </Link>
                 <Link
                   to={`${ROUTES.PACIENTE_DETALLE(paciente.id)}?tab=plan`}
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-plan btn-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Plan

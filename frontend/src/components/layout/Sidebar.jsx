@@ -59,8 +59,10 @@ const Sidebar = ({ open, onNavigate }) => {
     <aside className={`sidebar${open ? ' sidebar-open' : ''}`}>
       <div className="brand">
         <div className="brand-mark">
-          <img src={logo} alt="Peredent - Odontología General · Ortodoncia · Cirugía Maxilofacial" />
+          <img src={logo} alt="Peredent" />
         </div>
+        <p className="brand-specialties">Odontología General · Ortodoncia · Cirugía Maxilofacial</p>
+        <p className="brand-doctors">Dr. Pereira Barrios / Dr. Pereira Torres</p>
       </div>
 
       <nav>

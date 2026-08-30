@@ -1,0 +1,216 @@
+.plan-tratamiento {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.plan-tablas {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.plan-table {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.06);
+}
+
+.plan-table th {
+  text-align: left;
+  padding: 11px 12px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.plan-table th:last-child {
+  text-align: right;
+}
+
+.plan-table td {
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.plan-table tbody tr:not(.plan-subtotal-row):nth-child(even) {
+  background: var(--surface-alt);
+}
+
+.plan-table tbody tr:not(.plan-subtotal-row):hover {
+  background: var(--accent-soft);
+}
+
+.plan-pieza {
+  padding-left: 12px !important;
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.plan-input {
+  width: 100%;
+  display: block;
+  padding: 6px 2px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  transition: border-color 0.15s ease;
+}
+
+.plan-input:hover {
+  border-bottom-color: var(--ink-faint);
+}
+
+.plan-input:focus {
+  outline: none;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 5px;
+}
+
+.plan-input-tratamiento::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+textarea.plan-input-tratamiento {
+  resize: none;
+  overflow: hidden;
+  min-height: 28px;
+  line-height: 1.4;
+}
+
+.plan-input-valor {
+  text-align: right;
+}
+
+.plan-subtotal-row td {
+  background: var(--teal);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 12px 10px;
+  border-top: none;
+  white-space: nowrap;
+}
+
+.plan-subtotal-row td:last-child {
+  text-align: right;
+}
+
+.plan-resumen {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.plan-resumen-izquierda {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 220px;
+}
+
+.plan-descuento-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.plan-descuento-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.plan-descuento-field input {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--ink);
+  width: 160px;
+}
+
+.plan-descuento-field input:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.plan-resumen-derecha {
+  text-align: right;
+}
+
+.plan-total-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.plan-total-valor {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.plan-acciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.plan-acciones-botones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.plan-estado {
+  font-size: 13px;
+}
+
+.plan-estado-ok {
+  color: var(--accent);
+}
+
+.plan-estado-pendiente {
+  color: var(--amber);
+}
+
+@media (max-width: 760px) {
+  .plan-tablas {
+    flex-direction: column;
+  }
+
+  .plan-resumen {
+    align-items: flex-start;
+  }
+
+  .plan-resumen-derecha {
+    text-align: left;
+  }
+}

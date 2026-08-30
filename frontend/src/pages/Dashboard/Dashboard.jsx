@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { pacientesService } from '../../services/pacientes.service';
 import { citasService } from '../../services/citas.service';
-import { inventarioService } from '../../services/inventario.service';
 import { formatDate, formatTime } from '../../utils/formatters';
 import { Loader, EmptyState } from '../../components/common';
 import '../../styles/page-header.css';
@@ -22,28 +21,24 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [pacientes, setPacientes] = useState([]);
   const [citas, setCitas] = useState([]);
-  const [stockBajo, setStockBajo] = useState([]);
-  const [errores, setErrores] = useState({ pacientes: false, citas: false, inventario: false });
+  const [errores, setErrores] = useState({ pacientes: false, citas: false });
 
   useEffect(() => {
     let activo = true;
 
     const cargar = async () => {
-      const [rPacientes, rCitas, rInventario] = await Promise.allSettled([
+      const [rPacientes, rCitas] = await Promise.allSettled([
         pacientesService.getAll(),
         citasService.getProximas(),
-        inventarioService.getStockBajo(),
       ]);
 
       if (!activo) return;
 
       setPacientes(rPacientes.status === 'fulfilled' ? rPacientes.value : []);
       setCitas(rCitas.status === 'fulfilled' ? rCitas.value : []);
-      setStockBajo(rInventario.status === 'fulfilled' ? rInventario.value : []);
       setErrores({
         pacientes: rPacientes.status === 'rejected',
         citas: rCitas.status === 'rejected',
-        inventario: rInventario.status === 'rejected',
       });
       setLoading(false);
     };
@@ -65,7 +60,6 @@ const Dashboard = () => {
     { label: 'Pacientes totales', value: errores.pacientes ? '—' : pacientes.length },
     { label: 'Citas de hoy', value: errores.citas ? '—' : citasHoy.length },
     { label: 'Próximas citas', value: errores.citas ? '—' : citas.length },
-    { label: 'Stock bajo', value: errores.inventario ? '—' : stockBajo.length, warn: !errores.inventario && stockBajo.length > 0 },
   ];
 
   return (
@@ -108,30 +102,6 @@ const Dashboard = () => {
                   <div className="mini-row-time">
                     {formatDate(cita.fecha)} · {cita.hora ? cita.hora : formatTime(cita.fecha)}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="dashboard-panel">
-          <h3>Alertas de inventario</h3>
-          {errores.inventario ? (
-            <EmptyState
-              title="Inventario no disponible"
-              description="Aún no se puede cargar el inventario desde el servidor."
-            />
-          ) : stockBajo.length === 0 ? (
-            <EmptyState title="Sin alertas" description="Todos los insumos tienen stock suficiente." />
-          ) : (
-            <div className="mini-list">
-              {stockBajo.map((item) => (
-                <div className="mini-row" key={item.id || item.nombre}>
-                  <div>
-                    <div className="mini-row-title">{item.nombre}</div>
-                    <div className="mini-row-meta">Cantidad disponible: {item.cantidad}</div>
-                  </div>
-                  <span className="tag pending">Stock bajo</span>
                 </div>
               ))}
             </div>
