@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -50,6 +51,17 @@
     <Compile Remove="DTOs/Response/ApiResponseDto.cs" />
     <Compile Remove="DTOs/Response/CitaDto.cs" />
     <Compile Remove="DTOs/Response/UsuarioDto.cs" />
+  </ItemGroup>
+
+  <!--
+    Services/**/*.cs arriba excluye toda la carpeta porque el resto son
+    placeholders de texto (CitaService, PacienteService, EmailService,
+    InventarioService y sus interfaces). Estos dos son C# real: se re-incluyen
+    explícitamente.
+  -->
+  <ItemGroup>
+    <Compile Include="Services/IJwtTokenService.cs" />
+    <Compile Include="Services/JwtTokenService.cs" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Data;
 using Peredent.Api.DTOs.Request;
 using Peredent.Api.DTOs.Response;
+using Peredent.Api.Services;
 
 namespace Peredent.Api.Controllers;
 
@@ -13,10 +14,12 @@ namespace Peredent.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
+    private readonly IJwtTokenService _jwtTokenService;
 
-    public AuthController(ApplicationDbContext db)
+    public AuthController(ApplicationDbContext db, IJwtTokenService jwtTokenService)
     {
         _db = db;
+        _jwtTokenService = jwtTokenService;
     }
 
     [HttpPost("login")]
@@ -39,7 +42,7 @@ public class AuthController : ControllerBase
 
         return Ok(new AuthResponseDto
         {
-            Token = Guid.NewGuid().ToString("N"),
+            Token = _jwtTokenService.GenerarToken(usuario),
             Usuario = usuario.NombreUsuario,
             Rol = usuario.Rol?.NombreRol ?? string.Empty,
             EsAdmin = usuario.EsAdmin,

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Data;
@@ -9,6 +10,7 @@ namespace Peredent.Api.Controllers;
 
 [ApiController]
 [Route("api/pacientes")]
+[Authorize]
 public class PacientesController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
