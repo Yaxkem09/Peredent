@@ -38,30 +38,26 @@
 
   <ItemGroup>
     <Compile Remove="Data/DbInitializer.cs" />
-    <Compile Remove="Models/Cita.cs" />
     <Compile Remove="Models/Inventario.cs" />
     <Compile Remove="Repositories/**/*.cs" />
     <Compile Remove="Services/**/*.cs" />
     <Compile Remove="Tests/**/*.cs" />
-    <Compile Remove="Controllers/CitasController.cs" />
     <Compile Remove="Controllers/InventarioController.cs" />
-    <Compile Remove="DTOs/Request/CreateCitaDto.cs" />
     <Compile Remove="DTOs/Request/CreateUsuarioDto.cs" />
     <Compile Remove="DTOs/Request/RefreshTokenDto.cs" />
     <Compile Remove="DTOs/Response/ApiResponseDto.cs" />
-    <Compile Remove="DTOs/Response/CitaDto.cs" />
-    <Compile Remove="DTOs/Response/UsuarioDto.cs" />
   </ItemGroup>
 
   <!--
     Services/**/*.cs arriba excluye toda la carpeta porque el resto son
-    placeholders de texto (CitaService, PacienteService, EmailService,
-    InventarioService y sus interfaces). Estos dos son C# real: se re-incluyen
-    explícitamente.
+    placeholders de texto (PacienteService, EmailService, InventarioService y
+    sus interfaces). Estos son C# real: se re-incluyen explícitamente.
   -->
   <ItemGroup>
     <Compile Include="Services/IJwtTokenService.cs" />
     <Compile Include="Services/JwtTokenService.cs" />
+    <Compile Include="Services/ICitaService.cs" />
+    <Compile Include="Services/CitaService.cs" />
   </ItemGroup>
 
 </Project>

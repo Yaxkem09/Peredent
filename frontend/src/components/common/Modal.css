@@ -18,6 +18,12 @@
   width: 100%;
   box-shadow: 0 20px 60px rgba(10, 38, 75, 0.28);
   animation: modal-scale-in 0.15s ease;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.modal-card.wide {
+  max-width: 640px;
 }
 
 .modal-icon {

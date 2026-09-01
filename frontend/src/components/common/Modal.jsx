@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import './Modal.css';
 
-const Modal = ({ open, onClose, icon, title, children, footer }) => {
+const Modal = ({ open, onClose, icon, title, children, footer, wide = false }) => {
   useEffect(() => {
     if (!open) return undefined;
 
@@ -18,7 +18,7 @@ const Modal = ({ open, onClose, icon, title, children, footer }) => {
   return createPortal(
     <div className="modal-overlay" onMouseDown={onClose}>
       <div
-        className="modal-card"
+        className={`modal-card${wide ? ' wide' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}

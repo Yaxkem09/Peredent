@@ -1,6 +1,6 @@
 namespace Peredent.Api.DTOs.Request;
 
-public class CreateCitaDto
+public class UpdateCitaDto
 {
     public int IdPaciente { get; set; }
 
@@ -15,4 +15,6 @@ public class CreateCitaDto
     public string? NotasAdicionales { get; set; }
 
     public bool EnviarRecordatorioWhatsApp { get; set; }
+
+    public int IdEstadoCita { get; set; }
 }

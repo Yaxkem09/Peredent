@@ -27,6 +27,10 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<PlanTratamiento> PlanesTratamiento => Set<PlanTratamiento>();
 
+    public DbSet<EstadoCita> EstadosCita => Set<EstadoCita>();
+
+    public DbSet<Cita> Citas => Set<Cita>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -163,5 +167,40 @@ public class ApplicationDbContext : DbContext
             .HasMany(p => p.Piezas)
             .WithOne()
             .HasForeignKey(pt => pt.IdPresupuestoPlan);
+
+        modelBuilder.Entity<EstadoCita>(entity =>
+        {
+            entity.ToTable("EstadoCita");
+            entity.HasKey(e => e.IdEstadoCita);
+            entity.Property(e => e.IdEstadoCita).HasColumnName("ID_EstadoCita");
+            entity.Property(e => e.TipoEstadoCita).HasColumnName("TipoEstadoCita").HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<Cita>(entity =>
+        {
+            entity.ToTable("Citas");
+            entity.HasKey(c => c.IdCita);
+            entity.Property(c => c.IdCita).HasColumnName("ID_Cita");
+            entity.Property(c => c.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(c => c.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(c => c.IdEstadoCita).HasColumnName("ID_EstadoCita");
+            entity.Property(c => c.FechaInicio).HasColumnName("Fecha_Inicio");
+            entity.Property(c => c.FechaFin).HasColumnName("Fecha_Fin");
+            entity.Property(c => c.TipoTratamiento).HasColumnName("TipoTratamiento").HasMaxLength(150).IsRequired();
+            entity.Property(c => c.NotasAdicionales).HasColumnName("NotasAdicionales").HasMaxLength(500);
+            entity.Property(c => c.EnviarRecordatorioWhatsApp).HasColumnName("EnviarRecordatorioWhatsApp");
+
+            entity.HasOne(c => c.Usuario)
+                  .WithMany()
+                  .HasForeignKey(c => c.IdUsuario);
+
+            entity.HasOne(c => c.Paciente)
+                  .WithMany()
+                  .HasForeignKey(c => c.IdPaciente);
+
+            entity.HasOne(c => c.EstadoCita)
+                  .WithMany()
+                  .HasForeignKey(c => c.IdEstadoCita);
+        });
     }
 }

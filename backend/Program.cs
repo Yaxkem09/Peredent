@@ -67,6 +67,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // JWT_SECRET/JWT_EXPIRATION_MINUTES una vez al construirse.
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
+// Scoped: usa ApplicationDbContext, que también es scoped por request.
+builder.Services.AddScoped<ICitaService, CitaService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
