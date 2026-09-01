@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Data;
@@ -15,11 +13,13 @@ public class AuthController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public AuthController(ApplicationDbContext db, IJwtTokenService jwtTokenService)
+    public AuthController(ApplicationDbContext db, IJwtTokenService jwtTokenService, IPasswordHasher passwordHasher)
     {
         _db = db;
         _jwtTokenService = jwtTokenService;
+        _passwordHasher = passwordHasher;
     }
 
     [HttpPost("login")]
@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
             .FirstOrDefaultAsync(u => u.NombreUsuario == request.Usuario);
 
         var hashCoincide = usuario is not null &&
-            string.Equals(HashClave(request.Clave, usuario.Salt), usuario.ContrasenaHash, StringComparison.OrdinalIgnoreCase);
+            string.Equals(_passwordHasher.HashClave(request.Clave, usuario.Salt), usuario.ContrasenaHash, StringComparison.OrdinalIgnoreCase);
 
         if (usuario is null || !usuario.Estado || !hashCoincide)
         {
@@ -47,15 +47,5 @@ public class AuthController : ControllerBase
             Rol = usuario.Rol?.NombreRol ?? string.Empty,
             EsAdmin = usuario.EsAdmin,
         });
-    }
-
-    // Debe producir el mismo hash que HASHBYTES('SHA2_256', clave + salt) del script de
-    // creación de la base. La comparación con el valor guardado es case-insensitive porque
-    // SQL Server convierte ese binario a hexadecimal en mayúsculas.
-    private static string HashClave(string clave, string salt)
-    {
-        var bytes = Encoding.UTF8.GetBytes(clave + salt);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }
