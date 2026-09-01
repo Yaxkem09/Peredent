@@ -1,7 +1,12 @@
+using System.Security.Claims;
+using System.Text;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Peredent.Api.Data;
+using Peredent.Api.Services;
 
 // Solo existe .env en local (esta gitignored); en la nube las variables de
 // entorno las inyecta la plataforma directamente, no hace falta este archivo.
@@ -40,8 +45,48 @@ else
 
 var connectionString = connectionStringBuilder.ConnectionString;
 
+var jwtSecret = builder.Configuration["JWT_SECRET"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("JWT_SECRET no está configurada");
+}
+
+if (Encoding.UTF8.GetByteCount(jwtSecret) < 32)
+{
+    throw new InvalidOperationException("JWT_SECRET debe tener al menos 32 bytes (256 bits) para HMACSHA256");
+}
+
+var jwtExpirationMinutes = int.TryParse(builder.Configuration["JWT_EXPIRATION_MINUTES"], out var minutosConfigurados)
+    ? minutosConfigurados
+    : 480; // 8 horas: un turno clínico completo
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+// Singleton: no depende del DbContext ni de estado por-request, solo lee
+// JWT_SECRET/JWT_EXPIRATION_MINUTES una vez al construirse.
+builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateLifetime = true,
+            // JwtTokenService no emite iss/aud (un solo backend, un solo frontend
+            // conocido hoy); si eso cambia, activar estas dos validaciones.
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            // Explícito (coincide con el default de ClaimsIdentity) para que
+            // [Authorize(Roles=...)] siga funcionando aunque cambie el default
+            // de MapInboundClaims más adelante: JwtSecurityTokenHandler mapea el
+            // claim corto "role" del token de vuelta a ClaimTypes.Role al validar.
+            RoleClaimType = ClaimTypes.Role,
+            // ClockSkew por default (5 min) — no se sobreescribe, ya es razonable.
+        };
+    });
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -92,6 +137,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors(FrontendCorsPolicy);
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

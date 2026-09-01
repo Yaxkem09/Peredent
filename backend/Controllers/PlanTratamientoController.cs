@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Data;
@@ -8,6 +9,7 @@ using Peredent.Api.Models;
 namespace Peredent.Api.Controllers;
 
 [ApiController]
+[Authorize]
 public class PlanTratamientoController : ControllerBase
 {
     private const string EstadoPendiente = "Pendiente";
