@@ -1,52 +1,68 @@
-import {
-  HORA_INICIO,
-  HORA_FIN,
-  ALTO_HORA,
-  minutosDesdeInicio,
-  claseDeEstado,
-  toIsoDate,
-} from './agenda.utils';
+import { claseDeEstado, formatearHueco, minutosDesdeInicio, ordenarPorHora, toIsoDate } from './agenda.utils';
 
-const HORAS = Array.from({ length: HORA_FIN - HORA_INICIO }, (_, i) => HORA_INICIO + i);
+// Arma la lista intercalando huecos libres cuando entre el fin de una cita y
+// el inicio de la siguiente hay más tiempo libre que la duración normal de
+// una cita (evita marcar huecos por los minutos "de cortesía" entre citas).
+const armarFilas = (citasDelDia) => {
+  const filas = [];
+  let finAnterior = null;
+
+  citasDelDia.forEach((cita) => {
+    const inicio = minutosDesdeInicio(cita.hora);
+    if (finAnterior !== null) {
+      const brecha = inicio - finAnterior;
+      if (brecha > cita.duracionMinutos) {
+        filas.push({ tipo: 'hueco', key: `hueco-${cita.idCita}`, minutos: brecha });
+      }
+    }
+    filas.push({ tipo: 'cita', key: cita.idCita, cita });
+    finAnterior = inicio + cita.duracionMinutos;
+  });
+
+  return filas;
+};
 
 const VistaDia = ({ fechaActual, citas, onSeleccionarCita }) => {
   const fechaIso = toIsoDate(fechaActual);
-  const citasDelDia = citas.filter((c) => c.fecha === fechaIso);
-  const alturaTotal = (HORA_FIN - HORA_INICIO) * ALTO_HORA;
+  const citasDelDia = ordenarPorHora(citas.filter((c) => c.fecha === fechaIso));
+  const filas = armarFilas(citasDelDia);
 
   return (
-    <div className="day-calendar">
-      <div className="hours-col">
-        {HORAS.map((h) => (
-          <div className="hour-label" key={h}>{String(h).padStart(2, '0')}:00</div>
-        ))}
+    <div className="day-agenda">
+      <div className="agenda-count">
+        <b>{citasDelDia.length}</b> {citasDelDia.length === 1 ? 'cita programada' : 'citas programadas'}
       </div>
-      <div className="slots-col" style={{ height: alturaTotal }}>
-        {HORAS.map((h) => (
-          <div className="hour-row" key={h} />
-        ))}
 
-        {citasDelDia.length === 0 && (
-          <div className="appt-empty">Sin citas programadas para este día.</div>
-        )}
-
-        {citasDelDia.map((cita) => {
-          const top = minutosDesdeInicio(cita.hora);
-          const alto = (ALTO_HORA * cita.duracionMinutos) / 60 - 4;
-
-          return (
-            <div
-              key={cita.idCita}
-              className={`appt-block ${claseDeEstado(cita.estado)}`.trim()}
-              style={{ top, height: alto }}
-              onClick={() => onSeleccionarCita(cita)}
-            >
-              <span className="appt-time">{cita.hora.slice(0, 5)}</span>
-              {cita.nombrePaciente} — {cita.tipoTratamiento}
-            </div>
-          );
-        })}
-      </div>
+      {citasDelDia.length === 0 ? (
+        <div className="agenda-empty">Sin citas programadas para este día.</div>
+      ) : (
+        <div className="agenda-list">
+          {filas.map((fila) =>
+            fila.tipo === 'hueco' ? (
+              <div className="agenda-hueco" key={fila.key}>
+                {formatearHueco(fila.minutos)}
+              </div>
+            ) : (
+              <div
+                key={fila.key}
+                className={`cita-row ${claseDeEstado(fila.cita.estado)}`.trim()}
+                onClick={() => onSeleccionarCita(fila.cita)}
+              >
+                <div className="cr-hora">
+                  <div className="h">{fila.cita.hora.slice(0, 5)}</div>
+                  <div className="d">{fila.cita.duracionMinutos} min</div>
+                </div>
+                <div className="cr-sep" />
+                <div className="cr-info">
+                  <div className="cr-nombre">{fila.cita.nombrePaciente}</div>
+                  <div className="cr-servicio">{fila.cita.tipoTratamiento}</div>
+                </div>
+                <div className={`cr-estado ${claseDeEstado(fila.cita.estado)}`.trim()}>{fila.cita.estado}</div>
+              </div>
+            ),
+          )}
+        </div>
+      )}
     </div>
   );
 };

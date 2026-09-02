@@ -38,159 +38,230 @@
   gap: 4px;
 }
 
-/* ---- Vista día ---- */
-.day-calendar {
-  display: flex;
+/* ---- Vista día: agenda en lista, altura libre por tarjeta ---- */
+.day-agenda {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
-  overflow: hidden;
+  padding: 16px;
 }
 
-.hours-col {
-  width: 56px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--line);
+.agenda-count {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
 }
 
-.hour-label {
-  height: 60px;
-  font-size: 11px;
-  color: var(--ink-faint);
-  padding: 6px 8px 0;
-  box-sizing: border-box;
-  border-bottom: 1px solid var(--line);
+.agenda-count b {
+  color: var(--ink);
 }
 
-.hour-label:last-child {
-  border-bottom: none;
-}
-
-.slots-col {
-  flex: 1;
-  position: relative;
-}
-
-.hour-row {
-  height: 60px;
-  border-bottom: 1px solid var(--line);
-}
-
-.hour-row:last-child {
-  border-bottom: none;
-}
-
-.appt-block {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12.5px;
-  overflow: hidden;
-  border-left: 3px solid var(--teal);
-  background: var(--teal-soft);
-  color: var(--teal);
-  cursor: pointer;
-}
-
-.appt-block .appt-time {
-  font-size: 11px;
-  color: var(--ink-faint);
-  display: block;
-}
-
-.appt-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.agenda-empty {
   color: var(--ink-faint);
   font-size: 13px;
+  text-align: center;
+  padding: 32px 0;
 }
 
-/* ---- Vista semana ---- */
-.week-calendar {
+.agenda-list {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 640px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.agenda-hueco {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  padding: 2px 4px;
+}
+
+.agenda-hueco::before,
+.agenda-hueco::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--line);
+}
+
+.cita-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--teal);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition:
+    box-shadow 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.cita-row:hover {
+  box-shadow: 0 3px 10px rgba(10, 38, 75, 0.1);
+  border-color: var(--accent);
+}
+
+.cr-hora {
+  width: 64px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.cr-hora .h {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+}
+
+.cr-hora .d {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.cr-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+}
+
+.cr-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cr-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.cr-servicio {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 1px;
+}
+
+.cr-estado {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+/* ---- Vista semana: una lista independiente por día ---- */
+.week-lists {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
-  overflow-x: auto;
+  padding: 16px;
 }
 
-.week-hours-col {
-  width: 56px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--line);
-}
-
-.week-days {
-  display: flex;
+.week-col {
   flex: 1;
-  min-width: 700px;
-}
-
-.week-day-col {
-  flex: 1;
-  min-width: 96px;
-  border-right: 1px solid var(--line);
-}
-
-.week-day-col:last-child {
-  border-right: none;
-}
-
-.week-day-head {
-  padding: 10px 8px;
-  text-align: center;
-  border-bottom: 1px solid var(--line);
+  min-width: 170px;
   background: var(--surface-alt);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.week-day-head .wd-name {
-  font-size: 11px;
+.week-col.today {
+  background: var(--accent-soft);
+}
+
+.wc-head {
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+}
+
+.wc-head .wd-name {
+  font-size: 10.5px;
   color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
-.week-day-head .wd-num {
+.wc-head .wd-num {
   font-family: 'Fraunces', serif;
   font-size: 15px;
   margin-top: 2px;
 }
 
-.week-day-head.today {
-  background: var(--teal-soft);
+.week-col.today .wd-name,
+.week-col.today .wd-num {
+  color: var(--accent);
 }
 
-.week-day-head.today .wd-name,
-.week-day-head.today .wd-num {
-  color: var(--teal);
+.wc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 560px;
+  overflow-y: auto;
 }
 
-.week-slots {
-  position: relative;
-}
-
-.week-appt {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  border-radius: 6px;
-  padding: 3px 6px;
-  font-size: 10.5px;
-  line-height: 1.25;
-  overflow: hidden;
+.wc-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-left: 3px solid var(--teal);
-  background: var(--teal-soft);
-  color: var(--teal);
+  border-radius: 8px;
+  padding: 6px 8px;
   cursor: pointer;
+  font-size: 11.5px;
 }
 
-/* ---- Vista mes ---- */
+.wc-card:hover {
+  border-color: var(--accent);
+}
+
+.wc-card .wh {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.wc-card .wnom {
+  display: block;
+  margin-top: 1px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.wc-empty {
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* ---- Vista mes: contador de citas + panel lateral con el detalle del día ---- */
+.month-wrap {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
 .month-calendar {
+  flex: 1;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
@@ -219,19 +290,23 @@
 }
 
 .month-cell {
-  min-height: 100px;
+  min-height: 82px;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   box-sizing: border-box;
   cursor: pointer;
 }
 
 .month-cell:hover {
   background: var(--surface-alt);
+}
+
+.month-cell.selected {
+  background: var(--accent-soft);
 }
 
 .month-cell:nth-child(7n) {
@@ -260,61 +335,175 @@
   color: #ffffff;
 }
 
-.month-appt {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 5px;
-  border-left: 3px solid var(--teal);
-  background: var(--teal-soft);
-  color: var(--teal);
-  cursor: pointer;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.resumen-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.month-more {
-  font-size: 10px;
+.resumen-num {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Fraunces', serif;
+}
+
+.resumen-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.resumen-dots .rd {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+.side-panel {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--surface-alt);
+  border-radius: 12px;
+  padding: 14px;
+  position: sticky;
+  top: 0;
+}
+
+.sp-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.sp-fecha {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+}
+
+.sp-count {
+  font-size: 11.5px;
   color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.sp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.sp-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 12px;
   cursor: pointer;
-  padding: 0 6px;
 }
 
-.month-more:hover {
-  text-decoration: underline;
+.sp-card:hover {
+  border-color: var(--accent);
 }
 
-/* ---- Modificadores de estado, compartidos por las 3 vistas ---- */
-.appt-block.pending,
-.week-appt.pending,
-.month-appt.pending {
+.sp-card b {
+  display: block;
+  font-size: 11.5px;
+  margin-top: 1px;
+  word-break: break-word;
+}
+
+.sp-empty {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 860px) {
+  .month-wrap {
+    flex-direction: column;
+  }
+
+  .side-panel {
+    width: 100%;
+    position: static;
+  }
+}
+
+/* ---- Modificadores de estado, compartidos por las vistas ---- */
+.cita-row.pending,
+.wc-card.pending,
+.sp-card.pending {
   border-left-color: var(--amber);
+}
+
+.cita-row.cancelada,
+.wc-card.cancelada,
+.sp-card.cancelada {
+  border-left-color: var(--ink-faint);
+  opacity: 0.7;
+}
+
+.cita-row.cancelada .cr-nombre,
+.wc-card.cancelada .wnom,
+.sp-card.cancelada b {
+  text-decoration: line-through;
+}
+
+.cita-row.atendida,
+.wc-card.atendida,
+.sp-card.atendida {
+  border-left-color: var(--accent);
+}
+
+.cita-row.no-asistio,
+.wc-card.no-asistio,
+.sp-card.no-asistio {
+  border-left-color: var(--coral);
+  opacity: 0.7;
+}
+
+.cita-row.no-asistio .cr-nombre,
+.wc-card.no-asistio .wnom,
+.sp-card.no-asistio b {
+  text-decoration: line-through;
+}
+
+.cr-estado.pending {
   background: var(--amber-soft);
   color: var(--amber);
 }
 
-.appt-block.cancelada,
-.week-appt.cancelada,
-.month-appt.cancelada {
-  border-left-color: var(--ink-faint);
+.cr-estado.cancelada {
   background: var(--surface-alt);
   color: var(--ink-faint);
-  text-decoration: line-through;
 }
 
-.appt-block.atendida,
-.week-appt.atendida,
-.month-appt.atendida {
-  border-left-color: var(--accent);
+.cr-estado.atendida {
   background: var(--accent-soft);
   color: var(--accent);
 }
 
-.appt-block.no-asistio,
-.week-appt.no-asistio,
-.month-appt.no-asistio {
-  border-left-color: var(--coral);
+.cr-estado.no-asistio {
   background: var(--coral-soft);
   color: var(--coral);
-  text-decoration: line-through;
+}
+
+.resumen-dots .rd.pending {
+  background: var(--amber);
+}
+
+.resumen-dots .rd.cancelada {
+  background: var(--ink-faint);
+}
+
+.resumen-dots .rd.atendida {
+  background: var(--accent);
+}
+
+.resumen-dots .rd.no-asistio {
+  background: var(--coral);
 }

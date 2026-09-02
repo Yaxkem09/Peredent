@@ -5,10 +5,9 @@ export const MESES_LARGO = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
-// Horario de atención de la clínica y alto de fila usado para posicionar las citas.
+// Horario de atención de la clínica, usado para calcular huecos libres entre citas.
 export const HORA_INICIO = 7;
 export const HORA_FIN = 19;
-export const ALTO_HORA = 60; // px por hora (1px = 1 minuto)
 
 export const hoy = () => {
   const d = new Date();
@@ -55,7 +54,7 @@ export const formatearFechaLarga = (date) =>
 export const formatearFechaCorta = (date) => `${date.getDate()} ${MESES_LARGO[date.getMonth()].slice(0, 3)}`;
 
 // El backend serializa TimeOnly como "HH:mm:ss" (a veces con fracción); solo
-// nos interesan horas y minutos para ubicar el bloque en la grilla.
+// nos interesan horas y minutos para ordenar citas y calcular huecos libres.
 export const minutosDesdeInicio = (hora) => {
   const [h, m] = hora.split(':').map(Number);
   return (h - HORA_INICIO) * 60 + m;
@@ -63,6 +62,17 @@ export const minutosDesdeInicio = (hora) => {
 
 export const ordenarPorHora = (citas) =>
   [...citas].sort((a, b) => minutosDesdeInicio(a.hora) - minutosDesdeInicio(b.hora));
+
+// Texto legible para el hueco libre entre el fin de una cita y el inicio de la
+// siguiente en la vista día (ej. "1 h 30 min libres").
+export const formatearHueco = (minutos) => {
+  const horas = Math.floor(minutos / 60);
+  const mins = minutos % 60;
+  const partes = [];
+  if (horas > 0) partes.push(`${horas} h`);
+  if (mins > 0) partes.push(`${mins} min`);
+  return `${partes.join(' ')} libres`;
+};
 
 // Estado (string) que devuelve CitaDto -> modificador de clase CSS para el bloque de cita.
 // "Confirmada" usa el estilo base (teal), por eso mapea a cadena vacía.
