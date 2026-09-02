@@ -61,12 +61,13 @@ public class CitasControllerTests
         return usuario;
     }
 
-    private static CreateCitaDto NuevaCitaDto(int idPaciente, int idUsuario, DateOnly fecha, TimeOnly hora) => new()
+    private static CreateCitaDto NuevaCitaDto(int idPaciente, int idUsuario, DateOnly fecha, TimeOnly hora, int duracionMinutos = 30) => new()
     {
         IdPaciente = idPaciente,
         IdUsuario = idUsuario,
         Fecha = fecha,
         Hora = hora,
+        DuracionMinutos = duracionMinutos,
         TipoTratamiento = "Limpieza dental",
     };
 
@@ -111,6 +112,38 @@ public class CitasControllerTests
         var badRequest = Assert.IsType<BadRequestObjectResult>(resultado.Result);
         var mensaje = (string)badRequest.Value!.GetType().GetProperty("message")!.GetValue(badRequest.Value)!;
         Assert.Equal("Ese horario se cruza con otra cita.", mensaje);
+    }
+
+    [Fact]
+    public async Task Create_CitaDeUnaHora_Devuelve201ConDuracion60()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var controller = new CitasController(new CitaService(db));
+
+        var resultado = await controller.Create(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+
+        var creado = Assert.IsType<CreatedAtActionResult>(resultado.Result);
+        var dto = Assert.IsType<CitaDto>(creado.Value);
+        Assert.Equal(60, dto.DuracionMinutos);
+    }
+
+    [Fact]
+    public async Task Create_DuracionNoPermitida_Devuelve400()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var controller = new CitasController(new CitaService(db));
+
+        var resultado = await controller.Create(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 45));
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
     }
 
     [Fact]

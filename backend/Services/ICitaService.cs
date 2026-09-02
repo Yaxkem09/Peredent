@@ -24,6 +24,7 @@ public enum CitaError
     PacienteNoEncontrado,
     DentistaNoEncontrado,
     EstadoInvalido,
+    DuracionInvalida,
     FueraDeHorarioAtencion,
     ConflictoHorario,
 }

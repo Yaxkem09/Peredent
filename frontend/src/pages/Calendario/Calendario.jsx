@@ -119,7 +119,7 @@ const Calendario = () => {
         <div>
           <div className="eyebrow">{EYEBROW_POR_VISTA[vista]}</div>
           <h2>{tituloFecha}</h2>
-          <p>Citas confirmadas y pendientes · franja 7:00–19:00, 30 min por paciente.</p>
+          <p>Citas confirmadas y pendientes · franja 7:00–19:00, citas de 30 min o 1 hora.</p>
         </div>
 
         <div className="agenda-controls">

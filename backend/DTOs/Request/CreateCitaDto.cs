@@ -1,3 +1,5 @@
+using Peredent.Api.Models;
+
 namespace Peredent.Api.DTOs.Request;
 
 public class CreateCitaDto
@@ -9,6 +11,8 @@ public class CreateCitaDto
     public DateOnly Fecha { get; set; }
 
     public TimeOnly Hora { get; set; }
+
+    public int DuracionMinutos { get; set; } = CitaConstantes.DuracionMinutos;
 
     public string TipoTratamiento { get; set; } = string.Empty;
 

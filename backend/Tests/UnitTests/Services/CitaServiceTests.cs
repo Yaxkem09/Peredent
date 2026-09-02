@@ -58,12 +58,13 @@ public class CitaServiceTests
         return usuario;
     }
 
-    private static CreateCitaDto NuevaCitaDto(int idPaciente, int idUsuario, DateOnly fecha, TimeOnly hora) => new()
+    private static CreateCitaDto NuevaCitaDto(int idPaciente, int idUsuario, DateOnly fecha, TimeOnly hora, int duracionMinutos = 30) => new()
     {
         IdPaciente = idPaciente,
         IdUsuario = idUsuario,
         Fecha = fecha,
         Hora = hora,
+        DuracionMinutos = duracionMinutos,
         TipoTratamiento = "Limpieza dental",
     };
 
@@ -209,6 +210,113 @@ public class CitaServiceTests
         Assert.True(resultado.Exitoso);
     }
 
+    [Theory]
+    [InlineData(45)]
+    [InlineData(15)]
+    [InlineData(0)]
+    public async Task CrearAsync_DuracionNoPermitida_DevuelveDuracionInvalida(int duracionMinutos)
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos));
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.DuracionInvalida, resultado.Error);
+    }
+
+    [Fact]
+    public async Task CrearAsync_CitaDeUnaHora_SeCreaConDuracion60()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal(60, resultado.Cita!.DuracionMinutos);
+    }
+
+    [Fact]
+    public async Task CrearAsync_CitaDeUnaHoraQueTerminaJustoALasSieteDeLaNoche_EsValida()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(18, 0), duracionMinutos: 60));
+
+        Assert.True(resultado.Exitoso);
+    }
+
+    [Fact]
+    public async Task CrearAsync_CitaDeUnaHoraQueSePasaDelCierre_DevuelveFueraDeHorario()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(18, 30), duracionMinutos: 60));
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.FueraDeHorarioAtencion, resultado.Error);
+    }
+
+    [Fact]
+    public async Task CrearAsync_CitaDe30MinutosQueEmpiezaDentroDeUnaCitaDeUnaHoraDelMismoDentista_DevuelveConflictoHorario()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        // 9:00-10:00 (una hora).
+        await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+
+        // 9:45-10:15: arranca antes de que termine la primera.
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 45), duracionMinutos: 30));
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.ConflictoHorario, resultado.Error);
+    }
+
+    [Fact]
+    public async Task CrearAsync_CitaDe30MinutosJustoDespuesDeUnaCitaDeUnaHora_NoEsConflicto()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        // 9:00-10:00 (una hora).
+        await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+
+        // 10:00-10:30: arranca justo cuando termina la primera.
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(10, 0), duracionMinutos: 30));
+
+        Assert.True(resultado.Exitoso);
+    }
+
     [Fact]
     public async Task ActualizarAsync_ExcluyeLaPropiaCitaDelChequeoDeConflicto()
     {
@@ -258,6 +366,36 @@ public class CitaServiceTests
             IdUsuario = dentista.IdUsuario,
             Fecha = new DateOnly(2026, 9, 1),
             Hora = new TimeOnly(9, 10),
+            TipoTratamiento = "Limpieza dental",
+            IdEstadoCita = 1,
+        });
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.ConflictoHorario, resultado.Error);
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_AlargarA60MinutosChocaConLaSiguienteCita_DevuelveConflictoHorario()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var primera = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 30));
+        await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 30), duracionMinutos: 30));
+
+        // Alargar la primera cita a 1 hora la haría chocar con la segunda (9:30-10:00).
+        var resultado = await service.ActualizarAsync(primera.Cita!.IdCita, new UpdateCitaDto
+        {
+            IdPaciente = paciente.IdPaciente,
+            IdUsuario = dentista.IdUsuario,
+            Fecha = new DateOnly(2026, 9, 1),
+            Hora = new TimeOnly(9, 0),
+            DuracionMinutos = 60,
             TipoTratamiento = "Limpieza dental",
             IdEstadoCita = 1,
         });

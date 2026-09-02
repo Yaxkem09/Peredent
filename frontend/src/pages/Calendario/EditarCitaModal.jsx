@@ -15,6 +15,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
+  const [duracionMinutos, setDuracionMinutos] = useState(30);
   const [idEstadoCita, setIdEstadoCita] = useState('');
 
   const [guardando, setGuardando] = useState(false);
@@ -26,6 +27,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
     setFecha(cita.fecha);
     setHora(cita.hora.slice(0, 5));
+    setDuracionMinutos(cita.duracionMinutos);
     setIdEstadoCita(String(cita.idEstadoCita));
     setError(null);
     setCargandoEstados(true);
@@ -61,6 +63,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
         idUsuario: cita.idUsuario,
         fecha,
         hora,
+        duracionMinutos,
         tipoTratamiento: cita.tipoTratamiento,
         notasAdicionales: cita.notasAdicionales,
         enviarRecordatorioWhatsApp: cita.enviarRecordatorioWhatsApp,
@@ -92,7 +95,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
   return (
     <Modal open={open} onClose={onClose} title="Modificar cita" wide>
       <p className="cita-modal-sub">
-        Ajusta la fecha, hora o estado de la cita de <strong>{cita.nombrePaciente}</strong>.
+        Ajusta la fecha, hora, duración o estado de la cita de <strong>{cita.nombrePaciente}</strong>.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -114,7 +117,14 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
           <div className="field">
             <label htmlFor="editar-duracion">Duración</label>
-            <input id="editar-duracion" type="text" value="30 min (fija por paciente)" disabled />
+            <select
+              id="editar-duracion"
+              value={duracionMinutos}
+              onChange={(e) => setDuracionMinutos(Number(e.target.value))}
+            >
+              <option value={30}>30 min</option>
+              <option value={60}>1 hora</option>
+            </select>
           </div>
 
           <div className="field">

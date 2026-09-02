@@ -6,6 +6,7 @@ import { toIsoDate } from './agenda.utils';
 import './CitaModal.css';
 
 const HORA_INICIAL = '09:00';
+const DURACION_INICIAL = 30;
 
 const mensajeError = (err) =>
   err?.response?.data?.message || 'No se pudo guardar la cita. Intenta de nuevo.';
@@ -22,6 +23,7 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
   const [idUsuario, setIdUsuario] = useState('');
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState(HORA_INICIAL);
+  const [duracionMinutos, setDuracionMinutos] = useState(DURACION_INICIAL);
   const [tipoTratamiento, setTipoTratamiento] = useState('');
   const [notas, setNotas] = useState('');
   const [enviarRecordatorioWhatsApp, setEnviarRecordatorioWhatsApp] = useState(true);
@@ -36,6 +38,7 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
     setIdUsuario('');
     setFecha(toIsoDate(fechaInicial));
     setHora(HORA_INICIAL);
+    setDuracionMinutos(DURACION_INICIAL);
     setTipoTratamiento('');
     setNotas('');
     setEnviarRecordatorioWhatsApp(true);
@@ -78,6 +81,7 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
         idUsuario: Number(idUsuario),
         fecha,
         hora,
+        duracionMinutos,
         tipoTratamiento: tipoTratamiento.trim(),
         notasAdicionales: notas.trim() || null,
         enviarRecordatorioWhatsApp,
@@ -126,7 +130,14 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
 
           <div className="field">
             <label htmlFor="cita-duracion">Duración</label>
-            <input id="cita-duracion" type="text" value="30 min (fija por paciente)" disabled />
+            <select
+              id="cita-duracion"
+              value={duracionMinutos}
+              onChange={(e) => setDuracionMinutos(Number(e.target.value))}
+            >
+              <option value={30}>30 min</option>
+              <option value={60}>1 hora</option>
+            </select>
           </div>
 
           <div className="field">

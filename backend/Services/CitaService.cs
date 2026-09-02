@@ -57,14 +57,20 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.DentistaNoEncontrado, "El odontólogo indicado no existe.");
         }
 
-        if (!EstaDentroDelHorario(request.Hora))
+        if (!CitaConstantes.DuracionesPermitidas.Contains(request.DuracionMinutos))
+        {
+            return CitaResultado.Fallo(CitaError.DuracionInvalida, MensajeDuracionInvalida);
+        }
+
+        if (!EstaDentroDelHorario(request.Hora, request.DuracionMinutos))
         {
             return CitaResultado.Fallo(CitaError.FueraDeHorarioAtencion, MensajeFueraDeHorario);
         }
 
         var fechaInicio = request.Fecha.ToDateTime(request.Hora);
+        var fechaFin = fechaInicio.AddMinutes(request.DuracionMinutos);
 
-        if (await HayConflictoHorarioAsync(request.IdUsuario, fechaInicio, idCitaExcluir: null))
+        if (await HayConflictoHorarioAsync(request.IdUsuario, fechaInicio, fechaFin, idCitaExcluir: null))
         {
             return CitaResultado.Fallo(CitaError.ConflictoHorario, "Ese horario se cruza con otra cita.");
         }
@@ -81,7 +87,7 @@ public class CitaService : ICitaService
             IdUsuario = request.IdUsuario,
             IdEstadoCita = idEstadoPendiente.Value,
             FechaInicio = fechaInicio,
-            FechaFin = fechaInicio.AddMinutes(CitaConstantes.DuracionMinutos),
+            FechaFin = fechaFin,
             TipoTratamiento = request.TipoTratamiento.Trim(),
             NotasAdicionales = request.NotasAdicionales,
             EnviarRecordatorioWhatsApp = request.EnviarRecordatorioWhatsApp,
@@ -119,14 +125,20 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.EstadoInvalido, "El estado de cita indicado no existe.");
         }
 
-        if (!EstaDentroDelHorario(request.Hora))
+        if (!CitaConstantes.DuracionesPermitidas.Contains(request.DuracionMinutos))
+        {
+            return CitaResultado.Fallo(CitaError.DuracionInvalida, MensajeDuracionInvalida);
+        }
+
+        if (!EstaDentroDelHorario(request.Hora, request.DuracionMinutos))
         {
             return CitaResultado.Fallo(CitaError.FueraDeHorarioAtencion, MensajeFueraDeHorario);
         }
 
         var fechaInicio = request.Fecha.ToDateTime(request.Hora);
+        var fechaFin = fechaInicio.AddMinutes(request.DuracionMinutos);
 
-        if (await HayConflictoHorarioAsync(request.IdUsuario, fechaInicio, idCitaExcluir: idCita))
+        if (await HayConflictoHorarioAsync(request.IdUsuario, fechaInicio, fechaFin, idCitaExcluir: idCita))
         {
             return CitaResultado.Fallo(CitaError.ConflictoHorario, "Ese horario se cruza con otra cita.");
         }
@@ -135,7 +147,7 @@ public class CitaService : ICitaService
         cita.IdUsuario = request.IdUsuario;
         cita.IdEstadoCita = request.IdEstadoCita;
         cita.FechaInicio = fechaInicio;
-        cita.FechaFin = fechaInicio.AddMinutes(CitaConstantes.DuracionMinutos);
+        cita.FechaFin = fechaFin;
         cita.TipoTratamiento = request.TipoTratamiento.Trim();
         cita.NotasAdicionales = request.NotasAdicionales;
         cita.EnviarRecordatorioWhatsApp = request.EnviarRecordatorioWhatsApp;
@@ -169,34 +181,37 @@ public class CitaService : ICitaService
     private static readonly string MensajeFueraDeHorario =
         $"El horario de atención es de {CitaConstantes.HoraAperturaClinica}:00 a {CitaConstantes.HoraCierreClinica}:00.";
 
-    private static bool EstaDentroDelHorario(TimeOnly hora)
+    private static readonly string MensajeDuracionInvalida =
+        $"La duración de la cita debe ser de {string.Join(" o ", CitaConstantes.DuracionesPermitidas)} minutos.";
+
+    private static bool EstaDentroDelHorario(TimeOnly hora, int duracionMinutos)
     {
         var apertura = new TimeOnly(CitaConstantes.HoraAperturaClinica, 0);
         var cierre = new TimeOnly(CitaConstantes.HoraCierreClinica, 0);
 
-        return hora >= apertura && hora.AddMinutes(CitaConstantes.DuracionMinutos) <= cierre;
+        return hora >= apertura && hora.AddMinutes(duracionMinutos) <= cierre;
     }
 
-    // Dos citas del mismo odontólogo, el mismo día, conflictúan si la diferencia entre
-    // sus horas de inicio es menor a la duración fija de una cita (30 min): con esa
-    // duración constante, eso es lo mismo que decir que sus bloques [inicio, inicio+30)
-    // se traslapan. Las citas Canceladas no cuentan (el horario queda libre otra vez).
-    private async Task<bool> HayConflictoHorarioAsync(int idUsuario, DateTime fechaInicio, int? idCitaExcluir)
+    // Dos citas del mismo odontólogo, el mismo día, conflictúan si sus bloques
+    // [inicio, fin) se traslapan — ya no se puede asumir que todas duran 30 minutos,
+    // así que se compara el intervalo real de cada una. Las citas Canceladas no
+    // cuentan (el horario queda libre otra vez).
+    private async Task<bool> HayConflictoHorarioAsync(int idUsuario, DateTime fechaInicio, DateTime fechaFin, int? idCitaExcluir)
     {
         var idEstadoCancelada = await ObtenerIdEstadoAsync(EstadoCancelada);
 
         var inicioDia = fechaInicio.Date;
         var finDia = inicioDia.AddDays(1);
 
-        var horasDelDia = await _db.Citas
+        var citasDelDia = await _db.Citas
             .Where(c => c.IdUsuario == idUsuario
                 && c.FechaInicio >= inicioDia && c.FechaInicio < finDia
                 && c.IdEstadoCita != idEstadoCancelada
                 && (idCitaExcluir == null || c.IdCita != idCitaExcluir))
-            .Select(c => c.FechaInicio)
+            .Select(c => new { c.FechaInicio, c.FechaFin })
             .ToListAsync();
 
-        return horasDelDia.Any(existente => Math.Abs((existente - fechaInicio).TotalMinutes) < CitaConstantes.DuracionMinutos);
+        return citasDelDia.Any(existente => existente.FechaInicio < fechaFin && fechaInicio < existente.FechaFin);
     }
 
     private Task<int?> ObtenerIdEstadoAsync(string nombre) =>
@@ -223,7 +238,7 @@ public class CitaService : ICitaService
         NombreOdontologo = cita.Usuario.NombreUsuario,
         Fecha = DateOnly.FromDateTime(cita.FechaInicio),
         Hora = TimeOnly.FromDateTime(cita.FechaInicio),
-        DuracionMinutos = CitaConstantes.DuracionMinutos,
+        DuracionMinutos = (int)(cita.FechaFin - cita.FechaInicio).TotalMinutes,
         TipoTratamiento = cita.TipoTratamiento,
         NotasAdicionales = cita.NotasAdicionales,
         EnviarRecordatorioWhatsApp = cita.EnviarRecordatorioWhatsApp,

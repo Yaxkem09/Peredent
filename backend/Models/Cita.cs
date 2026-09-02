@@ -31,6 +31,9 @@ public static class CitaConstantes
 {
     public const int DuracionMinutos = 30;
 
+    // Duraciones que el consultorio ofrece hoy: cita normal (30 min) o cita doble (1 hora).
+    public static readonly int[] DuracionesPermitidas = { 30, 60 };
+
     public const int HoraAperturaClinica = 7;
 
     public const int HoraCierreClinica = 19;
