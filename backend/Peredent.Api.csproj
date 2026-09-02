@@ -46,11 +46,9 @@
     <Compile Remove="Controllers/CitasController.cs" />
     <Compile Remove="Controllers/InventarioController.cs" />
     <Compile Remove="DTOs/Request/CreateCitaDto.cs" />
-    <Compile Remove="DTOs/Request/CreateUsuarioDto.cs" />
     <Compile Remove="DTOs/Request/RefreshTokenDto.cs" />
     <Compile Remove="DTOs/Response/ApiResponseDto.cs" />
     <Compile Remove="DTOs/Response/CitaDto.cs" />
-    <Compile Remove="DTOs/Response/UsuarioDto.cs" />
   </ItemGroup>
 
   <!--
@@ -62,6 +60,8 @@
   <ItemGroup>
     <Compile Include="Services/IJwtTokenService.cs" />
     <Compile Include="Services/JwtTokenService.cs" />
+    <Compile Include="Services/IPasswordHasher.cs" />
+    <Compile Include="Services/PasswordHasher.cs" />
   </ItemGroup>
 
 </Project>
