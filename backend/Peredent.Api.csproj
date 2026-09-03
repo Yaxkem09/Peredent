@@ -43,7 +43,6 @@
     <Compile Remove="Services/**/*.cs" />
     <Compile Remove="Tests/**/*.cs" />
     <Compile Remove="Controllers/InventarioController.cs" />
-    <Compile Remove="DTOs/Request/CreateUsuarioDto.cs" />
     <Compile Remove="DTOs/Request/RefreshTokenDto.cs" />
     <Compile Remove="DTOs/Response/ApiResponseDto.cs" />
   </ItemGroup>
@@ -58,6 +57,8 @@
     <Compile Include="Services/JwtTokenService.cs" />
     <Compile Include="Services/ICitaService.cs" />
     <Compile Include="Services/CitaService.cs" />
+    <Compile Include="Services/IPasswordHasher.cs" />
+    <Compile Include="Services/PasswordHasher.cs" />
   </ItemGroup>
 
 </Project>
