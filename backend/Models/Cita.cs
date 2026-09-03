@@ -14,11 +14,7 @@ public class Cita
 
     public DateTime FechaFin { get; set; }
 
-    public string TipoTratamiento { get; set; } = string.Empty;
-
     public string? NotasAdicionales { get; set; }
-
-    public bool EnviarRecordatorioWhatsApp { get; set; }
 
     public Paciente Paciente { get; set; } = null!;
 

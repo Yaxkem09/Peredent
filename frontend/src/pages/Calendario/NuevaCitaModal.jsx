@@ -24,9 +24,7 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState(HORA_INICIAL);
   const [duracionMinutos, setDuracionMinutos] = useState(DURACION_INICIAL);
-  const [tipoTratamiento, setTipoTratamiento] = useState('');
   const [notas, setNotas] = useState('');
-  const [enviarRecordatorioWhatsApp, setEnviarRecordatorioWhatsApp] = useState(true);
 
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
@@ -39,9 +37,7 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
     setFecha(toIsoDate(fechaInicial));
     setHora(HORA_INICIAL);
     setDuracionMinutos(DURACION_INICIAL);
-    setTipoTratamiento('');
     setNotas('');
-    setEnviarRecordatorioWhatsApp(true);
     setError(null);
     setCargandoListas(true);
     setErrorListas(null);
@@ -72,8 +68,6 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
 
     if (!idPaciente) return setError('Selecciona un paciente.');
     if (!idUsuario) return setError('Selecciona un odontólogo.');
-    if (!tipoTratamiento.trim()) return setError('Indica el tipo de tratamiento.');
-
     setGuardando(true);
     try {
       const citaCreada = await citasService.create({
@@ -82,9 +76,7 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
         fecha,
         hora,
         duracionMinutos,
-        tipoTratamiento: tipoTratamiento.trim(),
         notasAdicionales: notas.trim() || null,
-        enviarRecordatorioWhatsApp,
       });
       notify('Cita creada correctamente.');
       onCreada(citaCreada);
@@ -158,17 +150,6 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
           </div>
 
           <div className="field full">
-            <label htmlFor="cita-tratamiento">Tipo de tratamiento</label>
-            <input
-              id="cita-tratamiento"
-              type="text"
-              placeholder="Ej. limpieza, endodoncia, revisión"
-              value={tipoTratamiento}
-              onChange={(e) => setTipoTratamiento(e.target.value)}
-            />
-          </div>
-
-          <div className="field full">
             <label htmlFor="cita-notas">Notas</label>
             <textarea
               id="cita-notas"
@@ -177,16 +158,6 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
               onChange={(e) => setNotas(e.target.value)}
             />
           </div>
-        </div>
-
-        <div className="toggle-line">
-          <input
-            type="checkbox"
-            id="cita-recordatorio"
-            checked={enviarRecordatorioWhatsApp}
-            onChange={(e) => setEnviarRecordatorioWhatsApp(e.target.checked)}
-          />
-          <label htmlFor="cita-recordatorio">Enviar recordatorio automático por WhatsApp (24 horas antes)</label>
         </div>
 
         {errorListas && <p className="cita-modal-mensaje error">{errorListas}</p>}

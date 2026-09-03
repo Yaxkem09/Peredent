@@ -88,9 +88,7 @@ public class CitaService : ICitaService
             IdEstadoCita = idEstadoPendiente.Value,
             FechaInicio = fechaInicio,
             FechaFin = fechaFin,
-            TipoTratamiento = request.TipoTratamiento.Trim(),
             NotasAdicionales = request.NotasAdicionales,
-            EnviarRecordatorioWhatsApp = request.EnviarRecordatorioWhatsApp,
         };
 
         _db.Citas.Add(cita);
@@ -148,9 +146,7 @@ public class CitaService : ICitaService
         cita.IdEstadoCita = request.IdEstadoCita;
         cita.FechaInicio = fechaInicio;
         cita.FechaFin = fechaFin;
-        cita.TipoTratamiento = request.TipoTratamiento.Trim();
         cita.NotasAdicionales = request.NotasAdicionales;
-        cita.EnviarRecordatorioWhatsApp = request.EnviarRecordatorioWhatsApp;
 
         await _db.SaveChangesAsync();
 
@@ -239,9 +235,7 @@ public class CitaService : ICitaService
         Fecha = DateOnly.FromDateTime(cita.FechaInicio),
         Hora = TimeOnly.FromDateTime(cita.FechaInicio),
         DuracionMinutos = (int)(cita.FechaFin - cita.FechaInicio).TotalMinutes,
-        TipoTratamiento = cita.TipoTratamiento,
         NotasAdicionales = cita.NotasAdicionales,
-        EnviarRecordatorioWhatsApp = cita.EnviarRecordatorioWhatsApp,
         IdEstadoCita = cita.IdEstadoCita,
         Estado = cita.EstadoCita.TipoEstadoCita,
     };

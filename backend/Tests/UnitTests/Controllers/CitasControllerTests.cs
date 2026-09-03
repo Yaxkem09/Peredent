@@ -68,7 +68,6 @@ public class CitasControllerTests
         Fecha = fecha,
         Hora = hora,
         DuracionMinutos = duracionMinutos,
-        TipoTratamiento = "Limpieza dental",
     };
 
     private static CitaDto ExtraerDto(ActionResult<CitaDto> resultado)
@@ -203,7 +202,6 @@ public class CitasControllerTests
             IdUsuario = dentista.IdUsuario,
             Fecha = new DateOnly(2026, 9, 1),
             Hora = new TimeOnly(9, 10),
-            TipoTratamiento = "Limpieza dental",
             IdEstadoCita = 1,
         });
 

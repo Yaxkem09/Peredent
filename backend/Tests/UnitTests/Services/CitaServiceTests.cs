@@ -65,7 +65,6 @@ public class CitaServiceTests
         Fecha = fecha,
         Hora = hora,
         DuracionMinutos = duracionMinutos,
-        TipoTratamiento = "Limpieza dental",
     };
 
     [Fact]
@@ -338,7 +337,6 @@ public class CitaServiceTests
             IdUsuario = dentista.IdUsuario,
             Fecha = new DateOnly(2026, 9, 1),
             Hora = new TimeOnly(9, 0),
-            TipoTratamiento = "Limpieza dental",
             IdEstadoCita = idEstadoConfirmada,
         });
 
@@ -366,7 +364,6 @@ public class CitaServiceTests
             IdUsuario = dentista.IdUsuario,
             Fecha = new DateOnly(2026, 9, 1),
             Hora = new TimeOnly(9, 10),
-            TipoTratamiento = "Limpieza dental",
             IdEstadoCita = 1,
         });
 
@@ -396,7 +393,6 @@ public class CitaServiceTests
             Fecha = new DateOnly(2026, 9, 1),
             Hora = new TimeOnly(9, 0),
             DuracionMinutos = 60,
-            TipoTratamiento = "Limpieza dental",
             IdEstadoCita = 1,
         });
 
@@ -419,7 +415,6 @@ public class CitaServiceTests
             IdUsuario = dentista.IdUsuario,
             Fecha = new DateOnly(2026, 9, 1),
             Hora = new TimeOnly(9, 0),
-            TipoTratamiento = "Limpieza dental",
             IdEstadoCita = 1,
         });
 
