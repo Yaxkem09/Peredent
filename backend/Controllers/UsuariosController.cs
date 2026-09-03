@@ -12,7 +12,7 @@ namespace Peredent.Api.Controllers;
 
 [ApiController]
 [Route("api/usuarios")]
-[Authorize(Policy = "SoloAdmin")]
+[Authorize]
 public class UsuariosController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
@@ -24,6 +24,9 @@ public class UsuariosController : ControllerBase
         _passwordHasher = passwordHasher;
     }
 
+    // Sin filtrar por Estado ni restringir a admins: cualquier usuario autenticado
+    // la usa (por ejemplo, el selector de odontólogo al agendar una cita); la
+    // pantalla de administración de usuarios filtra activos/inactivos en el frontend.
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UsuarioDto>>> GetAll()
     {
@@ -36,9 +39,10 @@ public class UsuariosController : ControllerBase
     }
 
     // Lista completa de la tabla Rol (no solo los roles que ya tienen usuarios),
-    // para poblar el combo de "Nuevo usuario". Protegido igual que el resto del
-    // controller: solo los admins crean usuarios, así que solo ellos la necesitan.
+    // para poblar el combo de "Nuevo usuario". Solo los admins crean usuarios,
+    // así que solo ellos la necesitan.
     [HttpGet("roles")]
+    [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<IEnumerable<RolDto>>> GetRoles()
     {
         var roles = await _db.Roles
@@ -50,6 +54,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<UsuarioDto>> Create([FromBody] CreateUsuarioDto request)
     {
         if (string.IsNullOrWhiteSpace(request.NombreUsuario) || string.IsNullOrWhiteSpace(request.Clave))
@@ -88,6 +93,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPatch("{id:int}/habilitar")]
+    [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<UsuarioDto>> Habilitar(int id)
     {
         var usuario = await BuscarConRolAsync(id);
@@ -102,6 +108,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPatch("{id:int}/deshabilitar")]
+    [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<UsuarioDto>> Deshabilitar(int id)
     {
         var usuario = await BuscarConRolAsync(id);
@@ -126,6 +133,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPatch("{id:int}/otorgar-admin")]
+    [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<UsuarioDto>> OtorgarAdmin(int id)
     {
         var usuario = await BuscarConRolAsync(id);
@@ -140,6 +148,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPatch("{id:int}/revocar-admin")]
+    [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<UsuarioDto>> RevocarAdmin(int id)
     {
         var usuario = await BuscarConRolAsync(id);

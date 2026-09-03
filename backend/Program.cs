@@ -68,6 +68,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // JWT_SECRET/JWT_EXPIRATION_MINUTES una vez al construirse.
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
+// Scoped: usa ApplicationDbContext, que también es scoped por request.
+builder.Services.AddScoped<ICitaService, CitaService>();
+
 // Singleton: sin estado, solo funciones puras de hashing.
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 

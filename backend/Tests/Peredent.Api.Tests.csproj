@@ -20,14 +20,14 @@
   </ItemGroup>
 
   <!--
-    UnitTests/Services/AuthServiceTests.cs y CitaServiceTests.cs todavia son
-    descripciones en texto plano (placeholder), no C# real, se excluyen del
-    build por la misma razon que Peredent.Api.csproj excluye Services/ y
-    Repositories/. Se re-habilitan cuando esos modulos existan de verdad.
+    UnitTests/Services/AuthServiceTests.cs todavia es una descripcion en texto
+    plano (placeholder), no C# real: AuthService (la clase, no el controller)
+    no existe todavia, se excluye del build por la misma razon que
+    Peredent.Api.csproj excluye Services/ y Repositories/. Se re-habilita
+    cuando ese modulo exista de verdad.
   -->
   <ItemGroup>
     <Compile Remove="UnitTests/Services/AuthServiceTests.cs" />
-    <Compile Remove="UnitTests/Services/CitaServiceTests.cs" />
   </ItemGroup>
 
 </Project>

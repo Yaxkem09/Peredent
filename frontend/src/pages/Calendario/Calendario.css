@@ -1,0 +1,509 @@
+.agenda-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ---- Selector de vista (Día / Semana / Mes) ---- */
+.view-switch {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.view-switch button {
+  border: none;
+  background: transparent;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.view-switch button.active {
+  background: var(--surface);
+  color: var(--teal);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.day-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- Vista día: agenda en lista, altura libre por tarjeta ---- */
+.day-agenda {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 16px;
+}
+
+.agenda-count {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+
+.agenda-count b {
+  color: var(--ink);
+}
+
+.agenda-empty {
+  color: var(--ink-faint);
+  font-size: 13px;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 640px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.agenda-hueco {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  padding: 2px 4px;
+}
+
+.agenda-hueco::before,
+.agenda-hueco::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed var(--line);
+}
+
+.cita-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--teal);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition:
+    box-shadow 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.cita-row:hover {
+  box-shadow: 0 3px 10px rgba(10, 38, 75, 0.1);
+  border-color: var(--accent);
+}
+
+.cr-hora {
+  width: 64px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.cr-hora .h {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+}
+
+.cr-hora .d {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.cr-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+}
+
+.cr-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cr-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.cr-servicio {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: 1px;
+}
+
+.cr-estado {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+/* ---- Vista semana: una lista independiente por día ---- */
+.week-lists {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 16px;
+}
+
+.week-col {
+  flex: 1;
+  min-width: 170px;
+  background: var(--surface-alt);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.week-col.today {
+  background: var(--accent-soft);
+}
+
+.wc-head {
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+}
+
+.wc-head .wd-name {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wc-head .wd-num {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  margin-top: 2px;
+}
+
+.week-col.today .wd-name,
+.week-col.today .wd-num {
+  color: var(--accent);
+}
+
+.wc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.wc-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 11.5px;
+}
+
+.wc-card:hover {
+  border-color: var(--accent);
+}
+
+.wc-card .wh {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.wc-card .wnom {
+  display: block;
+  margin-top: 1px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.wc-empty {
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* ---- Vista mes: contador de citas + panel lateral con el detalle del día ---- */
+.month-wrap {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.month-calendar {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.month-head-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--line);
+}
+
+.month-head-cell {
+  padding: 8px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.month-cell {
+  min-height: 82px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.month-cell:hover {
+  background: var(--surface-alt);
+}
+
+.month-cell.selected {
+  background: var(--accent-soft);
+}
+
+.month-cell:nth-child(7n) {
+  border-right: none;
+}
+
+.month-cell.outside {
+  background: var(--surface-alt);
+  color: var(--ink-faint);
+}
+
+.month-daynum {
+  font-family: 'Fraunces', serif;
+  font-size: 12.5px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.month-cell.today .month-daynum {
+  background: var(--teal);
+  color: #ffffff;
+}
+
+.resumen-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.resumen-num {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Fraunces', serif;
+}
+
+.resumen-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.resumen-dots .rd {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+.side-panel {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--surface-alt);
+  border-radius: 12px;
+  padding: 14px;
+  position: sticky;
+  top: 0;
+}
+
+.sp-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.sp-fecha {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+}
+
+.sp-count {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.sp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.sp-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--teal);
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sp-card:hover {
+  border-color: var(--accent);
+}
+
+.sp-card b {
+  display: block;
+  font-size: 11.5px;
+  margin-top: 1px;
+  word-break: break-word;
+}
+
+.sp-empty {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 860px) {
+  .month-wrap {
+    flex-direction: column;
+  }
+
+  .side-panel {
+    width: 100%;
+    position: static;
+  }
+}
+
+/* ---- Modificadores de estado, compartidos por las vistas ---- */
+.cita-row.pending,
+.wc-card.pending,
+.sp-card.pending {
+  border-left-color: var(--amber);
+}
+
+.cita-row.cancelada,
+.wc-card.cancelada,
+.sp-card.cancelada {
+  border-left-color: var(--ink-faint);
+  opacity: 0.7;
+}
+
+.cita-row.cancelada .cr-nombre,
+.wc-card.cancelada .wnom,
+.sp-card.cancelada b {
+  text-decoration: line-through;
+}
+
+.cita-row.atendida,
+.wc-card.atendida,
+.sp-card.atendida {
+  border-left-color: var(--accent);
+}
+
+.cita-row.no-asistio,
+.wc-card.no-asistio,
+.sp-card.no-asistio {
+  border-left-color: var(--coral);
+  opacity: 0.7;
+}
+
+.cita-row.no-asistio .cr-nombre,
+.wc-card.no-asistio .wnom,
+.sp-card.no-asistio b {
+  text-decoration: line-through;
+}
+
+.cr-estado.pending {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.cr-estado.cancelada {
+  background: var(--surface-alt);
+  color: var(--ink-faint);
+}
+
+.cr-estado.atendida {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cr-estado.no-asistio {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.resumen-dots .rd.pending {
+  background: var(--amber);
+}
+
+.resumen-dots .rd.cancelada {
+  background: var(--ink-faint);
+}
+
+.resumen-dots .rd.atendida {
+  background: var(--accent);
+}
+
+.resumen-dots .rd.no-asistio {
+  background: var(--coral);
+}
