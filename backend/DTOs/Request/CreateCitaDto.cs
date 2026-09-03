@@ -14,9 +14,5 @@ public class CreateCitaDto
 
     public int DuracionMinutos { get; set; } = CitaConstantes.DuracionMinutos;
 
-    public string TipoTratamiento { get; set; } = string.Empty;
-
     public string? NotasAdicionales { get; set; }
-
-    public bool EnviarRecordatorioWhatsApp { get; set; }
 }

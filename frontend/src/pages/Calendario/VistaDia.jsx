@@ -55,7 +55,6 @@ const VistaDia = ({ fechaActual, citas, onSeleccionarCita }) => {
                 <div className="cr-sep" />
                 <div className="cr-info">
                   <div className="cr-nombre">{fila.cita.nombrePaciente}</div>
-                  <div className="cr-servicio">{fila.cita.tipoTratamiento}</div>
                 </div>
                 <div className={`cr-estado ${claseDeEstado(fila.cita.estado)}`.trim()}>{fila.cita.estado}</div>
               </div>

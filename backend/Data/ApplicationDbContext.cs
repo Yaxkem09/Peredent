@@ -186,9 +186,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(c => c.IdEstadoCita).HasColumnName("ID_EstadoCita");
             entity.Property(c => c.FechaInicio).HasColumnName("Fecha_Inicio");
             entity.Property(c => c.FechaFin).HasColumnName("Fecha_Fin");
-            entity.Property(c => c.TipoTratamiento).HasColumnName("TipoTratamiento").HasMaxLength(150).IsRequired();
             entity.Property(c => c.NotasAdicionales).HasColumnName("NotasAdicionales").HasMaxLength(500);
-            entity.Property(c => c.EnviarRecordatorioWhatsApp).HasColumnName("EnviarRecordatorioWhatsApp");
 
             entity.HasOne(c => c.Usuario)
                   .WithMany()

@@ -64,9 +64,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
         fecha,
         hora,
         duracionMinutos,
-        tipoTratamiento: cita.tipoTratamiento,
         notasAdicionales: cita.notasAdicionales,
-        enviarRecordatorioWhatsApp: cita.enviarRecordatorioWhatsApp,
         idEstadoCita: Number(idEstadoCita),
       });
       notify('Cita actualizada correctamente.');

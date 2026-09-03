@@ -18,11 +18,7 @@ public class CitaDto
 
     public int DuracionMinutos { get; set; }
 
-    public string TipoTratamiento { get; set; } = string.Empty;
-
     public string? NotasAdicionales { get; set; }
-
-    public bool EnviarRecordatorioWhatsApp { get; set; }
 
     public int IdEstadoCita { get; set; }
 
