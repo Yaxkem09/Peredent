@@ -6,3 +6,4 @@ export { citasService } from './citas.service';
 export { inventarioService } from './inventario.service';
 export { historiaMedicaService } from './historia-medica.service';
 export { planTratamientoService } from './plan-tratamiento.service';
+export { endodonciaService } from './endodoncia.service';

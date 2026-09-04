@@ -30,6 +30,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<EstadoCita> EstadosCita => Set<EstadoCita>();
 
     public DbSet<Cita> Citas => Set<Cita>();
+    public DbSet<Endodoncia> Endodoncias => Set<Endodoncia>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -201,6 +202,43 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(c => c.EstadoCita)
                   .WithMany()
                   .HasForeignKey(c => c.IdEstadoCita);
+        });
+
+        modelBuilder.Entity<Endodoncia>(entity =>
+        {
+            entity.ToTable("Endodoncia");
+            entity.HasKey(e => e.IdEndodoncia);
+            entity.Property(e => e.IdEndodoncia)
+                .HasColumnName("ID_Endodoncia");
+            entity.Property(e => e.IdPaciente)
+                .HasColumnName("ID_Paciente");
+            entity.Property(e => e.Pieza)
+                .HasColumnName("Pieza")
+                .HasMaxLength(10)
+                .IsRequired();
+            entity.Property(e => e.Mm1)
+                .HasColumnName("MM1");
+            entity.Property(e => e.Mm2)
+                .HasColumnName("MM2");
+            entity.Property(e => e.Mm3)
+                .HasColumnName("MM3");
+            entity.Property(e => e.Mm4)
+                .HasColumnName("MM4");
+            entity.Property(e => e.Diametro)
+                .HasColumnName("Diametro");
+            entity.Property(e => e.Cuspide)
+                .HasColumnName("Cuspide")
+                .HasMaxLength(50);
+            entity.Property(e => e.Obturacion)
+                .HasColumnName("Obturacion");
+            entity.Property(e => e.TxPeriodontal)
+                .HasColumnName("TxPeriodontal");
+            entity.Property(e => e.ObservacionesTxPeriodontal)
+                .HasColumnName("ObservacionesTxPeriodontal")
+                .HasMaxLength(500);
+            entity.Property(e => e.ObservacionesEndodoncia)
+                .HasColumnName("ObservacionesEndodoncia")
+                .HasMaxLength(500);
         });
     }
 }

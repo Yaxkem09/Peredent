@@ -8,6 +8,7 @@ import { Alert, Button, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
 import PlanTratamientoTab from './PlanTratamientoTab';
 import HistorialPlanesTab from './HistorialPlanesTab';
+import EndodonciaTab from './EndodonciaTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -26,7 +27,7 @@ const TABS = [
   { id: 'recetario', label: 'Recetario' },
 ];
 
-const TABS_DISPONIBLES = new Set(['datos', 'historia', 'plan', 'historial-planes']);
+const TABS_DISPONIBLES = new Set(['datos', 'historia', 'plan', 'historial-planes', 'endodoncia']);
 
 const inicialesDe = (nombres, apellidos) =>
   `${(nombres || '').charAt(0)}${(apellidos || '').charAt(0)}`.toUpperCase() || '—';
@@ -319,6 +320,7 @@ const PacienteDetail = () => {
           )}
           {activeTab === 'plan' && <PlanTratamientoTab idPaciente={id} />}
           {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
+          {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"
