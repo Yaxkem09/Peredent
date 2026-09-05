@@ -61,6 +61,13 @@ public class CitasControllerTests
         return usuario;
     }
 
+    // Fecha "cualquiera" en el futuro, mismo criterio que CitaServiceTests: evita
+    // que el archivo quede con una fecha fija que el tiempo real termine pasando.
+    // OJO: GetByRango_DesdePosteriorAHasta_Devuelve400 NO usa esta constante a
+    // propósito -- necesita dos fechas fijas en un orden específico, no pasa por
+    // CrearAsync y no le afecta ninguna regla de "fecha pasada".
+    private static readonly DateOnly FechaFutura = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
+
     private static CreateCitaDto NuevaCitaDto(int idPaciente, int idUsuario, DateOnly fecha, TimeOnly hora, int duracionMinutos = 30) => new()
     {
         IdPaciente = idPaciente,
@@ -86,7 +93,7 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         var resultado = await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         var creado = Assert.IsType<CreatedAtActionResult>(resultado.Result);
         var dto = Assert.IsType<CitaDto>(creado.Value);
@@ -103,10 +110,10 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         var resultado = await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 15)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 15)));
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(resultado.Result);
         var mensaje = (string)badRequest.Value!.GetType().GetProperty("message")!.GetValue(badRequest.Value)!;
@@ -123,7 +130,7 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         var resultado = await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 60));
 
         var creado = Assert.IsType<CreatedAtActionResult>(resultado.Result);
         var dto = Assert.IsType<CitaDto>(creado.Value);
@@ -140,7 +147,7 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         var resultado = await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 45));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 45));
 
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
     }
@@ -154,7 +161,7 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         var resultado = await controller.Create(
-            NuevaCitaDto(999, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(999, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         Assert.IsType<NotFoundObjectResult>(resultado.Result);
     }
@@ -191,16 +198,16 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
         var segunda = await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(10, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(10, 0)));
         var idSegunda = ((CitaDto)((CreatedAtActionResult)segunda.Result!).Value!).IdCita;
 
         var resultado = await controller.Update(idSegunda, new UpdateCitaDto
         {
             IdPaciente = paciente.IdPaciente,
             IdUsuario = dentista.IdUsuario,
-            Fecha = new DateOnly(2026, 9, 1),
+            Fecha = FechaFutura,
             Hora = new TimeOnly(9, 10),
             IdEstadoCita = 1,
         });
@@ -218,7 +225,7 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         var creada = await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
         var idCreada = ((CitaDto)((CreatedAtActionResult)creada.Result!).Value!).IdCita;
 
         var resultado = ExtraerDto(await controller.Cancelar(idCreada));

@@ -74,6 +74,22 @@ export const formatearHueco = (minutos) => {
   return `${partes.join(' ')} libres`;
 };
 
+// Compara la fecha/hora de una cita (strings "yyyy-MM-dd" y "HH:mm[:ss]") contra
+// el reloj local del navegador. Solo es una ayuda de UX (deshabilitar campos,
+// mostrar avisos): el backend es la autoridad real y decide con hora de
+// Guatemala, así que puede haber un pequeño desfase si el navegador está en
+// otra zona horaria -- no pasa nada, el backend rechaza igual si hace falta.
+export const esCitaPasada = (fecha, hora) => new Date(`${fecha}T${hora}`) < new Date();
+
+// Igual que EstaDentroDelHorario en CitaService.cs (7:00-19:00), pero solo
+// para avisar en el front -- el backend sigue siendo el que bloquea de verdad.
+export const estaFueraDeHorarioClinica = (hora, duracionMinutos) => {
+  const [h, m] = hora.split(':').map(Number);
+  const inicioMinutos = h * 60 + m;
+  const finMinutos = inicioMinutos + duracionMinutos;
+  return inicioMinutos < HORA_INICIO * 60 || finMinutos > HORA_FIN * 60;
+};
+
 // Estado (string) que devuelve CitaDto -> modificador de clase CSS para el bloque de cita.
 // "Confirmada" usa el estilo base (teal), por eso mapea a cadena vacía.
 const CLASES_POR_ESTADO = {

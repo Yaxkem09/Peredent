@@ -84,6 +84,42 @@
   color: var(--teal);
 }
 
+.cita-modal-mensaje.aviso {
+  color: var(--amber);
+}
+
+.cita-paciente-resultados {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.cita-paciente-resultados li + li {
+  margin-top: 2px;
+}
+
+.cita-paciente-resultados button {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.cita-paciente-resultados button:hover {
+  background: var(--teal-soft);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

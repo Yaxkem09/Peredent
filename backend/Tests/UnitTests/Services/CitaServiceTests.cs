@@ -58,6 +58,18 @@ public class CitaServiceTests
         return usuario;
     }
 
+    // Fecha "cualquiera" en el futuro: la usa casi todo este archivo como
+    // placeholder para tests que no están probando la regla de "fecha pasada"
+    // en sí (duración, horario, conflictos, etc.). +30 días desde UtcNow en vez
+    // de una fecha fija evita que el test suite quede con una fecha ya vencida
+    // según pase el tiempo real.
+    private static readonly DateOnly FechaFutura = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(30));
+
+    // Solo la usa GetByRangoAsync_DevuelveSoloCitasDentroDelRango, para la cita
+    // que debe quedar FUERA del rango consultado (mismo desfase de 9 días que
+    // tenía el par de fechas fijas original).
+    private static readonly DateOnly FechaFuturaFueraDeRango = FechaFutura.AddDays(9);
+
     private static CreateCitaDto NuevaCitaDto(int idPaciente, int idUsuario, DateOnly fecha, TimeOnly hora, int duracionMinutos = 30) => new()
     {
         IdPaciente = idPaciente,
@@ -66,6 +78,29 @@ public class CitaServiceTests
         Hora = hora,
         DuracionMinutos = duracionMinutos,
     };
+
+    // Inserta una cita directo en el DbContext, sin pasar por CrearAsync. Hace
+    // falta para armar fixtures de citas "históricas" (fecha ya pasada): ahora
+    // que CrearAsync también rechaza fecha pasada, ya no se puede usar el
+    // servicio para simular una cita que se creó hace tiempo, cuando su fecha
+    // todavía era válida.
+    private static async Task<Cita> SembrarCitaAsync(
+        ApplicationDbContext db, int idPaciente, int idUsuario, DateOnly fecha, TimeOnly hora, int duracionMinutos = 30, string estado = "Pendiente")
+    {
+        var idEstado = (await db.EstadosCita.SingleAsync(e => e.TipoEstadoCita == estado)).IdEstadoCita;
+        var fechaInicio = fecha.ToDateTime(hora);
+        var cita = new Cita
+        {
+            IdPaciente = idPaciente,
+            IdUsuario = idUsuario,
+            IdEstadoCita = idEstado,
+            FechaInicio = fechaInicio,
+            FechaFin = fechaInicio.AddMinutes(duracionMinutos),
+        };
+        db.Citas.Add(cita);
+        await db.SaveChangesAsync();
+        return cita;
+    }
 
     [Fact]
     public async Task CrearAsync_DatosValidos_NaceEnPendiente()
@@ -77,7 +112,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         Assert.True(resultado.Exitoso);
         Assert.Equal("Pendiente", resultado.Cita!.Estado);
@@ -93,7 +128,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(999, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(999, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.PacienteNoEncontrado, resultado.Error);
@@ -108,10 +143,28 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, 999, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, 999, FechaFutura, new TimeOnly(9, 0)));
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.DentistaNoEncontrado, resultado.Error);
+    }
+
+    [Fact]
+    public async Task CrearAsync_FechaEnElPasado_DevuelveFechaEnElPasado()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var fechaPasada = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5));
+
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, fechaPasada, new TimeOnly(9, 0)));
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.FechaEnElPasado, resultado.Error);
     }
 
     [Theory]
@@ -127,7 +180,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(hora, minuto)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(hora, minuto)));
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.FueraDeHorarioAtencion, resultado.Error);
@@ -143,10 +196,10 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 15)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 15)));
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.ConflictoHorario, resultado.Error);
@@ -163,10 +216,10 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 30)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 30)));
 
         Assert.True(resultado.Exitoso);
     }
@@ -182,10 +235,10 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista1.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista1.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista2.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista2.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         Assert.True(resultado.Exitoso);
     }
@@ -200,11 +253,11 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var primera = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
         await service.CancelarAsync(primera.Cita!.IdCita);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         Assert.True(resultado.Exitoso);
     }
@@ -222,7 +275,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos));
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.DuracionInvalida, resultado.Error);
@@ -238,7 +291,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 60));
 
         Assert.True(resultado.Exitoso);
         Assert.Equal(60, resultado.Cita!.DuracionMinutos);
@@ -254,7 +307,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(18, 0), duracionMinutos: 60));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(18, 0), duracionMinutos: 60));
 
         Assert.True(resultado.Exitoso);
     }
@@ -269,7 +322,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(18, 30), duracionMinutos: 60));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(18, 30), duracionMinutos: 60));
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.FueraDeHorarioAtencion, resultado.Error);
@@ -286,11 +339,11 @@ public class CitaServiceTests
 
         // 9:00-10:00 (una hora).
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 60));
 
         // 9:45-10:15: arranca antes de que termine la primera.
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 45), duracionMinutos: 30));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 45), duracionMinutos: 30));
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.ConflictoHorario, resultado.Error);
@@ -307,11 +360,11 @@ public class CitaServiceTests
 
         // 9:00-10:00 (una hora).
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 60));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 60));
 
         // 10:00-10:30: arranca justo cuando termina la primera.
         var resultado = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(10, 0), duracionMinutos: 30));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(10, 0), duracionMinutos: 30));
 
         Assert.True(resultado.Exitoso);
     }
@@ -326,7 +379,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var creada = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         var idEstadoConfirmada = (await db.EstadosCita.SingleAsync(e => e.TipoEstadoCita == "Confirmada")).IdEstadoCita;
 
@@ -335,7 +388,7 @@ public class CitaServiceTests
         {
             IdPaciente = paciente.IdPaciente,
             IdUsuario = dentista.IdUsuario,
-            Fecha = new DateOnly(2026, 9, 1),
+            Fecha = FechaFutura,
             Hora = new TimeOnly(9, 0),
             IdEstadoCita = idEstadoConfirmada,
         });
@@ -354,15 +407,15 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
         var segunda = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(10, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(10, 0)));
 
         var resultado = await service.ActualizarAsync(segunda.Cita!.IdCita, new UpdateCitaDto
         {
             IdPaciente = paciente.IdPaciente,
             IdUsuario = dentista.IdUsuario,
-            Fecha = new DateOnly(2026, 9, 1),
+            Fecha = FechaFutura,
             Hora = new TimeOnly(9, 10),
             IdEstadoCita = 1,
         });
@@ -381,16 +434,16 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var primera = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0), duracionMinutos: 30));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 30));
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 30), duracionMinutos: 30));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 30), duracionMinutos: 30));
 
         // Alargar la primera cita a 1 hora la haría chocar con la segunda (9:30-10:00).
         var resultado = await service.ActualizarAsync(primera.Cita!.IdCita, new UpdateCitaDto
         {
             IdPaciente = paciente.IdPaciente,
             IdUsuario = dentista.IdUsuario,
-            Fecha = new DateOnly(2026, 9, 1),
+            Fecha = FechaFutura,
             Hora = new TimeOnly(9, 0),
             DuracionMinutos = 60,
             IdEstadoCita = 1,
@@ -413,13 +466,151 @@ public class CitaServiceTests
         {
             IdPaciente = paciente.IdPaciente,
             IdUsuario = dentista.IdUsuario,
-            Fecha = new DateOnly(2026, 9, 1),
+            Fecha = FechaFutura,
             Hora = new TimeOnly(9, 0),
             IdEstadoCita = 1,
         });
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.CitaNoEncontrada, resultado.Error);
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_MoverFechaAUnDiaAnterior_DevuelveFechaEnElPasado()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var fechaFutura = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5));
+        var creada = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, fechaFutura, new TimeOnly(9, 0)));
+
+        var resultado = await service.ActualizarAsync(creada.Cita!.IdCita, new UpdateCitaDto
+        {
+            IdPaciente = paciente.IdPaciente,
+            IdUsuario = dentista.IdUsuario,
+            Fecha = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5)),
+            Hora = new TimeOnly(9, 0),
+            IdEstadoCita = 1,
+        });
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.FechaEnElPasado, resultado.Error);
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_ReprogramarHoraDeCitaHistorica_DevuelveFechaEnElPasado()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var fechaPasada = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5));
+        var creada = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, fechaPasada, new TimeOnly(9, 0));
+
+        // Misma fecha, pero cambia la hora: sigue siendo "reprogramar" una cita
+        // que ya pasó, así que debe rechazarse igual que si cambiara el día.
+        var resultado = await service.ActualizarAsync(creada.IdCita, new UpdateCitaDto
+        {
+            IdPaciente = paciente.IdPaciente,
+            IdUsuario = dentista.IdUsuario,
+            Fecha = fechaPasada,
+            Hora = new TimeOnly(10, 0),
+            IdEstadoCita = 1,
+        });
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.FechaEnElPasado, resultado.Error);
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_SoloCambiaEstadoDeCitaHistorica_SinTocarFechaUHora_PermiteActualizar()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var fechaPasada = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5));
+        var creada = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, fechaPasada, new TimeOnly(9, 0));
+        var idEstadoCancelada = (await db.EstadosCita.SingleAsync(e => e.TipoEstadoCita == "Cancelada")).IdEstadoCita;
+
+        // Misma fecha/hora, solo cambia estado y notas: no es "reprogramar", debe permitirse.
+        var resultado = await service.ActualizarAsync(creada.IdCita, new UpdateCitaDto
+        {
+            IdPaciente = paciente.IdPaciente,
+            IdUsuario = dentista.IdUsuario,
+            Fecha = fechaPasada,
+            Hora = new TimeOnly(9, 0),
+            IdEstadoCita = idEstadoCancelada,
+            NotasAdicionales = "No se presentó, se reagendará por teléfono.",
+        });
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal("Cancelada", resultado.Cita!.Estado);
+    }
+
+    [Theory]
+    [InlineData("Atendida")]
+    [InlineData("No Asistio")]
+    public async Task ActualizarAsync_MarcarComoOcurridaUnaCitaFutura_DevuelveEstadoNoDisponibleAun(string estadoDestino)
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var fechaFutura = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5));
+        var creada = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, fechaFutura, new TimeOnly(9, 0)));
+        var idEstadoDestino = (await db.EstadosCita.SingleAsync(e => e.TipoEstadoCita == estadoDestino)).IdEstadoCita;
+
+        var resultado = await service.ActualizarAsync(creada.Cita!.IdCita, new UpdateCitaDto
+        {
+            IdPaciente = paciente.IdPaciente,
+            IdUsuario = dentista.IdUsuario,
+            Fecha = fechaFutura,
+            Hora = new TimeOnly(9, 0),
+            IdEstadoCita = idEstadoDestino,
+        });
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.EstadoNoDisponibleAun, resultado.Error);
+    }
+
+    [Theory]
+    [InlineData("Atendida")]
+    [InlineData("No Asistio")]
+    public async Task ActualizarAsync_MarcarComoOcurridaUnaCitaYaPasada_PermiteActualizar(string estadoDestino)
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var fechaPasada = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-5));
+        var creada = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, fechaPasada, new TimeOnly(9, 0));
+        var idEstadoDestino = (await db.EstadosCita.SingleAsync(e => e.TipoEstadoCita == estadoDestino)).IdEstadoCita;
+
+        var resultado = await service.ActualizarAsync(creada.IdCita, new UpdateCitaDto
+        {
+            IdPaciente = paciente.IdPaciente,
+            IdUsuario = dentista.IdUsuario,
+            Fecha = fechaPasada,
+            Hora = new TimeOnly(9, 0),
+            IdEstadoCita = idEstadoDestino,
+        });
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal(estadoDestino, resultado.Cita!.Estado);
     }
 
     [Fact]
@@ -432,7 +623,7 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         var creada = await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
 
         var resultado = await service.CancelarAsync(creada.Cita!.IdCita);
 
@@ -464,14 +655,14 @@ public class CitaServiceTests
         var service = new CitaService(db);
 
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 1), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
         await service.CrearAsync(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, new DateOnly(2026, 9, 10), new TimeOnly(9, 0)));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFuturaFueraDeRango, new TimeOnly(9, 0)));
 
-        var enRango = await service.GetByRangoAsync(new DateOnly(2026, 9, 1), new DateOnly(2026, 9, 5));
+        var enRango = await service.GetByRangoAsync(FechaFutura, FechaFutura.AddDays(4));
 
         var unica = Assert.Single(enRango);
-        Assert.Equal(new DateOnly(2026, 9, 1), unica.Fecha);
+        Assert.Equal(FechaFutura, unica.Fecha);
     }
 
     [Fact]

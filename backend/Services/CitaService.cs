@@ -10,6 +10,8 @@ public class CitaService : ICitaService
 {
     private const string EstadoPendiente = "Pendiente";
     private const string EstadoCancelada = "Cancelada";
+    private const string EstadoAtendida = "Atendida";
+    private const string EstadoNoAsistio = "No Asistio";
 
     private readonly ApplicationDbContext _db;
 
@@ -55,6 +57,11 @@ public class CitaService : ICitaService
         if (dentista is null)
         {
             return CitaResultado.Fallo(CitaError.DentistaNoEncontrado, "El odontólogo indicado no existe.");
+        }
+
+        if (request.Fecha < DateOnly.FromDateTime(AhoraGuatemala()))
+        {
+            return CitaResultado.Fallo(CitaError.FechaEnElPasado, "No se puede crear una cita en una fecha ya pasada.");
         }
 
         if (!CitaConstantes.DuracionesPermitidas.Contains(request.DuracionMinutos))
@@ -123,6 +130,27 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.EstadoInvalido, "El estado de cita indicado no existe.");
         }
 
+        var ahoraGuatemala = AhoraGuatemala();
+
+        // Solo evaluamos "fecha pasada" cuando el request realmente intenta mover
+        // la fecha/hora: reenviar sin cambios la fecha ya pasada de una cita
+        // histórica (para solo tocar Estado o Notas) debe seguir permitido.
+        var cambiaFechaOHora = request.Fecha != DateOnly.FromDateTime(cita.FechaInicio)
+            || request.Hora != TimeOnly.FromDateTime(cita.FechaInicio);
+
+        if (cambiaFechaOHora && request.Fecha < DateOnly.FromDateTime(ahoraGuatemala))
+        {
+            return CitaResultado.Fallo(CitaError.FechaEnElPasado, "No se puede mover una cita a una fecha ya pasada.");
+        }
+
+        // Una cita cuya fecha original ya pasó queda como historial: no se puede
+        // reprogramar (aunque sí se le puede seguir cambiando estado o notas).
+        var esHistorial = cita.FechaInicio.Date < ahoraGuatemala.Date;
+        if (esHistorial && cambiaFechaOHora)
+        {
+            return CitaResultado.Fallo(CitaError.FechaEnElPasado, "Esta cita ya pasó; no se puede reprogramar su fecha u hora.");
+        }
+
         if (!CitaConstantes.DuracionesPermitidas.Contains(request.DuracionMinutos))
         {
             return CitaResultado.Fallo(CitaError.DuracionInvalida, MensajeDuracionInvalida);
@@ -139,6 +167,11 @@ public class CitaService : ICitaService
         if (await HayConflictoHorarioAsync(request.IdUsuario, fechaInicio, fechaFin, idCitaExcluir: idCita))
         {
             return CitaResultado.Fallo(CitaError.ConflictoHorario, "Ese horario se cruza con otra cita.");
+        }
+
+        if (await EsTransicionAEstadoYaOcurridoAsync(request.IdEstadoCita) && fechaInicio > ahoraGuatemala)
+        {
+            return CitaResultado.Fallo(CitaError.EstadoNoDisponibleAun, "No se puede marcar Atendida o No Asistió antes de que llegue la hora de la cita.");
         }
 
         cita.IdPaciente = request.IdPaciente;
@@ -208,6 +241,22 @@ public class CitaService : ICitaService
             .ToListAsync();
 
         return citasDelDia.Any(existente => existente.FechaInicio < fechaFin && fechaInicio < existente.FechaFin);
+    }
+
+    // Hora actual en Guatemala (UTC-6, sin horario de verano). Autoridad para
+    // "fecha pasada" y "todavía no llega la hora": el navegador puede estar en
+    // otra zona horaria, pero el backend siempre decide con esta referencia.
+    private static DateTime AhoraGuatemala() => DateTime.UtcNow.AddHours(-6);
+
+    // Compara por IdEstadoCita contra el catálogo (nunca por el string del
+    // nombre): "No Asistio" no lleva tilde y una diferencia de tilde/mayúsculas
+    // en el nombre no debe romper este chequeo en silencio.
+    private async Task<bool> EsTransicionAEstadoYaOcurridoAsync(int idEstadoCita)
+    {
+        var idAtendida = await ObtenerIdEstadoAsync(EstadoAtendida);
+        var idNoAsistio = await ObtenerIdEstadoAsync(EstadoNoAsistio);
+
+        return idEstadoCita == idAtendida || idEstadoCita == idNoAsistio;
     }
 
     private Task<int?> ObtenerIdEstadoAsync(string nombre) =>
