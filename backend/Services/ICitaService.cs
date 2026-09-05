@@ -27,6 +27,8 @@ public enum CitaError
     DuracionInvalida,
     FueraDeHorarioAtencion,
     ConflictoHorario,
+    FechaEnElPasado,
+    EstadoNoDisponibleAun,
 }
 
 // Resultado explícito en vez de excepciones: así el controller puede distinguir,

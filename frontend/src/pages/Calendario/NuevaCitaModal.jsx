@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { citasService, pacientesService, usuariosService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { Button, Modal } from '../../components/common';
-import { toIsoDate } from './agenda.utils';
+import { estaFueraDeHorarioClinica, toIsoDate } from './agenda.utils';
 import './CitaModal.css';
 
 const HORA_INICIAL = '09:00';
 const DURACION_INICIAL = 30;
+const DEMORA_BUSQUEDA_MS = 400;
 
 const mensajeError = (err) =>
   err?.response?.data?.message || 'No se pudo guardar la cita. Intenta de nuevo.';
@@ -14,10 +15,14 @@ const mensajeError = (err) =>
 const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
   const { notify } = useNotification();
 
-  const [pacientes, setPacientes] = useState([]);
   const [odontologos, setOdontologos] = useState([]);
   const [cargandoListas, setCargandoListas] = useState(true);
   const [errorListas, setErrorListas] = useState(null);
+
+  const [terminoPaciente, setTerminoPaciente] = useState('');
+  const [resultadosPacientes, setResultadosPacientes] = useState([]);
+  const [buscandoPacientes, setBuscandoPacientes] = useState(false);
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
 
   const [idPaciente, setIdPaciente] = useState('');
   const [idUsuario, setIdUsuario] = useState('');
@@ -32,6 +37,9 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
   useEffect(() => {
     if (!open) return;
 
+    setTerminoPaciente('');
+    setResultadosPacientes([]);
+    setPacienteSeleccionado(null);
     setIdPaciente('');
     setIdUsuario('');
     setFecha(toIsoDate(fechaInicial));
@@ -43,14 +51,14 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
     setErrorListas(null);
 
     let activo = true;
-    Promise.all([pacientesService.getAll(), usuariosService.getAll()])
-      .then(([listaPacientes, listaUsuarios]) => {
+    usuariosService
+      .getAll()
+      .then((listaUsuarios) => {
         if (!activo) return;
-        setPacientes(listaPacientes);
         setOdontologos(listaUsuarios.filter((u) => u.rol === 'Odontologo'));
       })
       .catch(() => {
-        if (activo) setErrorListas('No se pudo cargar la lista de pacientes u odontólogos.');
+        if (activo) setErrorListas('No se pudo cargar la lista de odontólogos.');
       })
       .finally(() => {
         if (activo) setCargandoListas(false);
@@ -61,6 +69,56 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Busca pacientes por nombre a medida que se escribe (con demora para no
+  // disparar una request por cada tecla). Si ya hay un paciente elegido, no
+  // vuelve a buscar hasta que el usuario borre/edite el texto de nuevo.
+  useEffect(() => {
+    if (!open || pacienteSeleccionado) return;
+
+    if (!terminoPaciente.trim()) {
+      setResultadosPacientes([]);
+      return;
+    }
+
+    let activo = true;
+    setBuscandoPacientes(true);
+    const timer = setTimeout(() => {
+      pacientesService
+        .search(terminoPaciente.trim())
+        .then((data) => {
+          if (activo) setResultadosPacientes(data);
+        })
+        .catch(() => {
+          if (activo) setResultadosPacientes([]);
+        })
+        .finally(() => {
+          if (activo) setBuscandoPacientes(false);
+        });
+    }, DEMORA_BUSQUEDA_MS);
+
+    return () => {
+      activo = false;
+      clearTimeout(timer);
+    };
+  }, [terminoPaciente, open, pacienteSeleccionado]);
+
+  const handleTerminoPacienteChange = (valor) => {
+    setTerminoPaciente(valor);
+    if (pacienteSeleccionado) {
+      setPacienteSeleccionado(null);
+      setIdPaciente('');
+    }
+  };
+
+  const seleccionarPaciente = (paciente) => {
+    setPacienteSeleccionado(paciente);
+    setIdPaciente(String(paciente.id));
+    setTerminoPaciente(`${paciente.nombres} ${paciente.apellidos}`);
+    setResultadosPacientes([]);
+  };
+
+  const fueraDeHorario = hora ? estaFueraDeHorarioClinica(hora, duracionMinutos) : false;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,24 +153,37 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
         <div className="field-grid">
           <div className="field full">
             <label htmlFor="cita-paciente">Paciente</label>
-            <select
+            <input
               id="cita-paciente"
-              value={idPaciente}
-              onChange={(e) => setIdPaciente(e.target.value)}
-              disabled={cargandoListas}
-            >
-              <option value="">{cargandoListas ? 'Cargando...' : 'Selecciona un paciente'}</option>
-              {pacientes.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombres} {p.apellidos}
-                </option>
-              ))}
-            </select>
+              type="text"
+              placeholder="Busca por nombre, apellido o teléfono"
+              value={terminoPaciente}
+              onChange={(e) => handleTerminoPacienteChange(e.target.value)}
+              autoComplete="off"
+            />
+            {buscandoPacientes && <p className="cita-modal-mensaje">Buscando...</p>}
+            {!pacienteSeleccionado && resultadosPacientes.length > 0 && (
+              <ul className="cita-paciente-resultados">
+                {resultadosPacientes.map((p) => (
+                  <li key={p.id}>
+                    <button type="button" onClick={() => seleccionarPaciente(p)}>
+                      {p.nombres} {p.apellidos}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="field">
             <label htmlFor="cita-fecha">Fecha</label>
-            <input id="cita-fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            <input
+              id="cita-fecha"
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              min={toIsoDate(new Date())}
+            />
           </div>
 
           <div className="field">
@@ -159,6 +230,12 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
             />
           </div>
         </div>
+
+        {fueraDeHorario && (
+          <p className="cita-modal-mensaje aviso">
+            Fuera del horario 7:00–19:00 — el sistema no permitirá guardar.
+          </p>
+        )}
 
         {errorListas && <p className="cita-modal-mensaje error">{errorListas}</p>}
         {error && <p className="cita-modal-mensaje error">{error}</p>}

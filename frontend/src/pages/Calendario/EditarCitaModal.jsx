@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { citasService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { Button, Modal } from '../../components/common';
+import { esCitaPasada, estaFueraDeHorarioClinica, toIsoDate } from './agenda.utils';
 import './CitaModal.css';
+
+const ESTADOS_QUE_REQUIEREN_CITA_YA_OCURRIDA = ['Atendida', 'No Asistio'];
 
 const mensajeError = (err) =>
   err?.response?.data?.message || 'No se pudo guardar la cita. Intenta de nuevo.';
@@ -17,6 +20,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
   const [hora, setHora] = useState('');
   const [duracionMinutos, setDuracionMinutos] = useState(30);
   const [idEstadoCita, setIdEstadoCita] = useState('');
+  const [notas, setNotas] = useState('');
 
   const [guardando, setGuardando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
@@ -29,6 +33,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
     setHora(cita.hora.slice(0, 5));
     setDuracionMinutos(cita.duracionMinutos);
     setIdEstadoCita(String(cita.idEstadoCita));
+    setNotas(cita.notasAdicionales || '');
     setError(null);
     setCargandoEstados(true);
 
@@ -52,6 +57,15 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
   if (!cita) return null;
 
+  // La cita original ya pasó: la fecha/hora queda fija (no se puede reprogramar
+  // historial). El backend es la autoridad real de esto; acá solo es UX.
+  const citaYaPaso = esCitaPasada(cita.fecha, cita.hora);
+
+  // Con la fecha/hora que hay AHORA en el formulario (no la original): decide si
+  // Atendida/No Asistió tienen sentido todavía y si cae fuera de 7:00-19:00.
+  const nuevaCitaTodaviaNoLlega = fecha && hora ? !esCitaPasada(fecha, hora) : false;
+  const fueraDeHorario = hora ? estaFueraDeHorarioClinica(hora, duracionMinutos) : false;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -64,7 +78,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
         fecha,
         hora,
         duracionMinutos,
-        notasAdicionales: cita.notasAdicionales,
+        notasAdicionales: notas.trim() || null,
         idEstadoCita: Number(idEstadoCita),
       });
       notify('Cita actualizada correctamente.');
@@ -105,12 +119,25 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
           <div className="field">
             <label htmlFor="editar-fecha">Fecha</label>
-            <input id="editar-fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            <input
+              id="editar-fecha"
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              disabled={citaYaPaso}
+              min={citaYaPaso ? undefined : toIsoDate(new Date())}
+            />
           </div>
 
           <div className="field">
             <label htmlFor="editar-hora">Hora</label>
-            <input id="editar-hora" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
+            <input
+              id="editar-hora"
+              type="time"
+              value={hora}
+              onChange={(e) => setHora(e.target.value)}
+              disabled={citaYaPaso}
+            />
           </div>
 
           <div className="field">
@@ -134,13 +161,35 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
               disabled={cargandoEstados}
             >
               {estados.map((estado) => (
-                <option key={estado.id} value={estado.id}>
+                <option
+                  key={estado.id}
+                  value={estado.id}
+                  disabled={
+                    nuevaCitaTodaviaNoLlega && ESTADOS_QUE_REQUIEREN_CITA_YA_OCURRIDA.includes(estado.nombre)
+                  }
+                >
                   {estado.nombre}
                 </option>
               ))}
             </select>
           </div>
+
+          <div className="field full">
+            <label htmlFor="editar-notas">Notas</label>
+            <textarea
+              id="editar-notas"
+              placeholder="Notas para la cita"
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
+            />
+          </div>
         </div>
+
+        {fueraDeHorario && (
+          <p className="cita-modal-mensaje aviso">
+            Fuera del horario 7:00–19:00 — el sistema no permitirá guardar.
+          </p>
+        )}
 
         {error && <p className="cita-modal-mensaje error">{error}</p>}
 
