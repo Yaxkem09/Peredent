@@ -20,4 +20,16 @@ export const planTratamientoService = {
     const { data } = await api.get(`/pacientes/${pacienteId}/plan-tratamiento/historial`);
     return data;
   },
+
+  getPendientes: async (pacienteId) => {
+    const { data } = await api.get(`/pacientes/${pacienteId}/plan-tratamiento/pendientes`);
+    return data;
+  },
+
+  completarPendiente: async (pacienteId, pieza) => {
+    const { data } = await api.put(
+      `/pacientes/${pacienteId}/plan-tratamiento/pendientes/${encodeURIComponent(pieza)}/completar`,
+    );
+    return data;
+  },
 };

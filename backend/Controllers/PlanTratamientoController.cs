@@ -5,6 +5,7 @@ using Peredent.Api.Data;
 using Peredent.Api.DTOs.Request;
 using Peredent.Api.DTOs.Response;
 using Peredent.Api.Models;
+using Peredent.Api.Services;
 
 namespace Peredent.Api.Controllers;
 
@@ -19,10 +20,12 @@ public class PlanTratamientoController : ControllerBase
     private static DateTime FechaHoyGuatemala() => DateTime.UtcNow.AddHours(-6).Date;
 
     private readonly ApplicationDbContext _db;
+    private readonly IPlanTratamientoService _planTratamientoService;
 
-    public PlanTratamientoController(ApplicationDbContext db)
+    public PlanTratamientoController(ApplicationDbContext db, IPlanTratamientoService planTratamientoService)
     {
         _db = db;
+        _planTratamientoService = planTratamientoService;
     }
 
     [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento")]
@@ -79,7 +82,7 @@ public class PlanTratamientoController : ControllerBase
             }
         }
 
-        var idEstadoPendiente = await ObtenerIdEstadoPendienteAsync();
+        var idEstadoPendiente = await ObtenerIdEstadoAsync(EstadoPendiente);
         if (idEstadoPendiente is null)
         {
             return Problem("El catálogo de estados de tratamiento no está sembrado en la base de datos.");
@@ -137,6 +140,30 @@ public class PlanTratamientoController : ControllerBase
         return Ok(ToDto(pacienteId, presupuesto));
     }
 
+    [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/pendientes")]
+    public async Task<ActionResult<IEnumerable<TratamientoPendienteDto>>> GetPendientes(int pacienteId)
+    {
+        var resultado = await _planTratamientoService.ObtenerPendientesPorPacienteAsync(pacienteId);
+        if (!resultado.Exitoso)
+        {
+            return MapearError(resultado.Error!.Value, resultado.Mensaje!);
+        }
+
+        return Ok(resultado.Pendientes);
+    }
+
+    [HttpPut("api/pacientes/{pacienteId:int}/plan-tratamiento/pendientes/{pieza}/completar")]
+    public async Task<ActionResult<IEnumerable<TratamientoPendienteDto>>> MarcarCompletado(int pacienteId, string pieza)
+    {
+        var resultado = await _planTratamientoService.MarcarComoCompletadoAsync(pacienteId, pieza);
+        if (!resultado.Exitoso)
+        {
+            return MapearError(resultado.Error!.Value, resultado.Mensaje!);
+        }
+
+        return Ok(resultado.Pendientes);
+    }
+
     [HttpPost("api/pacientes/{pacienteId:int}/plan-tratamiento/finalizar")]
     public async Task<ActionResult<PlanTratamientoDto>> Finalizar(int pacienteId)
     {
@@ -170,11 +197,17 @@ public class PlanTratamientoController : ControllerBase
         return query.FirstOrDefaultAsync(p => p.IdPaciente == pacienteId && p.FechaCierre == null);
     }
 
-    private async Task<int?> ObtenerIdEstadoPendienteAsync()
+    private async Task<int?> ObtenerIdEstadoAsync(string nombre)
     {
-        var estado = await _db.EstadosTratamiento.FirstOrDefaultAsync(e => e.Nombre == EstadoPendiente);
+        var estado = await _db.EstadosTratamiento.FirstOrDefaultAsync(e => e.Nombre == nombre);
         return estado?.IdEstadoTratamiento;
     }
+
+    private ActionResult MapearError(PlanTratamientoError error, string mensaje) => error switch
+    {
+        PlanTratamientoError.CatalogoEstadosNoSembrado => Problem(mensaje),
+        _ => NotFound(new { message = mensaje }),
+    };
 
     private static PlanTratamientoDto ToDto(int pacienteId, PresupuestoPlan? presupuesto)
     {

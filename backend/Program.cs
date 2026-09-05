@@ -70,6 +70,7 @@ builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
 // Scoped: usa ApplicationDbContext, que también es scoped por request.
 builder.Services.AddScoped<ICitaService, CitaService>();
+builder.Services.AddScoped<IPlanTratamientoService, PlanTratamientoService>();
 
 // Singleton: sin estado, solo funciones puras de hashing.
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
