@@ -59,6 +59,8 @@
     <Compile Include="Services/CitaService.cs" />
     <Compile Include="Services/IPasswordHasher.cs" />
     <Compile Include="Services/PasswordHasher.cs" />
+    <Compile Include="Services/IPlanTratamientoService.cs" />
+    <Compile Include="Services/PlanTratamientoService.cs" />
   </ItemGroup>
 
 </Project>

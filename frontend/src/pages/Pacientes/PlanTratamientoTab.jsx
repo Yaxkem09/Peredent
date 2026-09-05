@@ -29,6 +29,7 @@ const combinarConGuardado = (piezasGuardadas) => {
       etiqueta: pieza.etiqueta,
       tratamiento: guardada?.tratamiento || '',
       valor: guardada?.valor || 0,
+      estado: guardada?.estado || '',
     };
   });
 };
@@ -183,6 +184,11 @@ const PlanTratamientoTab = ({ idPaciente }) => {
                   autoResize(e.target);
                 }}
               />
+              {fila.estado && (
+                <span className={`tag plan-estado-tag ${fila.estado === 'Completado' ? 'tag-ok' : 'tag-pending'}`}>
+                  {fila.estado}
+                </span>
+              )}
             </td>
             <td>
               <input
