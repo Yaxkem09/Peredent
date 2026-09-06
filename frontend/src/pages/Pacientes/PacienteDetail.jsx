@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { pacientesService } from '../../services/pacientes.service';
 import { historiaMedicaService } from '../../services/historia-medica.service';
 import { calcularEdadTexto } from '../../utils/edad';
@@ -10,6 +11,7 @@ import PlanTratamientoTab from './PlanTratamientoTab';
 import HistorialPlanesTab from './HistorialPlanesTab';
 import EndodonciaTab from './EndodonciaTab';
 import TratamientoPendienteTab from './TratamientoPendienteTab';
+import HistorialTratamientosTab from './HistorialTratamientosTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -19,16 +21,24 @@ const TABS = [
   { id: 'citas', label: 'Citas' },
   { id: 'plan', label: 'Plan de tratamiento' },
   { id: 'historial-planes', label: 'Historial de planes' },
-  { id: 'endodoncia', label: 'Endodoncia y restauración' },
   { id: 'pendientes', label: 'Tratamiento pendiente' },
   { id: 'historial', label: 'Historial' },
-  { id: 'saldo', label: 'Saldo y abonos' },
-  { id: 'presupuesto', label: 'Presupuesto' },
+  { id: 'endodoncia', label: 'Endodoncia y restauración' },
   { id: 'fotos', label: 'Fotos panorámicas' },
-  { id: 'recetario', label: 'Recetario' },
+  { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
+  { id: 'presupuesto', label: 'Presupuesto' },
+  { id: 'saldo', label: 'Saldo y abonos' },
 ];
 
-const TABS_DISPONIBLES = new Set(['datos', 'historia', 'plan', 'historial-planes', 'endodoncia', 'pendientes']);
+const TABS_DISPONIBLES = new Set([
+  'datos',
+  'historia',
+  'plan',
+  'historial-planes',
+  'endodoncia',
+  'pendientes',
+  'historial',
+]);
 
 const inicialesDe = (nombres, apellidos) =>
   `${(nombres || '').charAt(0)}${(apellidos || '').charAt(0)}`.toUpperCase() || '—';
@@ -239,8 +249,21 @@ const PacienteDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // El recetario no está disponible para asistentes (igual que en el menú lateral).
+  const visibleTabs = useMemo(
+    () => TABS.filter((tab) => !tab.hideFor?.includes(user?.rol)),
+    [user?.rol],
+  );
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'datos');
+
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab('datos');
+    }
+  }, [visibleTabs, activeTab]);
 
   const [paciente, setPaciente] = useState(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(true);
@@ -284,8 +307,25 @@ const PacienteDetail = () => {
 
   return (
     <div className="page-block">
-      <button type="button" className="breadcrumb-link" onClick={() => navigate(ROUTES.PACIENTES)}>
-        ← Volver a pacientes
+      <button
+        type="button"
+        className="btn btn-outline-teal btn-sm detail-volver"
+        onClick={() => navigate(ROUTES.PACIENTES)}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Volver a pacientes
       </button>
 
       <div className="page-head">
@@ -303,7 +343,7 @@ const PacienteDetail = () => {
       ) : (
         <>
           <div className="tabs">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 type="button"
                 key={tab.id}
@@ -323,6 +363,7 @@ const PacienteDetail = () => {
           {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
           {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
           {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}
+          {activeTab === 'historial' && <HistorialTratamientosTab idPaciente={id} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"

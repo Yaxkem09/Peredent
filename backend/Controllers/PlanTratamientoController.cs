@@ -14,6 +14,7 @@ namespace Peredent.Api.Controllers;
 public class PlanTratamientoController : ControllerBase
 {
     private const string EstadoPendiente = "Pendiente";
+    private const string EstadoCompletado = "Completado";
 
     // Guatemala es UTC-6 todo el año (no observa horario de verano), así que un
     // offset fijo evita depender de que el servidor tenga cargada la zona horaria.
@@ -58,6 +59,40 @@ public class PlanTratamientoController : ControllerBase
             .ToListAsync();
 
         return Ok(cerrados.Select(p => ToDto(pacienteId, p)));
+    }
+
+    // SCRUM-51: historial cronológico de tratamientos ya realizados del paciente
+    // (pieza, tratamiento, fecha). Reúne las piezas marcadas como "Completado" de
+    // todos sus planes —el activo y los cerrados— y las devuelve de la más reciente
+    // a la más antigua. El filtrado por pieza y por rango de fechas lo aplica el
+    // frontend sobre esta lista.
+    [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/historial-tratamientos")]
+    public async Task<ActionResult<IEnumerable<HistorialTratamientoDto>>> GetHistorialTratamientos(int pacienteId)
+    {
+        var paciente = await _db.Pacientes.FindAsync(pacienteId);
+        if (paciente is null)
+        {
+            return NotFound(new { message = "Paciente no encontrado." });
+        }
+
+        var completados = await _db.PlanesTratamiento
+            .Include(pt => pt.EstadoTratamiento)
+            .Where(pt => pt.EstadoTratamiento.Nombre == EstadoCompletado
+                && _db.PresupuestosPlan.Any(p => p.IdPresupuestoPlan == pt.IdPresupuestoPlan && p.IdPaciente == pacienteId))
+            .ToListAsync();
+
+        var historial = completados
+            .OrderByDescending(pt => pt.FechaFinTratamiento ?? pt.FechaRegistroPlan)
+            .ThenByDescending(pt => pt.IdPlanTratamiento)
+            .Select(pt => new HistorialTratamientoDto
+            {
+                Pieza = pt.Pieza,
+                Tratamiento = pt.Tratamiento,
+                Fecha = pt.FechaFinTratamiento ?? pt.FechaRegistroPlan,
+            })
+            .ToList();
+
+        return Ok(historial);
     }
 
     [HttpPut("api/pacientes/{pacienteId:int}/plan-tratamiento")]
@@ -173,10 +208,28 @@ public class PlanTratamientoController : ControllerBase
             return NotFound(new { message = "Paciente no encontrado." });
         }
 
-        var planActivo = await ObtenerPlanActivoAsync(pacienteId, incluirPiezas: false);
+        var planActivo = await ObtenerPlanActivoAsync(pacienteId, incluirPiezas: true);
         if (planActivo is null)
         {
             return NotFound(new { message = "Este paciente no tiene un plan de tratamiento activo para finalizar." });
+        }
+
+        // Un plan solo se puede finalizar cuando todas sus piezas están en estado
+        // "Completado": mientras quede alguna pendiente, el tratamiento no ha terminado.
+        var piezasPendientes = planActivo.Piezas
+            .Where(pt => pt.EstadoTratamiento?.Nombre != EstadoCompletado)
+            .Select(pt => pt.Pieza)
+            .OrderBy(pieza => pieza)
+            .ToList();
+
+        if (piezasPendientes.Count > 0)
+        {
+            return BadRequest(new
+            {
+                message = piezasPendientes.Count == 1
+                    ? $"No se puede finalizar el plan: la pieza {piezasPendientes[0]} todavía no está completada."
+                    : $"No se puede finalizar el plan: las piezas {string.Join(", ", piezasPendientes)} todavía no están completadas.",
+            });
         }
 
         planActivo.FechaCierre = FechaHoyGuatemala();

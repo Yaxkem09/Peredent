@@ -16,6 +16,7 @@
 }
 
 .login-screen {
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -24,22 +25,37 @@
   padding: 24px;
   box-sizing: border-box;
   background:
-    radial-gradient(circle at 15% 20%, rgba(31, 122, 99, 0.08), transparent 45%),
-    radial-gradient(circle at 85% 80%, rgba(200, 90, 60, 0.08), transparent 45%),
-    var(--bg);
+    radial-gradient(circle at 12% 18%, rgba(21, 147, 156, 0.16), transparent 42%),
+    radial-gradient(circle at 86% 10%, rgba(10, 38, 75, 0.10), transparent 40%),
+    radial-gradient(circle at 82% 88%, rgba(200, 90, 60, 0.10), transparent 46%),
+    linear-gradient(160deg, #eef4f3 0%, var(--bg) 52%, #edf1f5 100%);
+}
+
+/* Textura de puntos muy tenue para dar profundidad al fondo */
+.login-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(10, 38, 75, 0.045) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+  pointer-events: none;
 }
 
 .login-card {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 55% 45%;
   width: 100%;
   max-width: 860px;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(27, 40, 37, 0.08);
+  box-shadow:
+    0 30px 70px -20px rgba(10, 38, 75, 0.28),
+    0 8px 24px rgba(10, 38, 75, 0.08);
 }
 
-/* Columna izquierda: foto */
+/* Columna izquierda: foto (placeholder hasta tener las fotos de los odontólogos) */
 .login-photo {
   min-height: 500px;
   background: var(--surface-alt);
@@ -79,11 +95,19 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-bottom: 26px;
+  margin-bottom: 24px;
 }
 
 .login-logo {
-  width: 222.2px;
+  width: 288px;
+  max-width: 100%;
+}
+
+.login-welcome {
+  margin: 12px 0 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--ink-faint);
 }
 
 .login-logo img {
@@ -129,12 +153,15 @@
   font-family: 'Inter', sans-serif;
   font-size: 14.3px;
   color: var(--ink);
-  padding: 10px 12px;
+  padding: 11px 12px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: var(--surface);
+  background: #f8faf9;
   box-sizing: border-box;
-  transition: border-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .login-field input::placeholder {
@@ -142,7 +169,9 @@
 }
 
 .login-field input:focus {
-  border-color: var(--teal);
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(21, 147, 156, 0.14);
   outline: none;
 }
 
@@ -164,21 +193,30 @@
 
 .login-submit {
   width: 100%;
-  margin-top: 6px;
-  padding: 11px;
+  margin-top: 8px;
+  padding: 12px;
   border: none;
   border-radius: 8px;
-  background: var(--teal);
+  background: linear-gradient(135deg, #0a264b 0%, #13507e 100%);
   color: #ffffff;
   font-family: 'Inter', sans-serif;
   font-size: 14.3px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease;
+  box-shadow: 0 6px 16px -6px rgba(10, 38, 75, 0.5);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
 
 .login-submit:hover:not(:disabled) {
-  background: #186652;
+  background: linear-gradient(135deg, #0c2f5c 0%, #15939c 130%);
+  box-shadow: 0 8px 20px -6px rgba(21, 147, 156, 0.5);
+}
+
+.login-submit:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .login-submit:disabled {

@@ -81,6 +81,13 @@ const PlanTratamientoTab = ({ idPaciente }) => {
   const subtotalDerecha = useMemo(() => sumarValores(columnaDerecha), [columnaDerecha]);
   const total = Math.max(subtotalIzquierda + subtotalDerecha - (Number(descuento) || 0), 0);
 
+  // Un plan solo se puede finalizar cuando todas sus piezas con tratamiento están
+  // en estado "Completado"; mientras quede alguna pendiente el botón se deshabilita.
+  const piezasSinCompletar = filas.filter(
+    (f) => f.tratamiento.trim() !== '' && f.estado !== 'Completado',
+  );
+  const puedeFinalizar = existePlanActivo && piezasSinCompletar.length === 0;
+
   const marcarCambio = () => setGuardado(false);
 
   const cambiarTratamiento = (numero, valor) => {
@@ -145,8 +152,10 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       setExistePlanActivo(false);
       setGuardado(true);
       notify('Plan de tratamiento finalizado. Ya puedes iniciar uno nuevo.');
-    } catch {
-      setErrorGuardar('No se pudo finalizar el plan de tratamiento. Intenta de nuevo.');
+    } catch (err) {
+      setErrorGuardar(
+        err?.response?.data?.message || 'No se pudo finalizar el plan de tratamiento. Intenta de nuevo.',
+      );
     } finally {
       setFinalizando(false);
     }
@@ -254,7 +263,12 @@ const PlanTratamientoTab = ({ idPaciente }) => {
             type="button"
             className="btn btn-outline-teal btn-md"
             onClick={() => setMostrarConfirmarFinalizar(true)}
-            disabled={!existePlanActivo || guardando || finalizando}
+            disabled={!puedeFinalizar || guardando || finalizando}
+            title={
+              existePlanActivo && piezasSinCompletar.length > 0
+                ? 'Todas las piezas deben estar completadas para finalizar el plan.'
+                : undefined
+            }
           >
             {finalizando ? 'Finalizando…' : 'Finalizar este plan'}
           </button>
@@ -263,6 +277,13 @@ const PlanTratamientoTab = ({ idPaciente }) => {
           </button>
         </div>
       </div>
+
+      {existePlanActivo && piezasSinCompletar.length > 0 && (
+        <p className="plan-finalizar-hint">
+          Para finalizar el plan, todas las piezas deben estar en estado <strong>Completado</strong>. Faltan:{' '}
+          {piezasSinCompletar.map((f) => f.etiqueta).join(', ')}.
+        </p>
+      )}
 
       <Modal
         open={mostrarConfirmarFinalizar}

@@ -119,23 +119,34 @@ nav {
 }
 
 .logout-btn {
-  margin-top: 8px;
+  margin-top: 10px;
   width: 100%;
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
   font-size: 12.5px;
-  padding: 8px 12px;
+  font-weight: 500;
+  padding: 9px 12px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--surface-alt);
+  color: var(--ink-soft);
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  transition: border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.logout-btn svg {
+  flex-shrink: 0;
 }
 
 .logout-btn:hover {
-  border-color: var(--coral);
+  background: var(--coral-soft);
+  border-color: var(--coral-soft);
   color: var(--coral);
 }
 

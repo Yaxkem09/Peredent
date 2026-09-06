@@ -7,6 +7,8 @@ public interface ICitaService
 {
     Task<List<CitaDto>> GetByRangoAsync(DateOnly desde, DateOnly hasta);
 
+    Task<List<CitaDto>> GetProximasAsync(int limite = 50);
+
     Task<List<EstadoCitaDto>> GetEstadosAsync();
 
     Task<CitaDto?> GetByIdAsync(int idCita);

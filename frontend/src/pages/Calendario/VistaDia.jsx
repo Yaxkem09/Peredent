@@ -40,7 +40,7 @@ const VistaDia = ({ fechaActual, citas, onSeleccionarCita }) => {
           {filas.map((fila) =>
             fila.tipo === 'hueco' ? (
               <div className="agenda-hueco" key={fila.key}>
-                {formatearHueco(fila.minutos)}
+                <span className="agenda-hueco-label">{formatearHueco(fila.minutos)}</span>
               </div>
             ) : (
               <div
@@ -55,6 +55,24 @@ const VistaDia = ({ fechaActual, citas, onSeleccionarCita }) => {
                 <div className="cr-sep" />
                 <div className="cr-info">
                   <div className="cr-nombre">{fila.cita.nombrePaciente}</div>
+                  {fila.cita.notasAdicionales && (
+                    <div className="cr-nota">
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 7h16M4 12h16M4 17h10" />
+                      </svg>
+                      <span>{fila.cita.notasAdicionales}</span>
+                    </div>
+                  )}
                 </div>
                 <div className={`cr-estado ${claseDeEstado(fila.cita.estado)}`.trim()}>{fila.cita.estado}</div>
               </div>

@@ -33,6 +33,22 @@ public class CitaService : ICitaService
         return citas.Select(ToDto).ToList();
     }
 
+    // Citas de hoy en adelante (sin las canceladas), ordenadas cronológicamente.
+    // Alimenta el panel "Citas de hoy" y "Próximas citas" del dashboard.
+    public async Task<List<CitaDto>> GetProximasAsync(int limite = 50)
+    {
+        var inicioHoy = DateOnly.FromDateTime(AhoraGuatemala()).ToDateTime(TimeOnly.MinValue);
+        var idEstadoCancelada = await ObtenerIdEstadoAsync(EstadoCancelada);
+
+        var citas = await ConQuery()
+            .Where(c => c.FechaInicio >= inicioHoy && c.IdEstadoCita != idEstadoCancelada)
+            .OrderBy(c => c.FechaInicio)
+            .Take(limite)
+            .ToListAsync();
+
+        return citas.Select(ToDto).ToList();
+    }
+
     public Task<List<EstadoCitaDto>> GetEstadosAsync() =>
         _db.EstadosCita
             .OrderBy(e => e.IdEstadoCita)

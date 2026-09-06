@@ -47,13 +47,26 @@
 }
 
 .agenda-count {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   color: var(--ink-soft);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .agenda-count b {
-  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 20px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
 .agenda-empty {
@@ -75,9 +88,7 @@
 .agenda-hueco {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--ink-faint);
-  font-size: 11.5px;
+  gap: 12px;
   padding: 2px 4px;
 }
 
@@ -86,6 +97,18 @@
   content: '';
   flex: 1;
   border-top: 1px dashed var(--line);
+}
+
+.agenda-hueco-label {
+  flex-shrink: 0;
+  padding: 3px 12px;
+  border-radius: 20px;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .cita-row {
@@ -109,19 +132,28 @@
 }
 
 .cr-hora {
-  width: 64px;
+  width: 68px;
   flex-shrink: 0;
   text-align: center;
 }
 
 .cr-hora .h {
   font-family: 'Fraunces', serif;
-  font-size: 15px;
+  font-size: 16px;
+  color: var(--ink);
 }
 
 .cr-hora .d {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: var(--surface-alt);
+  color: var(--ink-soft);
   font-size: 10.5px;
-  color: var(--ink-faint);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .cr-sep {
@@ -147,6 +179,32 @@
   font-size: 12px;
   color: var(--ink-soft);
   margin-top: 1px;
+}
+
+.cr-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 5px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cr-nota svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--ink-faint);
+}
+
+.cr-nota span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .cr-estado {

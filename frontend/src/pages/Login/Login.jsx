@@ -80,6 +80,7 @@ const Login = () => {
             <div className="login-logo">
               <img src={logo} alt="Peredent - Odontología General · Ortodoncia · Cirugía Maxilofacial" />
             </div>
+            <p className="login-welcome">Inicia sesión para continuar</p>
           </div>
 
           <div className={`login-error-banner${errorBanner ? ' show' : ''}`}>

@@ -1,0 +1,105 @@
+.htx {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Barra de filtros: mismo lenguaje visual que el resto del expediente
+   (superficie suave, borde y radio de 12px como las tarjetas y tablas). */
+.htx-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.htx-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.htx-filtro label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.htx-filtro select,
+.htx-filtro input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.htx-filtro select {
+  min-width: 120px;
+}
+
+.htx-filtro select:focus,
+.htx-filtro input:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.htx-limpiar {
+  margin-bottom: 1px;
+}
+
+.htx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.06);
+}
+
+.htx-table th {
+  text-align: left;
+  padding: 11px 12px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.htx-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.htx-table tbody tr:nth-child(even) {
+  background: var(--surface-alt);
+}
+
+.htx-table tbody tr:hover {
+  background: var(--accent-soft);
+}
+
+.htx-pieza {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .htx-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
