@@ -42,6 +42,14 @@
   gap: 16px;
 }
 
+.historial-volver {
+  align-self: flex-start;
+}
+
+.historial-volver svg {
+  flex-shrink: 0;
+}
+
 .historial-detalle-card {
   background: var(--surface);
   border: 1px solid var(--line);

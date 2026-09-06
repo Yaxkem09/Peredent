@@ -144,7 +144,7 @@ GO
 
 -- ---------- EstadoCita ----------
 INSERT INTO EstadoCita (TipoEstadoCita) VALUES
-('Pendiente'), ('Confirmada'), ('Atendida'), ('Cancelada');
+('Pendiente'), ('Confirmada'), ('Atendida'), ('Cancelada'), ('No Asistio');
 GO
 
 -- ---------- EstadoTratamiento ----------

@@ -245,4 +245,32 @@ public class CitasControllerTests
 
         Assert.IsType<NotFoundObjectResult>(resultado.Result);
     }
+
+    [Fact]
+    public async Task GetProximas_DevuelveDesdeHoyOrdenadasYSinCanceladas()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var controller = new CitasController(new CitaService(db));
+
+        var manana = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1));
+        var enTresDias = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
+
+        await controller.Create(NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, enTresDias, new TimeOnly(9, 0)));
+        var segunda = await controller.Create(NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, manana, new TimeOnly(10, 0)));
+        var tercera = await controller.Create(NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, manana, new TimeOnly(11, 0)));
+
+        var idTercera = ((CitaDto)((CreatedAtActionResult)tercera.Result!).Value!).IdCita;
+        await controller.Cancelar(idTercera);
+
+        var ok = Assert.IsType<OkObjectResult>((await controller.GetProximas()).Result);
+        var proximas = Assert.IsAssignableFrom<IEnumerable<CitaDto>>(ok.Value).ToList();
+
+        Assert.Equal(2, proximas.Count);
+        Assert.Equal(manana, proximas[0].Fecha);
+        Assert.Equal(enTresDias, proximas[1].Fecha);
+        Assert.DoesNotContain(proximas, c => c.Estado == "Cancelada");
+    }
 }

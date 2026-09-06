@@ -37,7 +37,10 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Credenciales incorrectas" });
         }
 
-        usuario.UltimoAcceso = DateTime.UtcNow;
+        // Guatemala es UTC-6 todo el año (no observa horario de verano); guardamos
+        // la hora local de Guatemala para que UltimoAcceso se lea directo en la BD
+        // sin tener que convertir desde UTC (mismo criterio que el resto del backend).
+        usuario.UltimoAcceso = DateTime.UtcNow.AddHours(-6);
         await _db.SaveChangesAsync();
 
         return Ok(new AuthResponseDto

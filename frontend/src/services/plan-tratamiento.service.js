@@ -21,6 +21,11 @@ export const planTratamientoService = {
     return data;
   },
 
+  getHistorialTratamientos: async (pacienteId) => {
+    const { data } = await api.get(`/pacientes/${pacienteId}/plan-tratamiento/historial-tratamientos`);
+    return data;
+  },
+
   getPendientes: async (pacienteId) => {
     const { data } = await api.get(`/pacientes/${pacienteId}/plan-tratamiento/pendientes`);
     return data;

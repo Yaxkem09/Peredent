@@ -30,6 +30,15 @@ public class CitasController : ControllerBase
         return Ok(citas);
     }
 
+    // Citas de hoy en adelante para el dashboard. "proximas" no matchea la
+    // restricción {id:int} de abajo, así que no hay ambigüedad de rutas.
+    [HttpGet("proximas")]
+    public async Task<ActionResult<IEnumerable<CitaDto>>> GetProximas()
+    {
+        var citas = await _citaService.GetProximasAsync();
+        return Ok(citas);
+    }
+
     // Catálogo de estados de cita (para el selector de estado al editar una cita).
     // "estados" no matchea la restricción {id:int} de abajo, así que no hay ambigüedad de rutas.
     [HttpGet("estados")]
