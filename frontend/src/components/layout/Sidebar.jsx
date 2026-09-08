@@ -42,6 +42,7 @@ const NAV_ITEMS = [
   {
     to: '/recetario',
     label: 'Recetario',
+    hideFor: ['Asistente'],
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
         <path d="M7.5 3.5h9a1 1 0 0 1 1 1V19a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2V4.5a1 1 0 0 1 1-1Z" />
@@ -51,20 +52,36 @@ const NAV_ITEMS = [
   },
 ];
 
+const ADMIN_ITEM = {
+  to: '/administracion',
+  label: 'Administración',
+  icon: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" />
+    </svg>
+  ),
+};
+
 const Sidebar = ({ open, onNavigate }) => {
   const { user, logout } = useAuth();
   const iniciales = user?.usuario ? user.usuario.slice(0, 2).toUpperCase() : '--';
+
+  const items = NAV_ITEMS.filter((item) => !item.hideFor?.includes(user?.rol));
+  const visibleItems = user?.esAdmin ? [...items, ADMIN_ITEM] : items;
 
   return (
     <aside className={`sidebar${open ? ' sidebar-open' : ''}`}>
       <div className="brand">
         <div className="brand-mark">
-          <img src={logo} alt="Peredent - Odontología General · Ortodoncia · Cirugía Maxilofacial" />
+          <img src={logo} alt="Peredent" />
         </div>
+        <p className="brand-specialties">Odontología General · Ortodoncia · Cirugía Maxilofacial</p>
+        <p className="brand-doctors">Dr. Pereira Barrios / Dr. Pereira Torres</p>
       </div>
 
       <nav>
-        {NAV_ITEMS.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -82,10 +99,24 @@ const Sidebar = ({ open, onNavigate }) => {
           <div className="avatar">{iniciales}</div>
           <div>
             <div className="user-chip-name">{user?.usuario || 'Invitado'}</div>
-            <div className="user-chip-role">Personal clínico</div>
+            <div className="user-chip-role">{user?.rol || 'Personal clínico'}</div>
           </div>
         </div>
         <button type="button" className="logout-btn" onClick={logout}>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M15 12H4M8 8l-4 4 4 4" />
+            <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
+          </svg>
           Cerrar sesión
         </button>
       </div>

@@ -1,1 +1,18 @@
-Aquí va el DTO para crear una nueva cita con PacienteId, UsuarioId (dentista), FechaCita, HoraCita, Duracion, Motivo y Notas. Se valida que no haya conflictos de horarios y que la fecha no sea en el pasado.
+using Peredent.Api.Models;
+
+namespace Peredent.Api.DTOs.Request;
+
+public class CreateCitaDto
+{
+    public int IdPaciente { get; set; }
+
+    public int IdUsuario { get; set; }
+
+    public DateOnly Fecha { get; set; }
+
+    public TimeOnly Hora { get; set; }
+
+    public int DuracionMinutos { get; set; } = CitaConstantes.DuracionMinutos;
+
+    public string? NotasAdicionales { get; set; }
+}

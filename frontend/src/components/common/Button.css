@@ -8,10 +8,12 @@
   background: var(--surface);
   color: var(--ink);
   font-family: 'Inter', sans-serif;
+  text-decoration: none;
   cursor: pointer;
   transition:
     border-color 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease,
+    color 0.15s ease;
   white-space: nowrap;
 }
 
@@ -62,4 +64,17 @@
 
 .btn-ghost:hover:not(:disabled) {
   border-color: var(--line);
+}
+
+.btn-outline-teal {
+  background: var(--teal-soft);
+  color: var(--teal);
+  border-color: var(--teal-soft);
+  font-weight: 500;
+}
+
+.btn-outline-teal:hover:not(:disabled) {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #ffffff;
 }

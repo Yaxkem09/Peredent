@@ -21,6 +21,17 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<HistoriaCondicion> HistoriasCondiciones => Set<HistoriaCondicion>();
 
+    public DbSet<EstadoTratamiento> EstadosTratamiento => Set<EstadoTratamiento>();
+
+    public DbSet<PresupuestoPlan> PresupuestosPlan => Set<PresupuestoPlan>();
+
+    public DbSet<PlanTratamiento> PlanesTratamiento => Set<PlanTratamiento>();
+
+    public DbSet<EstadoCita> EstadosCita => Set<EstadoCita>();
+
+    public DbSet<Cita> Citas => Set<Cita>();
+    public DbSet<Endodoncia> Endodoncias => Set<Endodoncia>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -42,10 +53,12 @@ public class ApplicationDbContext : DbContext
             entity.Property(u => u.IdRol).HasColumnName("ID_Rol");
             entity.Property(u => u.Estado).HasColumnName("Estado");
             entity.Property(u => u.UltimoAcceso).HasColumnName("UltimoAcceso");
+            entity.Property(u => u.EsAdmin).HasColumnName("EsAdmin");
 
             entity.HasOne(u => u.Rol)
                   .WithMany()
-                  .HasForeignKey(u => u.IdRol);
+                  .HasForeignKey(u => u.IdRol)
+                  .IsRequired(false);
         });
 
         modelBuilder.Entity<Paciente>(entity =>
@@ -104,5 +117,126 @@ public class ApplicationDbContext : DbContext
             .HasMany(h => h.Condiciones)
             .WithOne()
             .HasForeignKey(hc => hc.IdHistoriaMedica);
+
+        modelBuilder.Entity<EstadoTratamiento>(entity =>
+        {
+            entity.ToTable("EstadoTratamiento");
+            entity.HasKey(e => e.IdEstadoTratamiento);
+            entity.Property(e => e.IdEstadoTratamiento).HasColumnName("ID_EstadoTratamiento");
+            entity.Property(e => e.Nombre).HasColumnName("EstadoTratamiento").HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<PresupuestoPlan>(entity =>
+        {
+            entity.ToTable("PresupuestoPlan");
+            entity.HasKey(p => p.IdPresupuestoPlan);
+            entity.Property(p => p.IdPresupuestoPlan).HasColumnName("ID_PresupuestoPlan");
+            entity.Property(p => p.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(p => p.FechaInicioPlan).HasColumnName("FechaInicioPlan");
+            entity.Property(p => p.CantidadDescuento).HasColumnName("CantidadDescuento").HasColumnType("decimal(10,2)");
+            entity.Property(p => p.FechaCierre).HasColumnName("FechaCierre");
+
+            // Un paciente puede tener muchos planes cerrados (historial), pero solo
+            // uno activo (FechaCierre NULL) a la vez — reforzado también en la BD
+            // con un índice único filtrado (ver PeredentScript_Sprint2.sql).
+            entity.HasIndex(p => p.IdPaciente)
+                  .HasFilter("[FechaCierre] IS NULL")
+                  .IsUnique();
+        });
+
+        modelBuilder.Entity<PlanTratamiento>(entity =>
+        {
+            entity.ToTable("PlanTratamiento");
+            entity.HasKey(pt => pt.IdPlanTratamiento);
+            entity.Property(pt => pt.IdPlanTratamiento).HasColumnName("ID_PlanTratamiento");
+            entity.Property(pt => pt.IdPresupuestoPlan).HasColumnName("ID_PresupuestoPlan");
+            entity.Property(pt => pt.IdEstadoTratamiento).HasColumnName("ID_EstadoTratamiento");
+            entity.Property(pt => pt.Pieza).HasColumnName("Pieza").HasMaxLength(20).IsRequired();
+            entity.Property(pt => pt.Tratamiento).HasColumnName("Tratamiento").HasMaxLength(255).IsRequired();
+            entity.Property(pt => pt.Valor).HasColumnName("valor").HasColumnType("decimal(10,2)");
+            entity.Property(pt => pt.FechaRegistroPlan).HasColumnName("FechaRegistroPlan");
+            entity.Property(pt => pt.FechaFinTratamiento).HasColumnName("FechaFinTratamiento");
+
+            entity.HasIndex(pt => new { pt.IdPresupuestoPlan, pt.Pieza }).IsUnique();
+
+            entity.HasOne(pt => pt.EstadoTratamiento)
+                  .WithMany()
+                  .HasForeignKey(pt => pt.IdEstadoTratamiento);
+        });
+
+        modelBuilder.Entity<PresupuestoPlan>()
+            .HasMany(p => p.Piezas)
+            .WithOne()
+            .HasForeignKey(pt => pt.IdPresupuestoPlan);
+
+        modelBuilder.Entity<EstadoCita>(entity =>
+        {
+            entity.ToTable("EstadoCita");
+            entity.HasKey(e => e.IdEstadoCita);
+            entity.Property(e => e.IdEstadoCita).HasColumnName("ID_EstadoCita");
+            entity.Property(e => e.TipoEstadoCita).HasColumnName("TipoEstadoCita").HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<Cita>(entity =>
+        {
+            entity.ToTable("Citas");
+            entity.HasKey(c => c.IdCita);
+            entity.Property(c => c.IdCita).HasColumnName("ID_Cita");
+            entity.Property(c => c.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(c => c.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(c => c.IdEstadoCita).HasColumnName("ID_EstadoCita");
+            entity.Property(c => c.FechaInicio).HasColumnName("Fecha_Inicio");
+            entity.Property(c => c.FechaFin).HasColumnName("Fecha_Fin");
+            entity.Property(c => c.NotasAdicionales).HasColumnName("NotasAdicionales").HasMaxLength(500);
+
+            entity.HasOne(c => c.Usuario)
+                  .WithMany()
+                  .HasForeignKey(c => c.IdUsuario);
+
+            entity.HasOne(c => c.Paciente)
+                  .WithMany()
+                  .HasForeignKey(c => c.IdPaciente);
+
+            entity.HasOne(c => c.EstadoCita)
+                  .WithMany()
+                  .HasForeignKey(c => c.IdEstadoCita);
+        });
+
+        modelBuilder.Entity<Endodoncia>(entity =>
+        {
+            entity.ToTable("Endodoncia");
+            entity.HasKey(e => e.IdEndodoncia);
+            entity.Property(e => e.IdEndodoncia)
+                .HasColumnName("ID_Endodoncia");
+            entity.Property(e => e.IdPaciente)
+                .HasColumnName("ID_Paciente");
+            entity.Property(e => e.Pieza)
+                .HasColumnName("Pieza")
+                .HasMaxLength(10)
+                .IsRequired();
+            entity.Property(e => e.Mm1)
+                .HasColumnName("MM1");
+            entity.Property(e => e.Mm2)
+                .HasColumnName("MM2");
+            entity.Property(e => e.Mm3)
+                .HasColumnName("MM3");
+            entity.Property(e => e.Mm4)
+                .HasColumnName("MM4");
+            entity.Property(e => e.Diametro)
+                .HasColumnName("Diametro");
+            entity.Property(e => e.Cuspide)
+                .HasColumnName("Cuspide")
+                .HasMaxLength(50);
+            entity.Property(e => e.Obturacion)
+                .HasColumnName("Obturacion");
+            entity.Property(e => e.TxPeriodontal)
+                .HasColumnName("TxPeriodontal");
+            entity.Property(e => e.ObservacionesTxPeriodontal)
+                .HasColumnName("ObservacionesTxPeriodontal")
+                .HasMaxLength(500);
+            entity.Property(e => e.ObservacionesEndodoncia)
+                .HasColumnName("ObservacionesEndodoncia")
+                .HasMaxLength(500);
+        });
     }
 }

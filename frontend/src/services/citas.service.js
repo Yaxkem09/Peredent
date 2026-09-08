@@ -1,8 +1,10 @@
 import api from './api';
 
 export const citasService = {
-  getAll: async () => {
-    const { data } = await api.get('/citas');
+  // desde/hasta en formato yyyy-MM-dd; trae solo las citas del rango visible
+  // en la vista de agenda (día/semana/mes), no todas las citas del sistema.
+  getAll: async ({ desde, hasta } = {}) => {
+    const { data } = await api.get('/citas', { params: { desde, hasta } });
     return data;
   },
 
@@ -13,6 +15,13 @@ export const citasService = {
 
   getByPaciente: async (pacienteId) => {
     const { data } = await api.get(`/citas/paciente/${pacienteId}`);
+    return data;
+  },
+
+  // Catálogo de estados de cita (Pendiente, Confirmada, Atendida, Cancelada, No Asistio),
+  // para el selector de estado del modal de editar cita.
+  getEstados: async () => {
+    const { data } = await api.get('/citas/estados');
     return data;
   },
 

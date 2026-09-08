@@ -1,0 +1,605 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Peredent.Api.Controllers;
+using Peredent.Api.Data;
+using Peredent.Api.DTOs.Request;
+using Peredent.Api.DTOs.Response;
+using Peredent.Api.Models;
+using Peredent.Api.Services;
+using Xunit;
+
+namespace Peredent.Api.Tests.UnitTests.Controllers;
+
+public class PlanTratamientoControllerTests
+{
+    private static ApplicationDbContext CrearContexto()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        return new ApplicationDbContext(options);
+    }
+
+    private static async Task SembrarEstadosAsync(ApplicationDbContext db)
+    {
+        db.EstadosTratamiento.Add(new EstadoTratamiento { IdEstadoTratamiento = 1, Nombre = "Pendiente" });
+        db.EstadosTratamiento.Add(new EstadoTratamiento { IdEstadoTratamiento = 2, Nombre = "Completado" });
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task<Paciente> CrearPacienteAsync(ApplicationDbContext db)
+    {
+        var paciente = new Paciente
+        {
+            Nombres = "Juan",
+            Apellidos = "Pérez",
+            FechaNacimiento = new DateTime(1990, 1, 1),
+            Telefono = "5555-5555",
+            FechaRegistro = DateTime.UtcNow,
+        };
+        db.Pacientes.Add(paciente);
+        await db.SaveChangesAsync();
+        return paciente;
+    }
+
+    private static PlanTratamientoDto ExtraerDto(ActionResult<PlanTratamientoDto> resultado)
+    {
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        return Assert.IsType<PlanTratamientoDto>(ok.Value);
+    }
+
+    private static List<PlanTratamientoDto> ExtraerLista(ActionResult<IEnumerable<PlanTratamientoDto>> resultado)
+    {
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        return Assert.IsAssignableFrom<IEnumerable<PlanTratamientoDto>>(ok.Value).ToList();
+    }
+
+    private static List<TratamientoPendienteDto> ExtraerPendientes(ActionResult<IEnumerable<TratamientoPendienteDto>> resultado)
+    {
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        return Assert.IsAssignableFrom<IEnumerable<TratamientoPendienteDto>>(ok.Value).ToList();
+    }
+
+    private static List<HistorialTratamientoDto> ExtraerHistorialTratamientos(ActionResult<IEnumerable<HistorialTratamientoDto>> resultado)
+    {
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        return Assert.IsAssignableFrom<IEnumerable<HistorialTratamientoDto>>(ok.Value).ToList();
+    }
+
+    [Fact]
+    public async Task GetByPaciente_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.GetByPaciente(999);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task Guardar_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.Guardar(999, new GuardarPlanTratamientoDto());
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task Guardar_ConPiezas_SeGuardaComoPendienteYSeRecuperaConGet()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var request = new GuardarPlanTratamientoDto
+        {
+            Descuento = 50,
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 },
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+                new() { Pieza = "1", Tratamiento = "", Valor = 0 }, // renglón vacío, no debe guardarse
+            },
+        };
+
+        var guardado = ExtraerDto(await controller.Guardar(paciente.IdPaciente, request));
+
+        Assert.Equal(2, guardado.Piezas.Count);
+        Assert.Equal(1050, guardado.Subtotal);
+        Assert.Equal(50, guardado.Descuento);
+        Assert.Equal(1000, guardado.Total);
+        Assert.All(guardado.Piezas, p => Assert.Equal("Pendiente", p.Estado));
+
+        var recuperado = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+
+        Assert.Equal(2, recuperado.Piezas.Count);
+        Assert.Equal("Obturación", recuperado.Piezas.Single(p => p.Pieza == "16").Tratamiento);
+        Assert.Equal(800, recuperado.Piezas.Single(p => p.Pieza == "21l").Valor);
+    }
+
+    [Fact]
+    public async Task Guardar_ValorNegativo_Devuelve400()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var request = new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = -10 } },
+        };
+
+        var resultado = await controller.Guardar(paciente.IdPaciente, request);
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task Guardar_TratamientoSinValor_Devuelve400YNoGuardaNada()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var request = new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 0 } },
+        };
+
+        var resultado = await controller.Guardar(paciente.IdPaciente, request);
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Empty(await db.PlanesTratamiento.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Guardar_Update_ActualizaValorSinDuplicarLaPieza()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        });
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 300 } },
+        });
+
+        var filas = await db.PlanesTratamiento.ToListAsync();
+
+        var fila = Assert.Single(filas);
+        Assert.Equal(300, fila.Valor);
+    }
+
+    [Fact]
+    public async Task Guardar_Update_QuitaPiezasVaciadasSinDejarHuerfanas()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 },
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+            },
+        });
+
+        // El usuario borra el tratamiento de la pieza 16 en el frontend.
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "", Valor = 0 },
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+            },
+        });
+
+        var filas = await db.PlanesTratamiento.ToListAsync();
+
+        var fila = Assert.Single(filas);
+        Assert.Equal("21l", fila.Pieza);
+    }
+
+    [Fact]
+    public async Task Guardar_Update_NoDegradaUnaPiezaYaCompletadaAPendiente()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        });
+
+        var idCompletado = (await db.EstadosTratamiento.SingleAsync(e => e.Nombre == "Completado")).IdEstadoTratamiento;
+        var fila = await db.PlanesTratamiento.SingleAsync();
+        fila.IdEstadoTratamiento = idCompletado;
+        await db.SaveChangesAsync();
+
+        // El odontólogo solo corrige el valor; no debería revertir el estado a Pendiente.
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 275 } },
+        });
+
+        var recuperado = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+
+        var piezaActualizada = Assert.Single(recuperado.Piezas);
+        Assert.Equal(275, piezaActualizada.Valor);
+        Assert.Equal("Completado", piezaActualizada.Estado);
+    }
+
+    [Fact]
+    public async Task Guardar_DescuentoMayorQueElSubtotal_TotalNoEsNegativo()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var request = new GuardarPlanTratamientoDto
+        {
+            Descuento = 5000,
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        };
+
+        var guardado = ExtraerDto(await controller.Guardar(paciente.IdPaciente, request));
+
+        Assert.Equal(0, guardado.Total);
+    }
+
+    [Fact]
+    public async Task Finalizar_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.Finalizar(999);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task Finalizar_SinPlanActivo_Devuelve404()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.Finalizar(paciente.IdPaciente);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task Finalizar_ConPiezasSinCompletar_Devuelve400YNoCierraElPlan()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Resina compuesta", Valor = 800 },
+                new() { Pieza = "15", Tratamiento = "Endodoncia", Valor = 2500 },
+            },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "16");
+
+        var resultado = await controller.Finalizar(paciente.IdPaciente);
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        var recuperado = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+        Assert.NotEmpty(recuperado.Piezas);
+        Assert.Empty(ExtraerLista(await controller.GetHistorial(paciente.IdPaciente)));
+    }
+
+    [Fact]
+    public async Task Finalizar_CierraElPlanYElSiguienteGuardadoCreaUnoNuevoSinPerderElAnterior()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Resina compuesta", Valor = 800 } },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "16");
+
+        var finalizado = ExtraerDto(await controller.Finalizar(paciente.IdPaciente));
+        Assert.Empty(finalizado.Piezas);
+
+        var activoTrasFinalizar = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+        Assert.Empty(activoTrasFinalizar.Piezas);
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "15", Tratamiento = "Endodoncia", Valor = 2500 } },
+        });
+
+        var nuevoActivo = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+        var piezaNueva = Assert.Single(nuevoActivo.Piezas);
+        Assert.Equal("15", piezaNueva.Pieza);
+
+        var historial = ExtraerLista(await controller.GetHistorial(paciente.IdPaciente));
+        var planCerrado = Assert.Single(historial);
+        var piezaHistorica = Assert.Single(planCerrado.Piezas);
+        Assert.Equal("16", piezaHistorica.Pieza);
+    }
+
+    [Fact]
+    public async Task GetPendientes_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.GetPendientes(999);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task GetPendientes_SinPlanActivo_DevuelveListaVacia()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var pendientes = ExtraerPendientes(await controller.GetPendientes(paciente.IdPaciente));
+
+        Assert.Empty(pendientes);
+    }
+
+    [Fact]
+    public async Task GetPendientes_SoloDevuelveLasPiezasEnEstadoPendienteDelPlanActivo()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 },
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+            },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "16");
+
+        var pendientes = ExtraerPendientes(await controller.GetPendientes(paciente.IdPaciente));
+
+        var pendiente = Assert.Single(pendientes);
+        Assert.Equal("21l", pendiente.Pieza);
+        Assert.Equal("Endodoncia", pendiente.Tratamiento);
+        Assert.Equal(800, pendiente.Valor);
+    }
+
+    [Fact]
+    public async Task MarcarCompletado_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.MarcarCompletado(999, "16");
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task MarcarCompletado_SinPlanActivo_Devuelve404()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.MarcarCompletado(paciente.IdPaciente, "16");
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task MarcarCompletado_PiezaInexistenteEnElPlanActivo_Devuelve404()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        });
+
+        var resultado = await controller.MarcarCompletado(paciente.IdPaciente, "21l");
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task MarcarCompletado_ActualizaEstadoYFechaFinYDesapareceDeLosPendientes()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        });
+
+        var pendientesTrasCompletar = ExtraerPendientes(await controller.MarcarCompletado(paciente.IdPaciente, "16"));
+        Assert.Empty(pendientesTrasCompletar);
+
+        var fila = await db.PlanesTratamiento.SingleAsync();
+        Assert.Equal("Completado", (await db.EstadosTratamiento.SingleAsync(e => e.IdEstadoTratamiento == fila.IdEstadoTratamiento)).Nombre);
+        Assert.NotNull(fila.FechaFinTratamiento);
+
+        var recuperado = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+        Assert.Equal("Completado", Assert.Single(recuperado.Piezas).Estado);
+    }
+
+    [Fact]
+    public async Task GetHistorial_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.GetHistorial(999);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task GetHistorial_SinPlanesCerrados_DevuelveListaVacia()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var historial = ExtraerLista(await controller.GetHistorial(paciente.IdPaciente));
+
+        Assert.Empty(historial);
+    }
+
+    [Fact]
+    public async Task GetHistorial_DevuelvePlanesCerradosOrdenadosPorFechaCierreDescendente()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Resina compuesta", Valor = 800 } },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "16");
+        await controller.Finalizar(paciente.IdPaciente);
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "15", Tratamiento = "Endodoncia", Valor = 2500 } },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "15");
+        await controller.Finalizar(paciente.IdPaciente);
+
+        // Forzamos fechas de cierre distintas (ambas quedaron "hoy") para poder verificar el orden.
+        var cerrados = await db.PresupuestosPlan
+            .Where(p => p.IdPaciente == paciente.IdPaciente)
+            .OrderBy(p => p.IdPresupuestoPlan)
+            .ToListAsync();
+        cerrados[0].FechaCierre = new DateTime(2026, 1, 1);
+        cerrados[1].FechaCierre = new DateTime(2026, 6, 1);
+        await db.SaveChangesAsync();
+
+        var historial = ExtraerLista(await controller.GetHistorial(paciente.IdPaciente));
+
+        Assert.Equal(2, historial.Count);
+        Assert.Equal(new DateTime(2026, 6, 1), historial[0].FechaCierre);
+        Assert.Equal(new DateTime(2026, 1, 1), historial[1].FechaCierre);
+    }
+
+    [Fact]
+    public async Task GetHistorialTratamientos_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        var resultado = await controller.GetHistorialTratamientos(999);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task GetHistorialTratamientos_SoloDevuelveLasPiezasCompletadas()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Resina compuesta", Valor = 800 },
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 2500 },
+            },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "16");
+
+        var historial = ExtraerHistorialTratamientos(await controller.GetHistorialTratamientos(paciente.IdPaciente));
+
+        var renglon = Assert.Single(historial);
+        Assert.Equal("16", renglon.Pieza);
+        Assert.Equal("Resina compuesta", renglon.Tratamiento);
+    }
+
+    [Fact]
+    public async Task GetHistorialTratamientos_IncluyePlanesCerradosYActivosDeMasRecienteAMasAntiguo()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+
+        // Plan 1: se completa una pieza y luego se cierra.
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Resina compuesta", Valor = 800 } },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "16");
+        await controller.Finalizar(paciente.IdPaciente);
+
+        // Plan 2 (activo): otra pieza completada.
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "15", Tratamiento = "Endodoncia", Valor = 2500 } },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "15");
+
+        // Forzamos fechas de fin distintas para poder verificar el orden cronológico.
+        var filas = await db.PlanesTratamiento.OrderBy(pt => pt.IdPlanTratamiento).ToListAsync();
+        filas[0].FechaFinTratamiento = new DateTime(2026, 1, 10);
+        filas[1].FechaFinTratamiento = new DateTime(2026, 8, 20);
+        await db.SaveChangesAsync();
+
+        var historial = ExtraerHistorialTratamientos(await controller.GetHistorialTratamientos(paciente.IdPaciente));
+
+        Assert.Equal(2, historial.Count);
+        Assert.Equal("15", historial[0].Pieza);
+        Assert.Equal(new DateTime(2026, 8, 20), historial[0].Fecha);
+        Assert.Equal("16", historial[1].Pieza);
+        Assert.Equal(new DateTime(2026, 1, 10), historial[1].Fecha);
+    }
+}

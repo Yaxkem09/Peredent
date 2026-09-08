@@ -1,0 +1,63 @@
+.tx-pendiente {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tx-pendiente-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.06);
+}
+
+.tx-pendiente-table th {
+  text-align: left;
+  padding: 11px 12px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.tx-pendiente-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.tx-pendiente-table tbody tr:nth-child(even) {
+  background: var(--surface-alt);
+}
+
+.tx-pendiente-table tbody tr:hover {
+  background: var(--accent-soft);
+}
+
+.tx-pendiente-pieza {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.tx-pendiente-valor {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.tx-pendiente-accion {
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .tx-pendiente-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

@@ -7,4 +7,5 @@ export const ROUTES = {
   PACIENTE_EDITAR: (id) => `/pacientes/${id}/editar`,
   CALENDARIO: '/calendario',
   RECETARIO: '/recetario',
+  ADMINISTRACION: '/administracion',
 };

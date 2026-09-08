@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { pacientesService } from '../../services/pacientes.service';
 import { historiaMedicaService } from '../../services/historia-medica.service';
 import { calcularEdadTexto } from '../../utils/edad';
 import { formatDate } from '../../utils/formatters';
 import { Alert, Button, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
+import PlanTratamientoTab from './PlanTratamientoTab';
+import HistorialPlanesTab from './HistorialPlanesTab';
+import EndodonciaTab from './EndodonciaTab';
+import TratamientoPendienteTab from './TratamientoPendienteTab';
+import HistorialTratamientosTab from './HistorialTratamientosTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -14,69 +20,79 @@ const TABS = [
   { id: 'historia', label: 'Historia médica' },
   { id: 'citas', label: 'Citas' },
   { id: 'plan', label: 'Plan de tratamiento' },
-  { id: 'endodoncia', label: 'Endodoncia y restauración' },
+  { id: 'historial-planes', label: 'Historial de planes' },
   { id: 'pendientes', label: 'Tratamiento pendiente' },
   { id: 'historial', label: 'Historial' },
-  { id: 'saldo', label: 'Saldo y abonos' },
-  { id: 'presupuesto', label: 'Presupuesto' },
+  { id: 'endodoncia', label: 'Endodoncia y restauración' },
   { id: 'fotos', label: 'Fotos panorámicas' },
-  { id: 'recetario', label: 'Recetario' },
+  { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
+  { id: 'presupuesto', label: 'Presupuesto' },
+  { id: 'saldo', label: 'Saldo y abonos' },
 ];
 
-const TABS_DISPONIBLES = new Set(['datos', 'historia']);
+const TABS_DISPONIBLES = new Set([
+  'datos',
+  'historia',
+  'plan',
+  'historial-planes',
+  'endodoncia',
+  'pendientes',
+  'historial',
+]);
+
+const inicialesDe = (nombres, apellidos) =>
+  `${(nombres || '').charAt(0)}${(apellidos || '').charAt(0)}`.toUpperCase() || '—';
 
 const DatosTab = ({ paciente, idPaciente }) => (
   <div>
-    <div className="detail-card">
-      <table className="detail-table">
-        <tbody>
-          <tr>
-            <td>Nombre completo</td>
-            <td>
-              {paciente.nombres} {paciente.apellidos}
-            </td>
-          </tr>
-          <tr>
-            <td>Edad</td>
-            <td>
-              {calcularEdadTexto(paciente.fechaNacimiento?.slice(0, 10)) || '—'} (
-              {formatDate(paciente.fechaNacimiento)})
-            </td>
-          </tr>
-          <tr>
-            <td>Sexo</td>
-            <td>{paciente.sexo || '—'}</td>
-          </tr>
-          <tr>
-            <td>Teléfono</td>
-            <td>{paciente.telefono || '—'}</td>
-          </tr>
-          <tr>
-            <td>Correo</td>
-            <td>{paciente.correo || '—'}</td>
-          </tr>
-          <tr>
-            <td>Dirección</td>
-            <td>{paciente.direccion || '—'}</td>
-          </tr>
-          {paciente.encargadoNombre && (
-            <tr>
-              <td>Encargado (menor de edad)</td>
-              <td>
-                {paciente.encargadoNombre}
-                {paciente.encargadoTelefono ? ` · ${paciente.encargadoTelefono}` : ''}
-              </td>
-            </tr>
-          )}
-          <tr>
-            <td>Registrado el</td>
-            <td>{formatDate(paciente.fechaRegistro)}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div className="info-card">
+      <div className="info-header">
+        <div className="info-avatar">{inicialesDe(paciente.nombres, paciente.apellidos)}</div>
+        <div>
+          <div className="info-name">
+            {paciente.nombres} {paciente.apellidos}
+          </div>
+          <div className="info-subtitle">
+            <span className="info-badge">{calcularEdadTexto(paciente.fechaNacimiento?.slice(0, 10)) || '—'}</span>
+            <span className="info-badge info-badge-sexo">{paciente.sexo || '—'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="info-grid">
+        <div className="info-item">
+          <span className="info-label">Fecha de nacimiento</span>
+          <span className="info-value">{formatDate(paciente.fechaNacimiento)}</span>
+        </div>
+        <div className="info-item">
+          <span className="info-label">Teléfono</span>
+          <span className="info-value">{paciente.telefono || '—'}</span>
+        </div>
+        <div className="info-item">
+          <span className="info-label">Correo</span>
+          <span className="info-value">{paciente.correo || '—'}</span>
+        </div>
+        <div className="info-item">
+          <span className="info-label">Registrado el</span>
+          <span className="info-value">{formatDate(paciente.fechaRegistro)}</span>
+        </div>
+        <div className="info-item info-item-full">
+          <span className="info-label">Dirección</span>
+          <span className="info-value">{paciente.direccion || '—'}</span>
+        </div>
+        {paciente.encargadoNombre && (
+          <div className="info-item info-item-full">
+            <span className="info-label">Encargado (menor de edad)</span>
+            <span className="info-value">
+              {paciente.encargadoNombre}
+              {paciente.encargadoTelefono ? ` · ${paciente.encargadoTelefono}` : ''}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
     <div className="detail-actions">
-      <Link to={ROUTES.PACIENTE_EDITAR(idPaciente)} className="btn btn-secondary btn-md">
+      <Link to={ROUTES.PACIENTE_EDITAR(idPaciente)} className="btn btn-outline-teal btn-md">
         Editar datos personales
       </Link>
     </div>
@@ -166,7 +182,7 @@ const HistoriaTab = ({ historia: historiaInicial, cargando, error, idPaciente })
           )}
         </div>
         <div className="detail-actions">
-          <button type="button" className="btn btn-secondary btn-md" onClick={() => setEditando(true)}>
+          <button type="button" className="btn btn-outline-teal btn-md" onClick={() => setEditando(true)}>
             Editar historia médica
           </button>
         </div>
@@ -233,8 +249,21 @@ const PacienteDetail = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // El recetario no está disponible para asistentes (igual que en el menú lateral).
+  const visibleTabs = useMemo(
+    () => TABS.filter((tab) => !tab.hideFor?.includes(user?.rol)),
+    [user?.rol],
+  );
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'datos');
+
+  useEffect(() => {
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab('datos');
+    }
+  }, [visibleTabs, activeTab]);
 
   const [paciente, setPaciente] = useState(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(true);
@@ -278,8 +307,25 @@ const PacienteDetail = () => {
 
   return (
     <div className="page-block">
-      <button type="button" className="breadcrumb-link" onClick={() => navigate(ROUTES.PACIENTES)}>
-        ← Volver a pacientes
+      <button
+        type="button"
+        className="btn btn-outline-teal btn-sm detail-volver"
+        onClick={() => navigate(ROUTES.PACIENTES)}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Volver a pacientes
       </button>
 
       <div className="page-head">
@@ -297,7 +343,7 @@ const PacienteDetail = () => {
       ) : (
         <>
           <div className="tabs">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 type="button"
                 key={tab.id}
@@ -313,6 +359,11 @@ const PacienteDetail = () => {
           {activeTab === 'historia' && (
             <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
+          {activeTab === 'plan' && <PlanTratamientoTab idPaciente={id} />}
+          {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
+          {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
+          {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}
+          {activeTab === 'historial' && <HistorialTratamientosTab idPaciente={id} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"

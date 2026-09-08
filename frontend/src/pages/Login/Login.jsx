@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ROUTES } from '../../routes/routes';
 import logo from '../../assets/logo.png';
 import './Login.css';
 
@@ -42,7 +43,7 @@ const Login = () => {
     setLoading(true);
     try {
       await login({ usuario, clave });
-      navigate('/dashboard');
+      navigate(ROUTES.PACIENTES);
     } catch (error) {
       setErrorBanner(true);
     } finally {
@@ -79,6 +80,7 @@ const Login = () => {
             <div className="login-logo">
               <img src={logo} alt="Peredent - Odontología General · Ortodoncia · Cirugía Maxilofacial" />
             </div>
+            <p className="login-welcome">Inicia sesión para continuar</p>
           </div>
 
           <div className={`login-error-banner${errorBanner ? ' show' : ''}`}>
@@ -124,11 +126,6 @@ const Login = () => {
               {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
           </form>
-
-          <p className="login-note">
-            Acceso de demostración: demo@peredent.com / 123456. Las contraseñas se guardan
-            cifradas y la sesión se cierra sola tras un periodo de inactividad.
-          </p>
         </div>
       </div>
     </div>
