@@ -55,6 +55,13 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
   if (pendientes.length === 0) {
     return (
       <EmptyState
+        icon={
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+            <path d="M9 3.5A1.5 1.5 0 0 1 10.5 2h3A1.5 1.5 0 0 1 15 3.5V5H9V3.5Z" />
+            <path d="m9 13 2 2 4-4" />
+          </svg>
+        }
         title="Sin tratamientos pendientes"
         description="Este paciente no tiene tratamientos pendientes en su plan de tratamiento activo."
       />

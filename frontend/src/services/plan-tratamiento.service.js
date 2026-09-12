@@ -21,6 +21,18 @@ export const planTratamientoService = {
     return data;
   },
 
+  getPresupuesto: async (pacienteId) => {
+    const { data } = await api.get(`/pacientes/${pacienteId}/plan-tratamiento/presupuesto`);
+    return data;
+  },
+
+  descargarPresupuestoPdf: async (pacienteId) => {
+    const respuesta = await api.get(`/pacientes/${pacienteId}/plan-tratamiento/presupuesto/pdf`, {
+      responseType: 'blob',
+    });
+    return respuesta;
+  },
+
   getHistorialTratamientos: async (pacienteId) => {
     const { data } = await api.get(`/pacientes/${pacienteId}/plan-tratamiento/historial-tratamientos`);
     return data;

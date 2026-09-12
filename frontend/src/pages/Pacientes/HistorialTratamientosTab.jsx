@@ -73,6 +73,13 @@ const HistorialTratamientosTab = ({ idPaciente }) => {
   if (tratamientos.length === 0) {
     return (
       <EmptyState
+        icon={
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3.5 12a8.5 8.5 0 1 0 2.9-6.4" />
+            <path d="M3.5 4.5v4h4" />
+            <path d="M12 8v4l3 2" />
+          </svg>
+        }
         title="Sin tratamientos en el historial"
         description="Cuando se marque un tratamiento como completado desde la pestaña Tratamiento pendiente, va a aparecer aquí."
       />
@@ -128,6 +135,12 @@ const HistorialTratamientosTab = ({ idPaciente }) => {
 
       {filtrados.length === 0 ? (
         <EmptyState
+          icon={
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          }
           title="Sin resultados"
           description="Ningún tratamiento del historial coincide con los filtros seleccionados."
         />

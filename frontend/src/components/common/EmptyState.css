@@ -1,9 +1,9 @@
 .empty-state-block {
-  padding: 48px 24px;
+  padding: 44px 24px;
   text-align: center;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1.5px dashed var(--line);
   border-radius: 12px;
 }
 
@@ -11,27 +11,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 14px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
   border-radius: 50%;
-  background: var(--surface-alt);
-  color: var(--ink-faint);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .empty-state-title {
   font-size: 16px;
+  font-weight: 600;
   color: var(--ink);
   margin-bottom: 6px;
 }
 
 .empty-state-desc {
-  font-size: 13px;
+  font-size: 13.5px;
   margin: 0 auto;
-  max-width: 360px;
-  line-height: 1.5;
+  max-width: 380px;
+  line-height: 1.6;
+  color: var(--ink-soft);
 }
 
 .empty-state-action {
-  margin-top: 16px;
+  margin-top: 18px;
 }
