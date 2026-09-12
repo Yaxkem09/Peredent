@@ -114,6 +114,13 @@ const HistorialPlanesTab = ({ idPaciente }) => {
   if (planes.length === 0) {
     return (
       <EmptyState
+        icon={
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3.5 12a8.5 8.5 0 1 0 2.9-6.4" />
+            <path d="M3.5 4.5v4h4" />
+            <path d="M12 8v4l3 2" />
+          </svg>
+        }
         title="Sin planes en el historial"
         description="Cuando se finalice un plan de tratamiento desde la pestaña Plan de tratamiento, va a aparecer aquí."
       />
