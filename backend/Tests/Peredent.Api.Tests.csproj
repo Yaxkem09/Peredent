@@ -13,21 +13,11 @@
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Peredent.Api.csproj" />
-  </ItemGroup>
-
-  <!--
-    UnitTests/Services/AuthServiceTests.cs todavia es una descripcion en texto
-    plano (placeholder), no C# real: AuthService (la clase, no el controller)
-    no existe todavia, se excluye del build por la misma razon que
-    Peredent.Api.csproj excluye Services/ y Repositories/. Se re-habilita
-    cuando ese modulo exista de verdad.
-  -->
-  <ItemGroup>
-    <Compile Remove="UnitTests/Services/AuthServiceTests.cs" />
   </ItemGroup>
 
 </Project>
