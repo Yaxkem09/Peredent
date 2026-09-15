@@ -75,6 +75,9 @@ builder.Services.AddScoped<IPlanTratamientoService, PlanTratamientoService>();
 // Singleton: sin estado, solo funciones puras de hashing.
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
+// Singleton: sin estado, arma el PDF del presupuesto a partir del DTO recibido.
+builder.Services.AddSingleton<IPresupuestoPdfService, PresupuestoPdfService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

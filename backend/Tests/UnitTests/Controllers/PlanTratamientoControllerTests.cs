@@ -66,11 +66,17 @@ public class PlanTratamientoControllerTests
         return Assert.IsAssignableFrom<IEnumerable<HistorialTratamientoDto>>(ok.Value).ToList();
     }
 
+    private static PresupuestoDto ExtraerPresupuesto(ActionResult<PresupuestoDto> resultado)
+    {
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        return Assert.IsType<PresupuestoDto>(ok.Value);
+    }
+
     [Fact]
     public async Task GetByPaciente_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.GetByPaciente(999);
 
@@ -81,7 +87,7 @@ public class PlanTratamientoControllerTests
     public async Task Guardar_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.Guardar(999, new GuardarPlanTratamientoDto());
 
@@ -94,7 +100,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var request = new GuardarPlanTratamientoDto
         {
@@ -122,13 +128,40 @@ public class PlanTratamientoControllerTests
         Assert.Equal(800, recuperado.Piezas.Single(p => p.Pieza == "21l").Valor);
     }
 
+    // Mismo bug que en el presupuesto: las piezas se guardan con su etiqueta
+    // ("4a", "10g", ...), así que ordenarlas como texto las deja alfabéticas en
+    // vez de en el orden numérico 1 a 32 que espera el historial de planes.
+    [Fact]
+    public async Task GetByPaciente_OrdenaLasPiezasNumericamenteNoAlfabeticamente()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+                new() { Pieza = "2", Tratamiento = "Limpieza", Valor = 300 },
+                new() { Pieza = "10g", Tratamiento = "Obturación", Valor = 250 },
+                new() { Pieza = "1", Tratamiento = "Limpieza", Valor = 300 },
+            },
+        });
+
+        var recuperado = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+
+        Assert.Equal(new[] { "1", "2", "10g", "21l" }, recuperado.Piezas.Select(p => p.Pieza));
+    }
+
     [Fact]
     public async Task Guardar_ValorNegativo_Devuelve400()
     {
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var request = new GuardarPlanTratamientoDto
         {
@@ -146,7 +179,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var request = new GuardarPlanTratamientoDto
         {
@@ -165,7 +198,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -189,7 +222,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -222,7 +255,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -253,7 +286,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var request = new GuardarPlanTratamientoDto
         {
@@ -270,7 +303,7 @@ public class PlanTratamientoControllerTests
     public async Task Finalizar_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.Finalizar(999);
 
@@ -283,7 +316,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.Finalizar(paciente.IdPaciente);
 
@@ -296,7 +329,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -322,7 +355,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -355,7 +388,7 @@ public class PlanTratamientoControllerTests
     public async Task GetPendientes_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.GetPendientes(999);
 
@@ -368,7 +401,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var pendientes = ExtraerPendientes(await controller.GetPendientes(paciente.IdPaciente));
 
@@ -381,7 +414,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -405,7 +438,7 @@ public class PlanTratamientoControllerTests
     public async Task MarcarCompletado_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.MarcarCompletado(999, "16");
 
@@ -418,7 +451,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.MarcarCompletado(paciente.IdPaciente, "16");
 
@@ -431,7 +464,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -449,7 +482,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -471,7 +504,7 @@ public class PlanTratamientoControllerTests
     public async Task GetHistorial_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.GetHistorial(999);
 
@@ -484,7 +517,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var historial = ExtraerLista(await controller.GetHistorial(paciente.IdPaciente));
 
@@ -497,7 +530,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -533,7 +566,7 @@ public class PlanTratamientoControllerTests
     public async Task GetHistorialTratamientos_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         var resultado = await controller.GetHistorialTratamientos(999);
 
@@ -546,7 +579,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
         {
@@ -571,7 +604,7 @@ public class PlanTratamientoControllerTests
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
         var paciente = await CrearPacienteAsync(db);
-        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db));
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
 
         // Plan 1: se completa una pieza y luego se cierra.
         await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
@@ -601,5 +634,224 @@ public class PlanTratamientoControllerTests
         Assert.Equal(new DateTime(2026, 8, 20), historial[0].Fecha);
         Assert.Equal("16", historial[1].Pieza);
         Assert.Equal(new DateTime(2026, 1, 10), historial[1].Fecha);
+    }
+
+    [Fact]
+    public async Task GetPresupuesto_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        var resultado = await controller.GetPresupuesto(999);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task GetPresupuesto_SinPlan_DevuelveTienePlanFalse()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        var presupuesto = ExtraerPresupuesto(await controller.GetPresupuesto(paciente.IdPaciente));
+
+        Assert.False(presupuesto.TienePlan);
+        Assert.Empty(presupuesto.Detalle);
+        Assert.Equal(0, presupuesto.Total);
+        Assert.Equal("Juan Pérez", presupuesto.NombrePaciente);
+    }
+
+    // SCRUM-79: el documento incluye el detalle de piezas, tratamientos y valores
+    // del plan reciente, más el subtotal, descuento y total.
+    [Fact]
+    public async Task GetPresupuesto_ConPlanActivo_DevuelveDetalleYTotales()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Descuento = 50,
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 },
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+                new() { Pieza = "1", Tratamiento = "", Valor = 0 }, // renglón vacío, no entra al presupuesto
+            },
+        });
+
+        var presupuesto = ExtraerPresupuesto(await controller.GetPresupuesto(paciente.IdPaciente));
+
+        Assert.True(presupuesto.TienePlan);
+        // La fecha de emisión es una fecha de calendario, no un instante UTC: si
+        // se serializara con Kind=Utc saldría con sufijo "Z" y el frontend la
+        // mostraría un día antes al convertirla a hora de Guatemala.
+        Assert.Equal(DateTimeKind.Unspecified, presupuesto.FechaEmision.Kind);
+        Assert.Equal(DateTime.UtcNow.AddHours(-6).Date, presupuesto.FechaEmision);
+        Assert.Equal(2, presupuesto.Detalle.Count);
+        Assert.Equal("Obturación", presupuesto.Detalle.Single(l => l.Pieza == "16").Tratamiento);
+        Assert.Equal(800, presupuesto.Detalle.Single(l => l.Pieza == "21l").Valor);
+        Assert.Equal(1050, presupuesto.Subtotal);
+        Assert.Equal(50, presupuesto.Descuento);
+        Assert.Equal(1000, presupuesto.Total);
+    }
+
+    // Las piezas se guardan con su etiqueta ("4a", "10g", "21l", ...), no con el
+    // número de PIEZAS_DENTALES; ordenar por esa cadena las deja alfabéticas
+    // (1, 10g, 11h, ... 2, 20, ...) en vez de 1 a 32.
+    [Fact]
+    public async Task GetPresupuesto_OrdenaLasPiezasNumericamenteNoAlfabeticamente()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+                new() { Pieza = "2", Tratamiento = "Limpieza", Valor = 300 },
+                new() { Pieza = "10g", Tratamiento = "Obturación", Valor = 250 },
+                new() { Pieza = "1", Tratamiento = "Limpieza", Valor = 300 },
+            },
+        });
+
+        var presupuesto = ExtraerPresupuesto(await controller.GetPresupuesto(paciente.IdPaciente));
+
+        Assert.Equal(new[] { "1", "2", "10g", "21l" }, presupuesto.Detalle.Select(l => l.Pieza));
+    }
+
+    // SCRUM-205: el presupuesto se actualiza cuando el plan reciente se actualiza.
+    [Fact]
+    public async Task GetPresupuesto_ReflejaLosCambiosGuardadosEnElPlan()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        });
+
+        var antes = ExtraerPresupuesto(await controller.GetPresupuesto(paciente.IdPaciente));
+        Assert.Equal(250, antes.Total);
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Descuento = 100,
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Corona", Valor = 900 },
+                new() { Pieza = "24", Tratamiento = "Obturación", Valor = 300 },
+            },
+        });
+
+        var despues = ExtraerPresupuesto(await controller.GetPresupuesto(paciente.IdPaciente));
+
+        Assert.Equal(2, despues.Detalle.Count);
+        Assert.Equal("Corona", despues.Detalle.Single(l => l.Pieza == "16").Tratamiento);
+        Assert.Equal(1200, despues.Subtotal);
+        Assert.Equal(100, despues.Descuento);
+        Assert.Equal(1100, despues.Total);
+    }
+
+    // El presupuesto es para firmar antes de iniciar el tratamiento: si el
+    // paciente ya no tiene un plan activo (el único que tuvo se finalizó), no
+    // se debe mostrar el detalle de ese plan viejo, sino el estado sin plan.
+    [Fact]
+    public async Task GetPresupuesto_SinPlanActivo_NoMuestraElUltimoPlanCerrado()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        });
+        await controller.MarcarCompletado(paciente.IdPaciente, "16");
+        await controller.Finalizar(paciente.IdPaciente);
+
+        var presupuesto = ExtraerPresupuesto(await controller.GetPresupuesto(paciente.IdPaciente));
+
+        Assert.False(presupuesto.TienePlan);
+        Assert.Empty(presupuesto.Detalle);
+        Assert.Equal(0, presupuesto.Total);
+    }
+
+    // SCRUM-80: el presupuesto incluye la leyenda de conformidad.
+    [Fact]
+    public async Task GetPresupuesto_IncluyeLaLeyendaDeConformidad()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        var presupuesto = ExtraerPresupuesto(await controller.GetPresupuesto(paciente.IdPaciente));
+
+        Assert.Contains("sujeto a cambios imprevistos", presupuesto.LeyendaConformidad);
+    }
+
+    [Fact]
+    public async Task GetPresupuestoPdf_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        var resultado = await controller.GetPresupuestoPdf(999);
+
+        Assert.IsType<NotFoundObjectResult>(resultado);
+    }
+
+    [Fact]
+    public async Task GetPresupuestoPdf_SinPlan_Devuelve400()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        var resultado = await controller.GetPresupuestoPdf(paciente.IdPaciente);
+
+        Assert.IsType<BadRequestObjectResult>(resultado);
+    }
+
+    // SCRUM-78: el presupuesto se puede exportar en PDF.
+    [Fact]
+    public async Task GetPresupuestoPdf_ConPlan_DevuelveArchivoPdf()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto
+        {
+            Descuento = 50,
+            Piezas = new List<PiezaPlanDto>
+            {
+                new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 },
+                new() { Pieza = "21l", Tratamiento = "Endodoncia", Valor = 800 },
+            },
+        });
+
+        var resultado = await controller.GetPresupuestoPdf(paciente.IdPaciente);
+
+        var archivo = Assert.IsType<FileContentResult>(resultado);
+        Assert.Equal("application/pdf", archivo.ContentType);
+        Assert.EndsWith(".pdf", archivo.FileDownloadName);
+        // Firma de un archivo PDF válido: los bytes arrancan con "%PDF-".
+        Assert.True(archivo.FileContents.Length > 0);
+        Assert.Equal("%PDF-", System.Text.Encoding.ASCII.GetString(archivo.FileContents, 0, 5));
     }
 }

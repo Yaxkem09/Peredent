@@ -16,17 +16,32 @@ public class PlanTratamientoController : ControllerBase
     private const string EstadoPendiente = "Pendiente";
     private const string EstadoCompletado = "Completado";
 
+    // SCRUM-80: leyenda de conformidad del presupuesto. Fuente única del texto,
+    // se envía en el DTO para que la vista y el PDF muestren lo mismo.
+    private const string LeyendaConformidad =
+        "Este presupuesto está sujeto a cambios imprevistos que puedan surgir durante el tratamiento.";
+
     // Guatemala es UTC-6 todo el año (no observa horario de verano), así que un
     // offset fijo evita depender de que el servidor tenga cargada la zona horaria.
-    private static DateTime FechaHoyGuatemala() => DateTime.UtcNow.AddHours(-6).Date;
+    // Se marca como Unspecified (no Utc): es una fecha de calendario, no un
+    // instante. Si conservara Kind=Utc, al serializarse a JSON saldría con
+    // sufijo "Z" y el frontend la mostraría un día antes al convertirla a hora
+    // local. Así queda igual que las fechas que devuelve EF desde la BD.
+    private static DateTime FechaHoyGuatemala() =>
+        DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-6).Date, DateTimeKind.Unspecified);
 
     private readonly ApplicationDbContext _db;
     private readonly IPlanTratamientoService _planTratamientoService;
+    private readonly IPresupuestoPdfService _presupuestoPdfService;
 
-    public PlanTratamientoController(ApplicationDbContext db, IPlanTratamientoService planTratamientoService)
+    public PlanTratamientoController(
+        ApplicationDbContext db,
+        IPlanTratamientoService planTratamientoService,
+        IPresupuestoPdfService presupuestoPdfService)
     {
         _db = db;
         _planTratamientoService = planTratamientoService;
+        _presupuestoPdfService = presupuestoPdfService;
     }
 
     [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento")]
@@ -93,6 +108,61 @@ public class PlanTratamientoController : ControllerBase
             .ToList();
 
         return Ok(historial);
+    }
+
+    // SCRUM-77 / SCRUM-79 / SCRUM-205: presupuesto para firma del paciente. No se
+    // guarda como copia; se arma aquí a partir del plan de tratamiento reciente
+    // (el activo, o el último cerrado si ya no hay activo), así que cualquier
+    // cambio guardado en el plan queda reflejado en la siguiente consulta.
+    [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/presupuesto")]
+    public async Task<ActionResult<PresupuestoDto>> GetPresupuesto(int pacienteId)
+    {
+        var paciente = await _db.Pacientes.FindAsync(pacienteId);
+        if (paciente is null)
+        {
+            return NotFound(new { message = "Paciente no encontrado." });
+        }
+
+        return Ok(await ArmarPresupuestoAsync(paciente));
+    }
+
+    // SCRUM-78: el mismo presupuesto exportado como PDF descargable.
+    [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/presupuesto/pdf")]
+    public async Task<IActionResult> GetPresupuestoPdf(int pacienteId)
+    {
+        var paciente = await _db.Pacientes.FindAsync(pacienteId);
+        if (paciente is null)
+        {
+            return NotFound(new { message = "Paciente no encontrado." });
+        }
+
+        var presupuesto = await ArmarPresupuestoAsync(paciente);
+        if (!presupuesto.TienePlan)
+        {
+            return BadRequest(new { message = "Este paciente no tiene un plan de tratamiento para exportar." });
+        }
+
+        var pdf = _presupuestoPdfService.Generar(presupuesto);
+        var nombreArchivo =
+            $"presupuesto-{ParteNombreArchivo($"{paciente.Nombres} {paciente.Apellidos}")}-{presupuesto.FechaEmision:yyyy-MM-dd}.pdf";
+
+        return File(pdf, "application/pdf", nombreArchivo);
+    }
+
+    private async Task<PresupuestoDto> ArmarPresupuestoAsync(Paciente paciente)
+    {
+        // El presupuesto es para firmar antes de iniciar el tratamiento: si no hay
+        // plan activo no se muestra el último plan finalizado, se muestra el
+        // estado vacío ("sin plan activo") en su lugar.
+        var plan = await ObtenerPlanActivoAsync(paciente.IdPaciente, incluirPiezas: true);
+
+        return ToPresupuestoDto(paciente, plan);
+    }
+
+    private static string ParteNombreArchivo(string texto)
+    {
+        var limpio = new string(texto.Where(c => char.IsLetterOrDigit(c) || c == ' ').ToArray());
+        return limpio.Trim().Replace(' ', '-').ToLowerInvariant();
     }
 
     [HttpPut("api/pacientes/{pacienteId:int}/plan-tratamiento")]
@@ -262,10 +332,53 @@ public class PlanTratamientoController : ControllerBase
         _ => NotFound(new { message = mensaje }),
     };
 
+    // Las piezas se guardan como su etiqueta (p. ej. "4a", "21l"), no como el
+    // número de PIEZAS_DENTALES; ordenar por esa cadena las deja alfabéticas
+    // ("1", "10g", "11h", ... "2", "20", ...) en vez de 1 a 32. Se ordena por el
+    // prefijo numérico de la etiqueta, que es justo ese número de pieza.
+    private static int NumeroPieza(string pieza)
+    {
+        var digitos = new string(pieza.TakeWhile(char.IsDigit).ToArray());
+        return int.TryParse(digitos, out var numero) ? numero : int.MaxValue;
+    }
+
+    private static PresupuestoDto ToPresupuestoDto(Paciente paciente, PresupuestoPlan? plan)
+    {
+        // Solo renglones con tratamiento escrito; el detalle del presupuesto son
+        // pieza, tratamiento y valor (SCRUM-79), sin el estado del tratamiento.
+        var detalle = plan?.Piezas
+            .Where(pt => !string.IsNullOrWhiteSpace(pt.Tratamiento))
+            .OrderBy(pt => NumeroPieza(pt.Pieza))
+            .Select(pt => new PresupuestoLineaDto
+            {
+                Pieza = pt.Pieza,
+                Tratamiento = pt.Tratamiento,
+                Valor = pt.Valor,
+            })
+            .ToList() ?? new List<PresupuestoLineaDto>();
+
+        var subtotal = detalle.Sum(l => l.Valor);
+        var descuento = plan?.CantidadDescuento ?? 0;
+
+        return new PresupuestoDto
+        {
+            IdPaciente = paciente.IdPaciente,
+            NombrePaciente = $"{paciente.Nombres} {paciente.Apellidos}".Trim(),
+            FechaEmision = FechaHoyGuatemala(),
+            FechaPlan = plan?.FechaInicioPlan,
+            TienePlan = detalle.Count > 0,
+            Detalle = detalle,
+            Subtotal = subtotal,
+            Descuento = descuento,
+            Total = Math.Max(subtotal - descuento, 0),
+            LeyendaConformidad = LeyendaConformidad,
+        };
+    }
+
     private static PlanTratamientoDto ToDto(int pacienteId, PresupuestoPlan? presupuesto)
     {
         var piezas = presupuesto?.Piezas
-            .OrderBy(pt => pt.Pieza)
+            .OrderBy(pt => NumeroPieza(pt.Pieza))
             .Select(pt => new PiezaPlanRespuestaDto
             {
                 Pieza = pt.Pieza,

@@ -15,6 +15,7 @@ publish/
 web.config
 *.user
 *.suo
+TestResults/
 
 # === Variables de entorno ===
 .env

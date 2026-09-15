@@ -12,6 +12,7 @@ import HistorialPlanesTab from './HistorialPlanesTab';
 import EndodonciaTab from './EndodonciaTab';
 import TratamientoPendienteTab from './TratamientoPendienteTab';
 import HistorialTratamientosTab from './HistorialTratamientosTab';
+import PresupuestoTab from './PresupuestoTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -38,6 +39,7 @@ const TABS_DISPONIBLES = new Set([
   'endodoncia',
   'pendientes',
   'historial',
+  'presupuesto',
 ]);
 
 const inicialesDe = (nombres, apellidos) =>
@@ -364,6 +366,7 @@ const PacienteDetail = () => {
           {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
           {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}
           {activeTab === 'historial' && <HistorialTratamientosTab idPaciente={id} />}
+          {activeTab === 'presupuesto' && <PresupuestoTab idPaciente={id} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"

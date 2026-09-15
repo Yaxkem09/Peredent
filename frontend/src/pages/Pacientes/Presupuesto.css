@@ -1,0 +1,171 @@
+.presupuesto {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.presupuesto-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+
+.presupuesto-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.presupuesto-titulo {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.presupuesto-paciente {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+.presupuesto-fechas {
+  display: flex;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.presupuesto-fechas > div {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.presupuesto-fecha-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.presupuesto-fecha-valor {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-top: 2px;
+}
+
+.presupuesto-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.06);
+}
+
+.presupuesto-table th {
+  text-align: left;
+  padding: 11px 12px;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.presupuesto-table th:last-child {
+  text-align: right;
+}
+
+.presupuesto-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.presupuesto-table tbody tr:not(.presupuesto-subtotal-row):nth-child(even) {
+  background: var(--surface-alt);
+}
+
+.presupuesto-pieza {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.presupuesto-valor {
+  text-align: right;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.presupuesto-subtotal-row td {
+  background: var(--teal);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 12px;
+  border-top: none;
+}
+
+.presupuesto-subtotal-row td:last-child {
+  text-align: right;
+}
+
+.presupuesto-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: flex-end;
+  min-width: 220px;
+}
+
+.presupuesto-resumen-linea {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.presupuesto-resumen-total {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .presupuesto-head {
+    flex-direction: column;
+  }
+
+  .presupuesto-fechas > div {
+    text-align: left;
+  }
+
+  .presupuesto-resumen {
+    align-self: stretch;
+  }
+}
+
+.presupuesto-acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.presupuesto-leyenda {
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-soft);
+}

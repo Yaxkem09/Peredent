@@ -15,6 +15,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+    <PackageReference Include="QuestPDF" Version="2026.8.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
@@ -61,6 +62,14 @@
     <Compile Include="Services/PasswordHasher.cs" />
     <Compile Include="Services/IPlanTratamientoService.cs" />
     <Compile Include="Services/PlanTratamientoService.cs" />
+    <Compile Include="Services/IPresupuestoPdfService.cs" />
+    <Compile Include="Services/PresupuestoPdfService.cs" />
+  </ItemGroup>
+
+  <!-- Logo que se incrusta en el PDF del presupuesto (SCRUM-78). Se copia al
+       directorio de salida (build y publish) para poder leerlo en runtime. -->
+  <ItemGroup>
+    <Content Include="Assets/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

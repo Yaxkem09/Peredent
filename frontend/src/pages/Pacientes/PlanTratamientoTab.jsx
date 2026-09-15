@@ -280,8 +280,8 @@ const PlanTratamientoTab = ({ idPaciente }) => {
 
       {existePlanActivo && piezasSinCompletar.length > 0 && (
         <p className="plan-finalizar-hint">
-          Para finalizar el plan, todas las piezas deben estar en estado <strong>Completado</strong>. Faltan:{' '}
-          {piezasSinCompletar.map((f) => f.etiqueta).join(', ')}.
+          Debes completar el tratamiento de todas las piezas para poder finalizar este plan
+          {piezasSinCompletar.length === 1 ? ' (queda 1 pendiente).' : ` (quedan ${piezasSinCompletar.length} pendientes).`}
         </p>
       )}
 
