@@ -17,6 +17,18 @@
   --amber: #b4791a;
   --amber-soft: #fbf0dd;
   --radius: 10px;
+
+  /* Colores de estado de cita (calendario): naranja/verde/gris/rojo, distintos
+     de --amber/--coral/--accent porque esos ya tienen un significado propio
+     (warning/danger/success) reutilizado en alertas y botones de toda la app. */
+  --naranja: #c9720f;
+  --naranja-soft: #fbeeda;
+  --verde: #2f8f57;
+  --verde-soft: #e2f3e8;
+  --gris: #6b7785;
+  --gris-soft: #eaedf0;
+  --rojo: #c8433a;
+  --rojo-soft: #fbe6e3;
 }
 
 *,

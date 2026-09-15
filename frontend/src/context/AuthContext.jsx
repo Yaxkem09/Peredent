@@ -1,7 +1,7 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { authService } from '../services/auth.service';
 import { useIdleTimer } from '../hooks/useIdleTimer';
-import { useNotification } from '../hooks/useNotification';
+import { SessionExpiredModal } from '../components/common';
 
 export const AuthContext = createContext(null);
 
@@ -10,7 +10,7 @@ const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { notify } = useNotification();
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     if (authService.isAuthenticated()) {
@@ -21,19 +21,25 @@ export const AuthProvider = ({ children }) => {
 
   const login = async ({ usuario, clave }) => {
     const data = await authService.login({ usuario, clave });
-    setUser({ usuario: data.usuario, rol: data.rol, esAdmin: data.esAdmin });
+    setUser({ idUsuario: data.idUsuario, usuario: data.usuario, rol: data.rol, esAdmin: data.esAdmin });
     return data;
   };
 
   const logout = useCallback(() => {
     authService.logout();
     setUser(null);
+    setSessionExpired(false);
   }, []);
 
+  // Único disparador del aviso de sesión expirada: 10 minutos sin ningún
+  // clic/tecla/scroll. El logout ya pasa en ese momento (no cuando se cierra
+  // el modal); el botón del modal solo lo cierra para dejar ver el login,
+  // a donde ProtectedRoute ya redirigió porque isAuthenticated pasó a false.
   const handleIdle = useCallback(() => {
-    logout();
-    notify('Sesión cerrada por inactividad');
-  }, [logout, notify]);
+    authService.logout();
+    setUser(null);
+    setSessionExpired(true);
+  }, []);
 
   useIdleTimer(handleIdle, { timeout: INACTIVITY_TIMEOUT_MS, enabled: Boolean(user) });
 
@@ -48,5 +54,10 @@ export const AuthProvider = ({ children }) => {
     [user, isLoading],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <SessionExpiredModal open={sessionExpired} onClose={() => setSessionExpired(false)} />
+    </AuthContext.Provider>
+  );
 };

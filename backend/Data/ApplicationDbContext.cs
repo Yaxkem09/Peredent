@@ -32,6 +32,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Cita> Citas => Set<Cita>();
     public DbSet<Endodoncia> Endodoncias => Set<Endodoncia>();
 
+    public DbSet<BloqueoAgenda> BloqueosAgenda => Set<BloqueoAgenda>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -200,6 +202,23 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(c => c.EstadoCita)
                   .WithMany()
                   .HasForeignKey(c => c.IdEstadoCita);
+        });
+
+        modelBuilder.Entity<BloqueoAgenda>(entity =>
+        {
+            entity.ToTable("BloqueoAgenda");
+            entity.HasKey(b => b.IdBloqueoAgenda);
+            entity.Property(b => b.IdBloqueoAgenda).HasColumnName("ID_BloqueoAgenda");
+            entity.Property(b => b.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(b => b.Fecha).HasColumnName("Fecha");
+            entity.Property(b => b.Motivo).HasColumnName("Motivo").HasMaxLength(200);
+            entity.Property(b => b.CreadoEn).HasColumnName("CreadoEn");
+
+            entity.HasOne(b => b.Usuario)
+                  .WithMany()
+                  .HasForeignKey(b => b.IdUsuario);
+
+            entity.HasIndex(b => new { b.IdUsuario, b.Fecha }).IsUnique();
         });
 
         modelBuilder.Entity<Endodoncia>(entity =>

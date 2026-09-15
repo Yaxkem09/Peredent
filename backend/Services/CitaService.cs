@@ -20,13 +20,14 @@ public class CitaService : ICitaService
         _db = db;
     }
 
-    public async Task<List<CitaDto>> GetByRangoAsync(DateOnly desde, DateOnly hasta)
+    public async Task<List<CitaDto>> GetByRangoAsync(DateOnly desde, DateOnly hasta, int? idUsuario = null)
     {
         var inicio = desde.ToDateTime(TimeOnly.MinValue);
         var finExclusivo = hasta.ToDateTime(TimeOnly.MinValue).AddDays(1);
 
         var citas = await ConQuery()
             .Where(c => c.FechaInicio >= inicio && c.FechaInicio < finExclusivo)
+            .Where(c => idUsuario == null || c.IdUsuario == idUsuario)
             .OrderBy(c => c.FechaInicio)
             .ToListAsync();
 
@@ -88,6 +89,11 @@ public class CitaService : ICitaService
         if (!EstaDentroDelHorario(request.Hora, request.DuracionMinutos))
         {
             return CitaResultado.Fallo(CitaError.FueraDeHorarioAtencion, MensajeFueraDeHorario);
+        }
+
+        if (await EsDiaBloqueadoAsync(request.IdUsuario, request.Fecha))
+        {
+            return CitaResultado.Fallo(CitaError.DiaNoLaborable, "El odontólogo no atiende ese día.");
         }
 
         var fechaInicio = request.Fecha.ToDateTime(request.Hora);
@@ -177,6 +183,11 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.FueraDeHorarioAtencion, MensajeFueraDeHorario);
         }
 
+        if (cambiaFechaOHora && await EsDiaBloqueadoAsync(request.IdUsuario, request.Fecha))
+        {
+            return CitaResultado.Fallo(CitaError.DiaNoLaborable, "El odontólogo no atiende ese día.");
+        }
+
         var fechaInicio = request.Fecha.ToDateTime(request.Hora);
         var fechaFin = fechaInicio.AddMinutes(request.DuracionMinutos);
 
@@ -258,6 +269,10 @@ public class CitaService : ICitaService
 
         return citasDelDia.Any(existente => existente.FechaInicio < fechaFin && fechaInicio < existente.FechaFin);
     }
+
+    // El odontólogo marcó ese día como no laborable (ver BloqueoAgendaService).
+    private Task<bool> EsDiaBloqueadoAsync(int idUsuario, DateOnly fecha) =>
+        _db.BloqueosAgenda.AnyAsync(b => b.IdUsuario == idUsuario && b.Fecha == fecha);
 
     // Hora actual en Guatemala (UTC-6, sin horario de verano). Autoridad para
     // "fecha pasada" y "todavía no llega la hora": el navegador puede estar en

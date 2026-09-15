@@ -1,31 +1,25 @@
-import { claseDeEstado, formatearHueco, minutosDesdeInicio, ordenarPorHora, toIsoDate } from './agenda.utils';
+import {
+  ALTURA_HORA_PX,
+  claseDeEstado,
+  formatearRangoHora,
+  horasDelDia,
+  ordenarPorHora,
+  posicionEnGrid,
+  toIsoDate,
+} from './agenda.utils';
 
-// Arma la lista intercalando huecos libres cuando entre el fin de una cita y
-// el inicio de la siguiente hay más tiempo libre que la duración normal de
-// una cita (evita marcar huecos por los minutos "de cortesía" entre citas).
-const armarFilas = (citasDelDia) => {
-  const filas = [];
-  let finAnterior = null;
+const HORAS_EJE = horasDelDia();
+const ALTURA_TOTAL = (HORAS_EJE.length - 1) * ALTURA_HORA_PX;
+const ALTURA_MIN_BLOQUE = 40;
+// Con nota, el bloque necesita una tercera línea de texto -- si no, una cita
+// corta (30 min) queda tan baja que la nota se recorta y no se ve sin abrir
+// el detalle, que es justo lo que esto evita.
+const ALTURA_MIN_BLOQUE_CON_NOTA = 64;
 
-  citasDelDia.forEach((cita) => {
-    const inicio = minutosDesdeInicio(cita.hora);
-    if (finAnterior !== null) {
-      const brecha = inicio - finAnterior;
-      if (brecha > cita.duracionMinutos) {
-        filas.push({ tipo: 'hueco', key: `hueco-${cita.idCita}`, minutos: brecha });
-      }
-    }
-    filas.push({ tipo: 'cita', key: cita.idCita, cita });
-    finAnterior = inicio + cita.duracionMinutos;
-  });
-
-  return filas;
-};
-
-const VistaDia = ({ fechaActual, citas, onSeleccionarCita }) => {
+const VistaDia = ({ fechaActual, citas, bloqueos, onSeleccionarCita }) => {
   const fechaIso = toIsoDate(fechaActual);
   const citasDelDia = ordenarPorHora(citas.filter((c) => c.fecha === fechaIso));
-  const filas = armarFilas(citasDelDia);
+  const bloqueo = bloqueos.find((b) => b.fecha === fechaIso);
 
   return (
     <div className="day-agenda">
@@ -33,53 +27,53 @@ const VistaDia = ({ fechaActual, citas, onSeleccionarCita }) => {
         <b>{citasDelDia.length}</b> {citasDelDia.length === 1 ? 'cita programada' : 'citas programadas'}
       </div>
 
-      {citasDelDia.length === 0 ? (
-        <div className="agenda-empty">Sin citas programadas para este día.</div>
-      ) : (
-        <div className="agenda-list">
-          {filas.map((fila) =>
-            fila.tipo === 'hueco' ? (
-              <div className="agenda-hueco" key={fila.key}>
-                <span className="agenda-hueco-label">{formatearHueco(fila.minutos)}</span>
-              </div>
-            ) : (
-              <div
-                key={fila.key}
-                className={`cita-row ${claseDeEstado(fila.cita.estado)}`.trim()}
-                onClick={() => onSeleccionarCita(fila.cita)}
-              >
-                <div className="cr-hora">
-                  <div className="h">{fila.cita.hora.slice(0, 5)}</div>
-                  <div className="d">{fila.cita.duracionMinutos} min</div>
-                </div>
-                <div className="cr-sep" />
-                <div className="cr-info">
-                  <div className="cr-nombre">{fila.cita.nombrePaciente}</div>
-                  {fila.cita.notasAdicionales && (
-                    <div className="cr-nota">
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M4 7h16M4 12h16M4 17h10" />
-                      </svg>
-                      <span>{fila.cita.notasAdicionales}</span>
-                    </div>
-                  )}
-                </div>
-                <div className={`cr-estado ${claseDeEstado(fila.cita.estado)}`.trim()}>{fila.cita.estado}</div>
-              </div>
-            ),
-          )}
+      {bloqueo && (
+        <div className="dia-bloqueado-aviso">
+          {bloqueo.nombreOdontologo} no labora este día{bloqueo.motivo ? `: ${bloqueo.motivo}` : '.'}
         </div>
       )}
+
+      <div className="grid-scroll">
+        <div className="time-grid">
+          <div className="hour-axis">
+            {HORAS_EJE.map((h, i) => (
+              <div className="hour-label" key={h} style={{ top: i * ALTURA_HORA_PX }}>
+                {h}:00
+              </div>
+            ))}
+          </div>
+
+          <div className={`canvas-row ${bloqueo ? 'bloqueado' : ''}`.trim()} style={{ height: ALTURA_TOTAL }}>
+            {HORAS_EJE.map((h, i) => (
+              <div className="hour-line" key={h} style={{ top: i * ALTURA_HORA_PX }} />
+            ))}
+
+            {citasDelDia.length === 0 && (
+              <div className="canvas-empty">Sin citas programadas para este día.</div>
+            )}
+
+            {citasDelDia.map((cita) => {
+              const { top, height } = posicionEnGrid(cita.hora, cita.duracionMinutos);
+              const alturaMinima = cita.notasAdicionales ? ALTURA_MIN_BLOQUE_CON_NOTA : ALTURA_MIN_BLOQUE;
+              return (
+                <div
+                  key={cita.idCita}
+                  className={`cita-block ${claseDeEstado(cita.estado)}`.trim()}
+                  style={{ top, height: Math.max(height, alturaMinima) }}
+                  onClick={() => onSeleccionarCita(cita)}
+                >
+                  <div className="cb-top">
+                    <span className="cb-rango">{formatearRangoHora(cita.hora, cita.duracionMinutos)}</span>
+                    <span className="cb-dot" />
+                  </div>
+                  <div className="cb-nombre">{cita.nombrePaciente}</div>
+                  {cita.notasAdicionales && <div className="cb-nota">{cita.notasAdicionales}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

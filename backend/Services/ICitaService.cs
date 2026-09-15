@@ -5,7 +5,8 @@ namespace Peredent.Api.Services;
 
 public interface ICitaService
 {
-    Task<List<CitaDto>> GetByRangoAsync(DateOnly desde, DateOnly hasta);
+    // idUsuario filtra por odontólogo (calendario individual); null trae de todos.
+    Task<List<CitaDto>> GetByRangoAsync(DateOnly desde, DateOnly hasta, int? idUsuario = null);
 
     Task<List<CitaDto>> GetProximasAsync(int limite = 50);
 
@@ -29,6 +30,7 @@ public enum CitaError
     DuracionInvalida,
     FueraDeHorarioAtencion,
     ConflictoHorario,
+    DiaNoLaborable,
     FechaEnElPasado,
     EstadoNoDisponibleAun,
 }
