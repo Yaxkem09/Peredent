@@ -666,6 +666,163 @@ public class CitaServiceTests
     }
 
     [Fact]
+    public async Task GetByPacienteAsync_PacienteInexistente_DevuelveNull()
+    {
+        using var db = CrearContexto();
+        var service = new CitaService(db);
+
+        var resultado = await service.GetByPacienteAsync(999, estado: null, desde: null, hasta: null);
+
+        Assert.Null(resultado);
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_PacienteSinCitas_DevuelveListaVacia()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        var service = new CitaService(db);
+
+        var resultado = await service.GetByPacienteAsync(paciente.IdPaciente, estado: null, desde: null, hasta: null);
+
+        Assert.NotNull(resultado);
+        Assert.Empty(resultado!);
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_DevuelveFuturasYPasadasOrdenadasDeMasRecienteAMasAntigua()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var fechaPasada = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10));
+        var fechaHoy = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, fechaPasada, new TimeOnly(9, 0));
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0));
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, fechaHoy, new TimeOnly(9, 0));
+
+        var resultado = await service.GetByPacienteAsync(paciente.IdPaciente, estado: null, desde: null, hasta: null);
+
+        Assert.NotNull(resultado);
+        Assert.Equal(3, resultado!.Count);
+        Assert.Equal(FechaFutura, resultado[0].Fecha);
+        Assert.Equal(fechaHoy, resultado[1].Fecha);
+        Assert.Equal(fechaPasada, resultado[2].Fecha);
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_MapeaFechaHoraOdontologoEstadoYNotas()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db, "dr.ramirez");
+        var service = new CitaService(db);
+
+        var cita = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(10, 30), estado: "Confirmada");
+        cita.NotasAdicionales = "Revisión de rutina.";
+        await db.SaveChangesAsync();
+
+        var resultado = await service.GetByPacienteAsync(paciente.IdPaciente, estado: null, desde: null, hasta: null);
+
+        var dto = Assert.Single(resultado!);
+        Assert.Equal(FechaFutura, dto.Fecha);
+        Assert.Equal(new TimeOnly(10, 30), dto.Hora);
+        Assert.Equal("dr.ramirez", dto.NombreOdontologo);
+        Assert.Equal("Confirmada", dto.Estado);
+        Assert.Equal("Revisión de rutina.", dto.NotasAdicionales);
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_FiltroPorEstado_DevuelveSoloCoincidenciaExacta()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), estado: "Pendiente");
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura.AddDays(1), new TimeOnly(9, 0), estado: "Cancelada");
+
+        var resultado = await service.GetByPacienteAsync(paciente.IdPaciente, estado: "Cancelada", desde: null, hasta: null);
+
+        var dto = Assert.Single(resultado!);
+        Assert.Equal("Cancelada", dto.Estado);
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_FiltroPorRangoDeFechas_EsInclusivo()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var desde = FechaFutura;
+        var hasta = FechaFutura.AddDays(2);
+
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, desde, new TimeOnly(9, 0));
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, hasta, new TimeOnly(9, 0));
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, hasta.AddDays(1), new TimeOnly(9, 0));
+
+        var resultado = await service.GetByPacienteAsync(paciente.IdPaciente, estado: null, desde: desde, hasta: hasta);
+
+        Assert.Equal(2, resultado!.Count);
+        Assert.DoesNotContain(resultado, dto => dto.Fecha == hasta.AddDays(1));
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_FiltrosCombinados_AplicaAND()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var desde = FechaFutura;
+        var hasta = FechaFutura.AddDays(5);
+
+        // Dentro del rango pero estado equivocado.
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura.AddDays(1), new TimeOnly(9, 0), estado: "Pendiente");
+        // Estado correcto pero fuera del rango.
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, hasta.AddDays(10), new TimeOnly(9, 0), estado: "Confirmada");
+        // Coincide en ambos filtros.
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura.AddDays(2), new TimeOnly(9, 0), estado: "Confirmada");
+
+        var resultado = await service.GetByPacienteAsync(paciente.IdPaciente, estado: "Confirmada", desde: desde, hasta: hasta);
+
+        var dto = Assert.Single(resultado!);
+        Assert.Equal(FechaFutura.AddDays(2), dto.Fecha);
+        Assert.Equal("Confirmada", dto.Estado);
+    }
+
+    [Fact]
+    public async Task GetByPacienteAsync_NoDevuelveCitasDeOtroPaciente()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente1 = await CrearPacienteAsync(db);
+        var paciente2 = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        await SembrarCitaAsync(db, paciente1.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0));
+        await SembrarCitaAsync(db, paciente2.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(10, 0));
+
+        var resultado = await service.GetByPacienteAsync(paciente1.IdPaciente, estado: null, desde: null, hasta: null);
+
+        var dto = Assert.Single(resultado!);
+        Assert.Equal(paciente1.IdPaciente, dto.IdPaciente);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_IdInexistente_DevuelveNull()
     {
         using var db = CrearContexto();

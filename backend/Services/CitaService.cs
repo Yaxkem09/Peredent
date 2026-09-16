@@ -33,6 +33,44 @@ public class CitaService : ICitaService
         return citas.Select(ToDto).ToList();
     }
 
+    // Historial completo del paciente (futuras y pasadas) para la pestaña "Citas"
+    // del expediente, más reciente primero. Los filtros son opcionales y se
+    // combinan con AND: estado por coincidencia exacta, desde/hasta inclusivos
+    // sobre la fecha de la cita.
+    public async Task<List<CitaDto>?> GetByPacienteAsync(int idPaciente, string? estado, DateOnly? desde, DateOnly? hasta)
+    {
+        var pacienteExiste = await _db.Pacientes.AnyAsync(p => p.IdPaciente == idPaciente);
+        if (!pacienteExiste)
+        {
+            return null;
+        }
+
+        var query = ConQuery().Where(c => c.IdPaciente == idPaciente);
+
+        if (!string.IsNullOrWhiteSpace(estado))
+        {
+            query = query.Where(c => c.EstadoCita.TipoEstadoCita == estado);
+        }
+
+        if (desde is not null)
+        {
+            var inicio = desde.Value.ToDateTime(TimeOnly.MinValue);
+            query = query.Where(c => c.FechaInicio >= inicio);
+        }
+
+        if (hasta is not null)
+        {
+            var finExclusivo = hasta.Value.ToDateTime(TimeOnly.MinValue).AddDays(1);
+            query = query.Where(c => c.FechaInicio < finExclusivo);
+        }
+
+        var citas = await query
+            .OrderByDescending(c => c.FechaInicio)
+            .ToListAsync();
+
+        return citas.Select(ToDto).ToList();
+    }
+
     // Citas de hoy en adelante (sin las canceladas), ordenadas cronológicamente.
     // Alimenta el panel "Citas de hoy" y "Próximas citas" del dashboard.
     public async Task<List<CitaDto>> GetProximasAsync(int limite = 50)

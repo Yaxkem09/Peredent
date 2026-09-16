@@ -167,6 +167,72 @@ public class CitasControllerTests
     }
 
     [Fact]
+    public async Task GetByPaciente_PacienteInexistente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var controller = new CitasController(new CitaService(db));
+
+        var resultado = await controller.GetByPaciente(999, estado: null, desde: null, hasta: null);
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+    }
+
+    [Fact]
+    public async Task GetByPaciente_SinCitas_Devuelve200ConListaVacia()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new CitasController(new CitaService(db));
+
+        var resultado = await controller.GetByPaciente(paciente.IdPaciente, estado: null, desde: null, hasta: null);
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        Assert.Empty(Assert.IsAssignableFrom<IEnumerable<CitaDto>>(ok.Value));
+    }
+
+    [Fact]
+    public async Task GetByPaciente_DevuelveCitasDelPacienteOrdenadasDeMasRecienteAMasAntigua()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var controller = new CitasController(new CitaService(db));
+
+        var masCercana = FechaFutura;
+        var masLejana = FechaFutura.AddDays(5);
+
+        await controller.Create(NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, masCercana, new TimeOnly(9, 0)));
+        await controller.Create(NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, masLejana, new TimeOnly(9, 0)));
+
+        var resultado = await controller.GetByPaciente(paciente.IdPaciente, estado: null, desde: null, hasta: null);
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        var citas = Assert.IsAssignableFrom<IEnumerable<CitaDto>>(ok.Value).ToList();
+
+        Assert.Equal(2, citas.Count);
+        Assert.Equal(masLejana, citas[0].Fecha);
+        Assert.Equal(masCercana, citas[1].Fecha);
+    }
+
+    [Fact]
+    public async Task GetByPaciente_FiltroPorEstado_DevuelveSoloCoincidencia()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var controller = new CitasController(new CitaService(db));
+
+        await controller.Create(NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0)));
+
+        var resultado = await controller.GetByPaciente(paciente.IdPaciente, estado: "Cancelada", desde: null, hasta: null);
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        Assert.Empty(Assert.IsAssignableFrom<IEnumerable<CitaDto>>(ok.Value));
+    }
+
+    [Fact]
     public async Task GetById_Inexistente_Devuelve404()
     {
         using var db = CrearContexto();
