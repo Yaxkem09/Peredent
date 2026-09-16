@@ -146,7 +146,7 @@
 }
 
 .dash-cita.is-pendiente {
-  border-left-color: var(--amber);
+  border-left-color: var(--naranja);
 }
 
 .dash-cita.is-confirmada {
@@ -154,22 +154,23 @@
 }
 
 .dash-cita.is-atendida {
-  border-left-color: var(--accent);
+  border-left-color: var(--verde);
 }
 
 .dash-cita.is-cancelada {
-  border-left-color: var(--ink-faint);
+  border-left-color: var(--gris);
 }
 
 .dash-cita.is-no-asistio {
-  border-left-color: var(--coral);
+  border-left-color: var(--rojo);
 }
 
 .dash-cita-hora {
   font-family: 'Fraunces', serif;
-  font-size: 15px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
-  width: 44px;
+  width: 96px;
   flex-shrink: 0;
 }
 
@@ -209,8 +210,8 @@
 }
 
 .dash-cita-estado.is-pendiente {
-  background: var(--amber-soft);
-  color: var(--amber);
+  background: var(--naranja-soft);
+  color: var(--naranja);
 }
 
 .dash-cita-estado.is-confirmada {
@@ -219,18 +220,18 @@
 }
 
 .dash-cita-estado.is-atendida {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--verde-soft);
+  color: var(--verde);
 }
 
 .dash-cita-estado.is-cancelada {
-  background: var(--surface-alt);
-  color: var(--ink-faint);
+  background: var(--gris-soft);
+  color: var(--gris);
 }
 
 .dash-cita-estado.is-no-asistio {
-  background: var(--coral-soft);
-  color: var(--coral);
+  background: var(--rojo-soft);
+  color: var(--rojo);
 }
 
 @media (max-width: 480px) {

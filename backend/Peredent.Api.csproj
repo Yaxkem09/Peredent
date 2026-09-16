@@ -58,6 +58,8 @@
     <Compile Include="Services/JwtTokenService.cs" />
     <Compile Include="Services/ICitaService.cs" />
     <Compile Include="Services/CitaService.cs" />
+    <Compile Include="Services/IBloqueoAgendaService.cs" />
+    <Compile Include="Services/BloqueoAgendaService.cs" />
     <Compile Include="Services/IPasswordHasher.cs" />
     <Compile Include="Services/PasswordHasher.cs" />
     <Compile Include="Services/IPlanTratamientoService.cs" />

@@ -27,6 +27,7 @@ public class JwtTokenService : IJwtTokenService
             new(ClaimTypes.NameIdentifier, usuario.NombreUsuario),
             new(ClaimTypes.Role, usuario.Rol?.NombreRol ?? string.Empty),
             new("esAdmin", usuario.EsAdmin ? "true" : "false"),
+            new("idUsuario", usuario.IdUsuario.ToString()),
         };
 
         var credenciales = new SigningCredentials(new SymmetricSecurityKey(_clave), SecurityAlgorithms.HmacSha256);

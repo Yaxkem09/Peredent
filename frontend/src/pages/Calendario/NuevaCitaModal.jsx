@@ -12,7 +12,7 @@ const DEMORA_BUSQUEDA_MS = 400;
 const mensajeError = (err) =>
   err?.response?.data?.message || 'No se pudo guardar la cita. Intenta de nuevo.';
 
-const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
+const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada }) => {
   const { notify } = useNotification();
 
   const [odontologos, setOdontologos] = useState([]);
@@ -41,14 +41,25 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
     setResultadosPacientes([]);
     setPacienteSeleccionado(null);
     setIdPaciente('');
-    setIdUsuario('');
     setFecha(toIsoDate(fechaInicial));
     setHora(HORA_INICIAL);
     setDuracionMinutos(DURACION_INICIAL);
     setNotas('');
     setError(null);
-    setCargandoListas(true);
     setErrorListas(null);
+
+    // Si ya se sabe para qué odontólogo es la cita (viendo su calendario, o
+    // sos el odontólogo logueado), no hace falta pedir /api/usuarios ni
+    // mostrar el selector: se fija de una vez y listo.
+    if (odontologoFijo) {
+      setIdUsuario(String(odontologoFijo.id));
+      setOdontologos([]);
+      setCargandoListas(false);
+      return undefined;
+    }
+
+    setIdUsuario('');
+    setCargandoListas(true);
 
     let activo = true;
     usuariosService
@@ -68,7 +79,7 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
       activo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, odontologoFijo]);
 
   // Busca pacientes por nombre a medida que se escribe (con demora para no
   // disparar una request por cada tecla). Si ya hay un paciente elegido, no
@@ -205,19 +216,23 @@ const NuevaCitaModal = ({ open, fechaInicial, onClose, onCreada }) => {
 
           <div className="field">
             <label htmlFor="cita-odontologo">Odontólogo</label>
-            <select
-              id="cita-odontologo"
-              value={idUsuario}
-              onChange={(e) => setIdUsuario(e.target.value)}
-              disabled={cargandoListas}
-            >
-              <option value="">{cargandoListas ? 'Cargando...' : 'Selecciona un odontólogo'}</option>
-              {odontologos.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.nombreUsuario}
-                </option>
-              ))}
-            </select>
+            {odontologoFijo ? (
+              <input id="cita-odontologo" type="text" value={odontologoFijo.nombreUsuario} disabled />
+            ) : (
+              <select
+                id="cita-odontologo"
+                value={idUsuario}
+                onChange={(e) => setIdUsuario(e.target.value)}
+                disabled={cargandoListas}
+              >
+                <option value="">{cargandoListas ? 'Cargando...' : 'Selecciona un odontólogo'}</option>
+                {odontologos.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.nombreUsuario}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="field full">

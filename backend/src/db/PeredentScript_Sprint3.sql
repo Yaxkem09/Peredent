@@ -85,3 +85,24 @@ CREATE INDEX IX_MedicamentosReceta_Recetario ON MedicamentosReceta (ID_Recetario
 CREATE INDEX IX_Panoramicas_Paciente_Activas
     ON Panoramicas (ID_Paciente, Fecha_Eliminacion);
 GO
+
+-- ============================================================
+-- 6. BLOQUEO AGENDA (un odontólogo marca un día como no laborable)
+-- ============================================================
+CREATE TABLE BloqueoAgenda (
+    ID_BloqueoAgenda INT IDENTITY(1,1) NOT NULL,
+    ID_Usuario       INT               NOT NULL,
+    Fecha            DATE              NOT NULL,
+    Motivo           VARCHAR(200)      NULL,
+    CreadoEn         DATETIME          NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT PK_BloqueoAgenda PRIMARY KEY (ID_BloqueoAgenda),
+    CONSTRAINT FK_BloqueoAgenda_Usuario
+        FOREIGN KEY (ID_Usuario) REFERENCES Usuario(ID_Usuario)
+);
+GO
+
+-- Un odontólogo no puede bloquear el mismo día dos veces.
+CREATE UNIQUE INDEX IX_BloqueoAgenda_Usuario_Fecha
+    ON BloqueoAgenda (ID_Usuario, Fecha);
+GO

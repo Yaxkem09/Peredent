@@ -46,6 +46,7 @@ public class AuthController : ControllerBase
         return Ok(new AuthResponseDto
         {
             Token = _jwtTokenService.GenerarToken(usuario),
+            IdUsuario = usuario.IdUsuario,
             Usuario = usuario.NombreUsuario,
             Rol = usuario.Rol?.NombreRol ?? string.Empty,
             EsAdmin = usuario.EsAdmin,
