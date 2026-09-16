@@ -7,6 +7,7 @@ import { calcularEdadTexto } from '../../utils/edad';
 import { formatDate } from '../../utils/formatters';
 import { Alert, Button, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
+import HistorialCitas from './HistorialCitas';
 import PlanTratamientoTab from './PlanTratamientoTab';
 import HistorialPlanesTab from './HistorialPlanesTab';
 import EndodonciaTab from './EndodonciaTab';
@@ -34,6 +35,7 @@ const TABS = [
 const TABS_DISPONIBLES = new Set([
   'datos',
   'historia',
+  'citas',
   'plan',
   'historial-planes',
   'endodoncia',
@@ -361,6 +363,7 @@ const PacienteDetail = () => {
           {activeTab === 'historia' && (
             <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
+          {activeTab === 'citas' && <HistorialCitas idPaciente={id} />}
           {activeTab === 'plan' && <PlanTratamientoTab idPaciente={id} />}
           {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
           {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}

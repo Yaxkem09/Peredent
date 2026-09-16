@@ -8,6 +8,9 @@ public interface ICitaService
     // idUsuario filtra por odontólogo (calendario individual); null trae de todos.
     Task<List<CitaDto>> GetByRangoAsync(DateOnly desde, DateOnly hasta, int? idUsuario = null);
 
+    // null = el paciente no existe; lista vacía = paciente existe pero sin citas (o sin match de filtros).
+    Task<List<CitaDto>?> GetByPacienteAsync(int idPaciente, string? estado, DateOnly? desde, DateOnly? hasta);
+
     Task<List<CitaDto>> GetProximasAsync(int limite = 50);
 
     Task<List<EstadoCitaDto>> GetEstadosAsync();

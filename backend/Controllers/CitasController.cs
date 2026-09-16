@@ -65,6 +65,24 @@ public class CitasController : ControllerBase
         return Ok(estados);
     }
 
+    // Historial completo de citas del paciente (futuras y pasadas) para la pestaña
+    // "Citas" del expediente. Ruta absoluta (con "/" al inicio) para que quede
+    // anidada bajo /api/pacientes/ en vez de /api/citas/, igual que hacen
+    // HistoriaMedicaController y PlanTratamientoController con sus propios
+    // sub-recursos de paciente.
+    [HttpGet("/api/pacientes/{pacienteId:int}/citas")]
+    public async Task<ActionResult<IEnumerable<CitaDto>>> GetByPaciente(
+        int pacienteId, [FromQuery] string? estado, [FromQuery] DateOnly? desde, [FromQuery] DateOnly? hasta)
+    {
+        var citas = await _citaService.GetByPacienteAsync(pacienteId, estado, desde, hasta);
+        if (citas is null)
+        {
+            return NotFound(new { message = "Paciente no encontrado." });
+        }
+
+        return Ok(citas);
+    }
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CitaDto>> GetById(int id)
     {

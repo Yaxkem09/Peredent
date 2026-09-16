@@ -16,8 +16,10 @@ export const citasService = {
     return data;
   },
 
-  getByPaciente: async (pacienteId) => {
-    const { data } = await api.get(`/citas/paciente/${pacienteId}`);
+  // Historial completo de citas del paciente (futuras y pasadas), para la pestaña
+  // "Citas" del expediente. Filtros opcionales, combinables.
+  getByPaciente: async (pacienteId, { estado, desde, hasta } = {}) => {
+    const { data } = await api.get(`/pacientes/${pacienteId}/citas`, { params: { estado, desde, hasta } });
     return data;
   },
 
