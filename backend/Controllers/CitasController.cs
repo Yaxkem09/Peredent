@@ -25,7 +25,7 @@ public class CitasController : ControllerBase
     public async Task<ActionResult<IEnumerable<CitaDto>>> GetByRango(
         [FromQuery] DateOnly desde,
         [FromQuery] DateOnly hasta,
-        [FromQuery] int? idUsuario)
+        [FromQuery] int? idUsuario = null)
     {
         if (desde > hasta)
         {

@@ -25,7 +25,7 @@ public class BloqueosAgendaController : ControllerBase
     public async Task<ActionResult<IEnumerable<BloqueoAgendaDto>>> GetByRango(
         [FromQuery] DateOnly desde,
         [FromQuery] DateOnly hasta,
-        [FromQuery] int? idUsuario)
+        [FromQuery] int? idUsuario = null)
     {
         if (desde > hasta)
         {
