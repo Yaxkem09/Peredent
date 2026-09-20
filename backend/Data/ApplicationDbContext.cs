@@ -40,6 +40,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<MedicamentoReceta> MedicamentosReceta => Set<MedicamentoReceta>();
 
+    public DbSet<Panoramica> Panoramicas => Set<Panoramica>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -314,5 +316,33 @@ public class ApplicationDbContext : DbContext
             .WithOne()
             .HasForeignKey(m => m.IdRecetario)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Panoramica>(entity =>
+        {
+            // Tabla ya definida en backend/src/db/PeredentScript_Sprint3.sql: se
+            // replican tipos y default exactos (VARCHAR/DATETIME, no los nvarchar(max)
+            // /datetime2 que EF usaría por convención) para que la migración generada
+            // coincida con ese script.
+            entity.ToTable("Panoramicas");
+            entity.HasKey(p => p.IdPanoramica);
+            entity.Property(p => p.IdPanoramica).HasColumnName("ID_Panoramica");
+            entity.Property(p => p.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(p => p.KeyPanoramicaR2).HasColumnName("Key_PanoramicaR2").HasColumnType("varchar(500)").IsRequired();
+            entity.Property(p => p.FechaSubida).HasColumnName("Fecha_Subida").HasColumnType("datetime").HasDefaultValueSql("GETDATE()").IsRequired();
+            entity.Property(p => p.FechaEliminacion).HasColumnName("Fecha_Eliminacion").HasColumnType("datetime");
+
+            // El script no declara ON DELETE CASCADE en esta FK (default NO ACTION);
+            // sin este OnDelete, EF Core generaría CASCADE por ser una relación requerida.
+            entity.HasOne(p => p.Paciente)
+                  .WithMany()
+                  .HasForeignKey(p => p.IdPaciente)
+                  .HasConstraintName("FK_Panoramicas_Paciente")
+                  .OnDelete(DeleteBehavior.NoAction);
+
+            // Soft-delete: se filtra por Fecha_Eliminacion IS NULL para "activas", por
+            // eso el índice compuesto (cubre también las búsquedas por sola ID_Paciente).
+            entity.HasIndex(p => new { p.IdPaciente, p.FechaEliminacion })
+                  .HasDatabaseName("IX_Panoramicas_Paciente_Activas");
+        });
     }
 }
