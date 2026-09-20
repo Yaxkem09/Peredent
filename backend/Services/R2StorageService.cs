@@ -10,11 +10,21 @@ public class R2StorageService : IR2StorageService, IDisposable
 {
     private readonly IAmazonS3 _s3Client;
     private readonly string _bucketName;
+    private readonly Protocol _protocoloPresign;
 
     public R2StorageService(IOptions<R2Options> opciones)
     {
         var r2 = opciones.Value;
         _bucketName = r2.BucketName;
+
+        // UseHttp NO controla el esquema del presigned URL en AWSSDK.S3
+        // 4.0.103.3 (verificado manualmente): el builder de la URL firmada
+        // siempre usa https salvo que se fije GetPreSignedUrlRequest.Protocol
+        // explícitamente. Se deriva del endpoint configurado (http para MinIO
+        // local, https para R2 real) y se aplica en GenerarUrlFirmadaAsync.
+        _protocoloPresign = new Uri(r2.Endpoint).Scheme == Uri.UriSchemeHttp
+            ? Protocol.HTTP
+            : Protocol.HTTPS;
 
         var s3Config = new AmazonS3Config
         {
@@ -52,6 +62,7 @@ public class R2StorageService : IR2StorageService, IDisposable
             BucketName = _bucketName,
             Key = objectKey,
             Verb = HttpVerb.GET,
+            Protocol = _protocoloPresign,
             Expires = DateTime.UtcNow.Add(duracion),
         };
 

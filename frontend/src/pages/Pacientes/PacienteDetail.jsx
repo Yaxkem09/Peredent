@@ -15,6 +15,7 @@ import TratamientoPendienteTab from './TratamientoPendienteTab';
 import HistorialTratamientosTab from './HistorialTratamientosTab';
 import PresupuestoTab from './PresupuestoTab';
 import RecetarioTab from './RecetarioTab';
+import FotosPanoramicasTab from './FotosPanoramicasTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -44,6 +45,7 @@ const TABS_DISPONIBLES = new Set([
   'historial',
   'presupuesto',
   'recetario',
+  'fotos',
 ]);
 
 const inicialesDe = (nombres, apellidos) =>
@@ -373,6 +375,7 @@ const PacienteDetail = () => {
           {activeTab === 'historial' && <HistorialTratamientosTab idPaciente={id} />}
           {activeTab === 'presupuesto' && <PresupuestoTab idPaciente={id} />}
           {activeTab === 'recetario' && <RecetarioTab idPaciente={id} paciente={paciente} />}
+          {activeTab === 'fotos' && <FotosPanoramicasTab idPaciente={id} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"

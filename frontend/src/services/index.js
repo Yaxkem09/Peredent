@@ -9,3 +9,4 @@ export { historiaMedicaService } from './historia-medica.service';
 export { planTratamientoService } from './plan-tratamiento.service';
 export { endodonciaService } from './endodoncia.service';
 export { recetarioService } from './recetario.service';
+export { panoramicasService } from './panoramicas.service';
