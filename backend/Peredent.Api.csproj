@@ -68,6 +68,8 @@
     <Compile Include="Services/PlanTratamientoService.cs" />
     <Compile Include="Services/IPresupuestoPdfService.cs" />
     <Compile Include="Services/PresupuestoPdfService.cs" />
+    <Compile Include="Services/IRecetaPdfService.cs" />
+    <Compile Include="Services/RecetaPdfService.cs" />
     <Compile Include="Services/IR2StorageService.cs" />
     <Compile Include="Services/R2StorageService.cs" />
   </ItemGroup>
