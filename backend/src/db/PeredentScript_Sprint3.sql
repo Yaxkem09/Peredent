@@ -59,6 +59,11 @@ GO
 -- ============================================================
 -- 4. PANORAMICAS (fotos panorámicas del paciente en R2)
 -- ============================================================
+-- NOTA: esta tabla ahora se gestiona vía EF Core Migrations (migración
+-- AddPanoramicas, en backend/Migrations/). Este bloque queda solo como
+-- referencia histórica del diseño original; no hace falta ejecutarlo a
+-- mano en bases de datos nuevas que se creen a partir de las migraciones
+-- de EF.
 CREATE TABLE Panoramicas (
     ID_Panoramica       INT IDENTITY(1,1) NOT NULL,
     ID_Paciente         INT               NOT NULL,
