@@ -66,6 +66,8 @@
     <Compile Include="Services/PlanTratamientoService.cs" />
     <Compile Include="Services/IPresupuestoPdfService.cs" />
     <Compile Include="Services/PresupuestoPdfService.cs" />
+    <Compile Include="Services/IRecetaPdfService.cs" />
+    <Compile Include="Services/RecetaPdfService.cs" />
   </ItemGroup>
 
   <!-- Logo que se incrusta en el PDF del presupuesto (SCRUM-78). Se copia al

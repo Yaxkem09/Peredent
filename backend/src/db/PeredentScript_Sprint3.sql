@@ -31,7 +31,7 @@ CREATE TABLE Recetario (
     ID_Paciente             INT               NOT NULL,
     ID_DatosRecetario       INT               NOT NULL,
     FechaEmisionRecetario   DATETIME          NOT NULL DEFAULT GETDATE(),
-    NotasAdicionales        VARCHAR(500)      NULL,
+    NotasAdicionalesRecetario        VARCHAR(500)      NULL,
     CONSTRAINT PK_Recetario PRIMARY KEY (ID_Recetario),
     CONSTRAINT FK_Recetario_Paciente FOREIGN KEY (ID_Paciente)
         REFERENCES Paciente (ID_Paciente),

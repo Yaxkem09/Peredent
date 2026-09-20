@@ -34,6 +34,12 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<BloqueoAgenda> BloqueosAgenda => Set<BloqueoAgenda>();
 
+    public DbSet<DatosRecetario> DatosRecetarios => Set<DatosRecetario>();
+
+    public DbSet<Recetario> Recetarios => Set<Recetario>();
+
+    public DbSet<MedicamentoReceta> MedicamentosReceta => Set<MedicamentoReceta>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -257,5 +263,56 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("ObservacionesEndodoncia")
                 .HasMaxLength(500);
         });
+
+        modelBuilder.Entity<DatosRecetario>(entity =>
+        {
+            entity.ToTable("DatosRecetario");
+            entity.HasKey(d => d.IdDatosRecetario);
+            entity.Property(d => d.IdDatosRecetario).HasColumnName("ID_DatosRecetario");
+            entity.Property(d => d.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(d => d.NombresOdontologo).HasColumnName("NombresOdontologo").HasMaxLength(100).IsRequired();
+            entity.Property(d => d.ApellidosOdontologo).HasColumnName("ApellidosOdontologo").HasMaxLength(100).IsRequired();
+            entity.Property(d => d.ColegiadoOdontologo).HasColumnName("ColegiadoOdontologo").HasMaxLength(50).IsRequired();
+            entity.Property(d => d.DireccionOdontologo).HasColumnName("DireccionOdontologo").HasMaxLength(200).IsRequired();
+            entity.Property(d => d.TelefonoOdontologo).HasColumnName("TelefonoOdontologo").HasMaxLength(20).IsRequired();
+            entity.Property(d => d.CorreoOdontologo).HasColumnName("CorreoOdontologo").HasMaxLength(150).IsRequired();
+            entity.Property(d => d.FirmaKeyR2).HasColumnName("Firma_KeyR2").HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Recetario>(entity =>
+        {
+            entity.ToTable("Recetario");
+            entity.HasKey(r => r.IdRecetario);
+            entity.Property(r => r.IdRecetario).HasColumnName("ID_Recetario");
+            entity.Property(r => r.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(r => r.IdDatosRecetario).HasColumnName("ID_DatosRecetario");
+            entity.Property(r => r.FechaEmisionRecetario).HasColumnName("FechaEmisionRecetario");
+            entity.Property(r => r.NotasAdicionalesRecetario).HasColumnName("NotasAdicionalesRecetario").HasMaxLength(500);
+
+            entity.HasOne(r => r.Paciente)
+                  .WithMany()
+                  .HasForeignKey(r => r.IdPaciente);
+
+            entity.HasOne(r => r.DatosRecetario)
+                  .WithMany()
+                  .HasForeignKey(r => r.IdDatosRecetario);
+        });
+
+        modelBuilder.Entity<MedicamentoReceta>(entity =>
+        {
+            entity.ToTable("MedicamentosReceta");
+            entity.HasKey(m => m.IdMedicamentosReceta);
+            entity.Property(m => m.IdMedicamentosReceta).HasColumnName("ID_MedicamentosReceta");
+            entity.Property(m => m.IdRecetario).HasColumnName("ID_Recetario");
+            entity.Property(m => m.Nombre).HasColumnName("MedicamentoReceta").HasMaxLength(150).IsRequired();
+            entity.Property(m => m.PresentacionReceta).HasColumnName("PresentacionReceta").HasMaxLength(100).IsRequired();
+            entity.Property(m => m.IndicacionesReceta).HasColumnName("IndicacionesReceta").HasMaxLength(300).IsRequired();
+        });
+
+        modelBuilder.Entity<Recetario>()
+            .HasMany(r => r.Medicamentos)
+            .WithOne()
+            .HasForeignKey(m => m.IdRecetario)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

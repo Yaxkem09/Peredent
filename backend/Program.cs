@@ -79,6 +79,9 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 // Singleton: sin estado, arma el PDF del presupuesto a partir del DTO recibido.
 builder.Services.AddSingleton<IPresupuestoPdfService, PresupuestoPdfService>();
 
+// Singleton: sin estado, arma el PDF de la receta a partir del DTO recibido.
+builder.Services.AddSingleton<IRecetaPdfService, RecetaPdfService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

@@ -24,21 +24,69 @@
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
+  overflow: hidden;
+  /* Degradado azul marino → verde azulado (colores del logo) con destellos de luz */
   background:
-    radial-gradient(circle at 12% 18%, rgba(21, 147, 156, 0.16), transparent 42%),
-    radial-gradient(circle at 86% 10%, rgba(10, 38, 75, 0.10), transparent 40%),
-    radial-gradient(circle at 82% 88%, rgba(200, 90, 60, 0.10), transparent 46%),
-    linear-gradient(160deg, #eef4f3 0%, var(--bg) 52%, #edf1f5 100%);
+    radial-gradient(circle at 15% 20%, rgba(21, 147, 156, 0.55), transparent 45%),
+    radial-gradient(circle at 88% 12%, rgba(90, 170, 220, 0.30), transparent 42%),
+    radial-gradient(circle at 80% 92%, rgba(21, 147, 156, 0.40), transparent 50%),
+    linear-gradient(155deg, #061a36 0%, #0a264b 45%, #0d4a63 100%);
 }
 
-/* Textura de puntos muy tenue para dar profundidad al fondo */
+/* Textura de puntos tenue para dar profundidad al fondo */
 .login-screen::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(10, 38, 75, 0.045) 1px, transparent 1.4px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1.4px);
+  background-size: 26px 26px;
   pointer-events: none;
+}
+
+/* Anillos decorativos que recuerdan al círculo del logo */
+.login-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 92% 88%, transparent 0 250px, rgba(255, 255, 255, 0.10) 251px 253px, transparent 254px),
+    radial-gradient(circle at 92% 88%, transparent 0 340px, rgba(255, 255, 255, 0.06) 341px 342px, transparent 343px),
+    radial-gradient(circle at 6% 10%, transparent 0 180px, rgba(255, 255, 255, 0.08) 181px 183px, transparent 184px),
+    radial-gradient(circle at 6% 10%, transparent 0 270px, rgba(255, 255, 255, 0.05) 271px 272px, transparent 273px);
+  pointer-events: none;
+}
+
+/* Muelas flotando suavemente en el fondo */
+.login-teeth {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.login-tooth {
+  position: absolute;
+  height: auto;
+  color: rgba(255, 255, 255, 0.10);
+  filter: drop-shadow(0 0 14px rgba(21, 147, 156, 0.35));
+  transform: rotate(var(--giro, 0deg));
+  animation: login-flotar ease-in-out infinite;
+}
+
+@keyframes login-flotar {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--giro, 0deg));
+  }
+  50% {
+    transform: translateY(-26px) rotate(calc(var(--giro, 0deg) + 10deg));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-tooth {
+    animation: none;
+  }
 }
 
 .login-card {
