@@ -22,3 +22,18 @@
 .endo-checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; }
 .endo-obs-label { display: block; font-size: 0.8rem; color: #6b7280; margin-bottom: 0.4rem; }
 .endo-textarea { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; resize: vertical; margin-top: 0.5rem; box-sizing: border-box; }
+.protesis-indicaciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.protesis-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}

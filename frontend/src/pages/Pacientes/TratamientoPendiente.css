@@ -61,3 +61,30 @@
     overflow-x: auto;
   }
 }
+
+.tx-pendiente-controles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tx-pendiente-label-orden {
+  font-size: 13px;
+  color: var(--ink-light);
+  font-weight: 500;
+}
+
+.tx-pendiente-select {
+  font-size: 13px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tx-pendiente-select:focus {
+  outline: none;
+  border-color: var(--teal);
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { endodonciaService } from '../../services/endodoncia.service';
+import { protesisService } from '../../services/protesis.service';
 import { Alert, Loader } from '../../components/common';
 import './EndodonciaTab.css';
 
@@ -21,6 +22,13 @@ const EndodonciaTab = ({ idPaciente }) => {
   const [txPeriodontal, setTxPeriodontal] = useState(false);
   const [observacionesTxPeriodontal, setObservacionesTxPeriodontal] = useState('');
   const [observacionesEndodoncia, setObservacionesEndodoncia] = useState('');
+  const [protesisIndicaciones, setProtesisIndicaciones] = useState({
+  PPF: false, PPRSup: false, PPRInf: false, PTSup: false, PTInf: false,
+  });
+  const [observacionesProtesis, setObservacionesProtesis] = useState('');
+  const [guardandoProtesis, setGuardandoProtesis] = useState(false);
+  const [errorProtesis, setErrorProtesis] = useState(null);
+  const [exitoProtesis, setExitoProtesis] = useState(false);
 
   useEffect(() => {
     endodonciaService.getByPaciente(idPaciente)
@@ -38,6 +46,21 @@ const EndodonciaTab = ({ idPaciente }) => {
       })
       .catch(() => setError('No se pudo cargar el registro de endodoncia.'))
       .finally(() => setCargando(false));
+  }, [idPaciente]);
+
+  useEffect(() => {
+    protesisService.getByPaciente(idPaciente)
+      .then((data) => {
+        setProtesisIndicaciones({
+          PPF: data.ppf ?? false,
+          PPRSup: data.pprSup ?? false,
+          PPRInf: data.pprInf ?? false,
+          PTSup: data.ptSup ?? false,
+          PTInf: data.ptInf ?? false,
+        });
+        setObservacionesProtesis(data.observacionesProtesis ?? '');
+      })
+      .catch(() => {});
   }, [idPaciente]);
 
   const agregarPieza = () => setPiezas((prev) => [...prev, piezaVacia()]);
@@ -81,6 +104,27 @@ const EndodonciaTab = ({ idPaciente }) => {
       setErrorGuardar('No se pudo guardar. Intenta de nuevo.');
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const guardarProtesis = async () => {
+    setGuardandoProtesis(true);
+    setErrorProtesis(null);
+    setExitoProtesis(false);
+    try {
+      await protesisService.guardar(idPaciente, {
+        ppf: protesisIndicaciones.PPF,
+        pprSup: protesisIndicaciones.PPRSup,
+        pprInf: protesisIndicaciones.PPRInf,
+        ptSup: protesisIndicaciones.PTSup,
+        ptInf: protesisIndicaciones.PTInf,
+        observacionesProtesis: observacionesProtesis || null,
+      });
+      setExitoProtesis(true);
+    } catch {
+      setErrorProtesis('No se pudo guardar la prótesis. Intenta de nuevo.');
+    } finally {
+      setGuardandoProtesis(false);
     }
   };
 
@@ -216,6 +260,60 @@ const EndodonciaTab = ({ idPaciente }) => {
       </div>
     </div>
   );
+
+  <div className="info-card">
+      <strong>Prótesis</strong>
+      <p className="endo-subtitle">Tipo de indicación protésica.</p>
+
+      {errorProtesis && <Alert type="error">{errorProtesis}</Alert>}
+      {exitoProtesis && <Alert type="success">Prótesis guardada correctamente.</Alert>}
+
+      <div className="endo-section">
+        <div className="protesis-indicaciones">
+          <p className="endo-obs-label">Indicaciones</p>
+          <div className="protesis-checkboxes">
+            {['PPF', 'PPRSup', 'PPRInf', 'PTSup', 'PTInf'].map((key) => (
+              <label key={key} className="endo-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={protesisIndicaciones[key]}
+                  onChange={(e) =>
+                  setProtesisIndicaciones((prev) => ({ ...prev, [key]: e.target.checked }))
+                  }
+                />
+                {key === 'PPRSup' ? 'PPR sup'
+                  : key === 'PPRInf' ? 'PPR inf'
+                  : key === 'PTSup' ? 'PT sup'
+                  : key === 'PTInf' ? 'PT inf'
+                  : key}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="endo-section">
+        <label className="endo-obs-label">Observaciones de prótesis</label>
+        <textarea
+          className="endo-textarea"
+          rows={4}
+          value={observacionesProtesis}
+          onChange={(e) => setObservacionesProtesis(e.target.value)}
+          placeholder="Notas adicionales sobre la indicación protésica"
+        />
+      </div>
+
+      <div className="detail-actions">
+        <button
+          type="button"
+          className="btn btn-primary btn-md"
+          onClick={guardarProtesis}
+          disabled={guardandoProtesis}
+        >
+          {guardandoProtesis ? 'Guardando…' : 'Guardar prótesis'}
+        </button>
+      </div>
+  </div>
 };
 
 export default EndodonciaTab;

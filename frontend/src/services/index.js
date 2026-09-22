@@ -10,3 +10,4 @@ export { planTratamientoService } from './plan-tratamiento.service';
 export { endodonciaService } from './endodoncia.service';
 export { recetarioService } from './recetario.service';
 export { panoramicasService } from './panoramicas.service';
+export { protesisService } from './protesis.service';
