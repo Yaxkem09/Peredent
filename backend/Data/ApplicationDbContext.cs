@@ -32,6 +32,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Cita> Citas => Set<Cita>();
     public DbSet<Endodoncia> Endodoncias => Set<Endodoncia>();
 
+    public DbSet<Protesis> Protesis => Set<Protesis>();
     public DbSet<BloqueoAgenda> BloqueosAgenda => Set<BloqueoAgenda>();
 
     public DbSet<DatosRecetario> DatosRecetarios => Set<DatosRecetario>();
@@ -263,6 +264,22 @@ public class ApplicationDbContext : DbContext
                 .HasMaxLength(500);
             entity.Property(e => e.ObservacionesEndodoncia)
                 .HasColumnName("ObservacionesEndodoncia")
+                .HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Protesis>(entity =>
+        {
+            entity.ToTable("Protesis");
+            entity.HasKey(p => p.IdProtesis);
+            entity.Property(p => p.IdProtesis).HasColumnName("ID_Protesis");
+            entity.Property(p => p.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(p => p.PPF).HasColumnName("PPF");
+            entity.Property(p => p.PPRSup).HasColumnName("PPRSup");
+            entity.Property(p => p.PPRInf).HasColumnName("PPRInf");
+            entity.Property(p => p.PTSup).HasColumnName("PT_Sup");
+            entity.Property(p => p.PTInf).HasColumnName("PT_Inf");
+            entity.Property(p => p.ObservacionesProtesis)
+                .HasColumnName("ObservacionesProtesis")
                 .HasMaxLength(500);
         });
 

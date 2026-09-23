@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { planTratamientoService } from '../../services/plan-tratamiento.service';
 import { Alert, EmptyState, Loader } from '../../components/common';
@@ -12,6 +12,16 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
   const [error, setError] = useState(null);
   const [errorCompletar, setErrorCompletar] = useState(null);
   const [completando, setCompletando] = useState(null);
+  const [criterioOrden, setCriterioOrden] = useState('pieza');
+
+  const pendientesOrdenados = useMemo(() => {
+    return [...pendientes].sort((a, b) => {
+      if (criterioOrden === 'pieza') {
+        return Number(a.pieza) - Number(b.pieza);
+      }
+      return new Date(a.fechaRegistroPlan) - new Date(b.fechaRegistroPlan);
+    });
+  }, [pendientes, criterioOrden]);
 
   useEffect(() => {
     let activo = true;
@@ -71,6 +81,21 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
   return (
     <div className="tx-pendiente">
       {errorCompletar && <Alert type="error">{errorCompletar}</Alert>}
+      
+      <div className="tx-pendiente-controles">
+        <label htmlFor="criterio-orden" className="tx-pendiente-label-orden">
+          Ordenar por:
+        </label>
+        <select
+          id="criterio-orden"
+          className="tx-pendiente-select"
+          value={criterioOrden}
+          onChange={(e) => setCriterioOrden(e.target.value)}
+        >
+          <option value="pieza">Pieza dental</option>
+          <option value="fecha">Fecha del plan</option>
+        </select>
+      </div>
 
       <table className="tx-pendiente-table">
         <thead>
@@ -83,7 +108,7 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
           </tr>
         </thead>
         <tbody>
-          {pendientes.map((p) => (
+          {pendientesOrdenados.map((p) => (
             <tr key={p.pieza}>
               <td className="tx-pendiente-pieza">{p.pieza}</td>
               <td>{p.tratamiento}</td>
