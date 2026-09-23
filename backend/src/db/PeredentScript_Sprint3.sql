@@ -31,7 +31,7 @@ CREATE TABLE Recetario (
     ID_Paciente             INT               NOT NULL,
     ID_DatosRecetario       INT               NOT NULL,
     FechaEmisionRecetario   DATETIME          NOT NULL DEFAULT GETDATE(),
-    NotasAdicionales        VARCHAR(500)      NULL,
+    NotasAdicionalesRecetario        VARCHAR(500)      NULL,
     CONSTRAINT PK_Recetario PRIMARY KEY (ID_Recetario),
     CONSTRAINT FK_Recetario_Paciente FOREIGN KEY (ID_Paciente)
         REFERENCES Paciente (ID_Paciente),
@@ -59,6 +59,11 @@ GO
 -- ============================================================
 -- 4. PANORAMICAS (fotos panorámicas del paciente en R2)
 -- ============================================================
+-- NOTA: esta tabla ahora se gestiona vía EF Core Migrations (migración
+-- AddPanoramicas, en backend/Migrations/). Este bloque queda solo como
+-- referencia histórica del diseño original; no hace falta ejecutarlo a
+-- mano en bases de datos nuevas que se creen a partir de las migraciones
+-- de EF.
 CREATE TABLE Panoramicas (
     ID_Panoramica       INT IDENTITY(1,1) NOT NULL,
     ID_Paciente         INT               NOT NULL,
@@ -84,4 +89,25 @@ CREATE INDEX IX_MedicamentosReceta_Recetario ON MedicamentosReceta (ID_Recetario
 -- Filtro de panorámicas activas por paciente (Fecha_Eliminacion IS NULL)
 CREATE INDEX IX_Panoramicas_Paciente_Activas
     ON Panoramicas (ID_Paciente, Fecha_Eliminacion);
+GO
+
+-- ============================================================
+-- 6. BLOQUEO AGENDA (un odontólogo marca un día como no laborable)
+-- ============================================================
+CREATE TABLE BloqueoAgenda (
+    ID_BloqueoAgenda INT IDENTITY(1,1) NOT NULL,
+    ID_Usuario       INT               NOT NULL,
+    Fecha            DATE              NOT NULL,
+    Motivo           VARCHAR(200)      NULL,
+    CreadoEn         DATETIME          NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT PK_BloqueoAgenda PRIMARY KEY (ID_BloqueoAgenda),
+    CONSTRAINT FK_BloqueoAgenda_Usuario
+        FOREIGN KEY (ID_Usuario) REFERENCES Usuario(ID_Usuario)
+);
+GO
+
+-- Un odontólogo no puede bloquear el mismo día dos veces.
+CREATE UNIQUE INDEX IX_BloqueoAgenda_Usuario_Fecha
+    ON BloqueoAgenda (ID_Usuario, Fecha);
 GO

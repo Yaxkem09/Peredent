@@ -7,12 +7,15 @@ import { calcularEdadTexto } from '../../utils/edad';
 import { formatDate } from '../../utils/formatters';
 import { Alert, Button, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
+import HistorialCitas from './HistorialCitas';
 import PlanTratamientoTab from './PlanTratamientoTab';
 import HistorialPlanesTab from './HistorialPlanesTab';
 import EndodonciaTab from './EndodonciaTab';
 import TratamientoPendienteTab from './TratamientoPendienteTab';
 import HistorialTratamientosTab from './HistorialTratamientosTab';
 import PresupuestoTab from './PresupuestoTab';
+import RecetarioTab from './RecetarioTab';
+import FotosPanoramicasTab from './FotosPanoramicasTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -34,12 +37,15 @@ const TABS = [
 const TABS_DISPONIBLES = new Set([
   'datos',
   'historia',
+  'citas',
   'plan',
   'historial-planes',
   'endodoncia',
   'pendientes',
   'historial',
   'presupuesto',
+  'recetario',
+  'fotos',
 ]);
 
 const inicialesDe = (nombres, apellidos) =>
@@ -361,12 +367,15 @@ const PacienteDetail = () => {
           {activeTab === 'historia' && (
             <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
+          {activeTab === 'citas' && <HistorialCitas idPaciente={id} />}
           {activeTab === 'plan' && <PlanTratamientoTab idPaciente={id} />}
           {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
           {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
           {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}
           {activeTab === 'historial' && <HistorialTratamientosTab idPaciente={id} />}
           {activeTab === 'presupuesto' && <PresupuestoTab idPaciente={id} />}
+          {activeTab === 'recetario' && <RecetarioTab idPaciente={id} paciente={paciente} />}
+          {activeTab === 'fotos' && <FotosPanoramicasTab idPaciente={id} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"

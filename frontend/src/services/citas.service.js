@@ -3,8 +3,11 @@ import api from './api';
 export const citasService = {
   // desde/hasta en formato yyyy-MM-dd; trae solo las citas del rango visible
   // en la vista de agenda (día/semana/mes), no todas las citas del sistema.
-  getAll: async ({ desde, hasta } = {}) => {
-    const { data } = await api.get('/citas', { params: { desde, hasta } });
+  // idUsuario filtra por el calendario de un solo odontólogo; si el usuario
+  // logueado es Odontólogo, el backend lo fuerza a su propio id sin importar
+  // lo que se mande acá.
+  getAll: async ({ desde, hasta, idUsuario } = {}) => {
+    const { data } = await api.get('/citas', { params: { desde, hasta, idUsuario } });
     return data;
   },
 
@@ -13,8 +16,10 @@ export const citasService = {
     return data;
   },
 
-  getByPaciente: async (pacienteId) => {
-    const { data } = await api.get(`/citas/paciente/${pacienteId}`);
+  // Historial completo de citas del paciente (futuras y pasadas), para la pestaña
+  // "Citas" del expediente. Filtros opcionales, combinables.
+  getByPaciente: async (pacienteId, { estado, desde, hasta } = {}) => {
+    const { data } = await api.get(`/pacientes/${pacienteId}/citas`, { params: { estado, desde, hasta } });
     return data;
   },
 

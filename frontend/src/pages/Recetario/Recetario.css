@@ -1,0 +1,810 @@
+/* Lista de recetas (pestaña del expediente y menú principal) */
+
+.recetario {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.recetario-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.recetario-contador {
+  margin-right: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.recetario-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recetario-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--teal);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.recetario-item:hover {
+  border-color: var(--teal);
+  border-left-color: var(--teal);
+  box-shadow: 0 4px 14px rgba(10, 38, 75, 0.1);
+  transform: translateY(-1px);
+}
+
+.recetario-item-icono {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--teal-soft);
+  color: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recetario-item.tono-accent {
+  border-left-color: var(--accent);
+}
+
+.recetario-item.tono-accent:hover {
+  border-left-color: var(--accent);
+}
+
+.recetario-item.tono-accent .recetario-item-icono {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.recetario-item.tono-amber {
+  border-left-color: var(--amber);
+}
+
+.recetario-item.tono-amber:hover {
+  border-left-color: var(--amber);
+}
+
+.recetario-item.tono-amber .recetario-item-icono {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.recetario-badge-hoy {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  background: var(--amber-soft);
+  padding: 2px 8px;
+  border-radius: 20px;
+  vertical-align: middle;
+}
+
+.recetario-item-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.recetario-item-paciente {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.recetario-item-fecha {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.recetario-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recetario-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.recetario-item-chevron {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+}
+
+/* Buscador del menú principal (SCRUM-101) */
+
+.recetario-buscador {
+  position: relative;
+  max-width: 420px;
+}
+
+.recetario-buscador-icono {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+.recetario-buscador input {
+  width: 100%;
+  padding: 11px 14px 11px 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--ink);
+  box-sizing: border-box;
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.recetario-buscador input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.recetario-toolbar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.05);
+}
+
+.recetario-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.recetario-mensaje-sutil {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.recetario-resultado-pill {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  background: var(--teal-soft);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* Ícono de color junto al título de la página */
+
+.recetario-page-titulo {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.recetario-page-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--teal-soft);
+  color: var(--teal);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Elegir paciente (nueva receta desde el menú principal) */
+
+.recetario-elegir-paciente {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.recetario-volver-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.recetario-volver-link:hover {
+  text-decoration: underline;
+}
+
+.recetario-elegir-paciente-titulo {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.recetario-elegir-paciente-campo {
+  position: relative;
+}
+
+.recetario-elegir-paciente-campo input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--ink);
+  box-sizing: border-box;
+  background: var(--surface);
+}
+
+.recetario-elegir-paciente-campo input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.recetario-elegir-paciente-icono {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+.recetario-elegir-paciente-resultados {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recetario-elegir-paciente-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.recetario-elegir-paciente-item:hover {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.recetario-elegir-paciente-nombre {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.recetario-elegir-paciente-detalle {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.recetario-paciente-elegido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--teal-soft);
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+.recetario-paciente-elegido-texto {
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.recetario-paciente-elegido-texto strong {
+  color: var(--teal);
+}
+
+.recetario-cambiar-paciente {
+  background: none;
+  border: none;
+  color: var(--teal);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* Formulario de nueva receta */
+
+.receta-form-header {
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.receta-form-header strong {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.receta-subtitle {
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  margin: 6px 0 0;
+}
+
+.receta-section {
+  margin-top: 20px;
+  background: var(--surface-alt);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.receta-section-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.receta-section-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.receta-section-icono-odontologo {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.receta-section-icono-medicamento {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.receta-section-icono-nota {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.receta-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.receta-campo-full {
+  grid-column: 1 / -1;
+}
+
+.receta-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.receta-campo input {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.receta-campo input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.receta-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-left: 3px solid var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.receta-info-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.receta-medicamentos-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.receta-medicamento-row {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1.4fr auto;
+  gap: 8px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.receta-medicamento-row-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.receta-medicamento-row input {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--ink);
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface-alt);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.receta-medicamento-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  background: var(--surface);
+}
+
+.receta-btn-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--coral-soft);
+  background: var(--coral-soft);
+  color: var(--coral);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.receta-btn-remove:hover:not(:disabled) {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #ffffff;
+}
+
+.receta-btn-remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.receta-section textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.receta-section textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (max-width: 720px) {
+  .receta-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .receta-medicamento-row {
+    grid-template-columns: 1fr;
+  }
+
+  .receta-medicamento-row-num,
+  .receta-btn-remove {
+    justify-self: start;
+  }
+}
+
+/* Documento de la receta (vista / impresión) */
+
+.receta-doc-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.receta-doc-acciones-grupo {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.receta-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 32px 36px;
+  box-shadow: 0 2px 10px rgba(10, 38, 75, 0.06);
+}
+
+.receta-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 24px;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--teal);
+}
+
+.receta-logo {
+  width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.receta-logo img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.receta-clinica-datos {
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.65;
+}
+
+.receta-odontologo-nombre {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.receta-fecha {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.receta-fecha-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+.receta-fecha-valor {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 3px;
+}
+
+.receta-fecha-hora {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 1px;
+}
+
+.receta-paciente {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.receta-paciente-label {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.receta-medicamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.receta-medicamento {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.receta-medicamento:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.receta-medicamento-nombre {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.receta-medicamento-indicaciones {
+  font-size: 13.5px;
+  color: var(--ink);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.receta-otras {
+  padding-top: 16px;
+  border-top: 1px solid var(--ink-faint);
+}
+
+.receta-otras-label {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.receta-otras p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.receta-firma {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.receta-firma-linea {
+  width: 260px;
+  border-top: 1px solid var(--ink-faint);
+  margin-bottom: 8px;
+}
+
+.receta-firma-texto {
+  font-size: 13px;
+  color: var(--ink);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .receta-doc {
+    padding: 22px 20px;
+  }
+
+  .receta-head {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+
+  .receta-fecha {
+    text-align: center;
+  }
+
+  .receta-firma {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .receta-print,
+  .receta-print * {
+    visibility: visible;
+  }
+
+  .receta-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: none;
+    box-shadow: none;
+  }
+}

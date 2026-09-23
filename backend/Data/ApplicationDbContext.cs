@@ -32,6 +32,17 @@ public class ApplicationDbContext : DbContext
     public DbSet<Cita> Citas => Set<Cita>();
     public DbSet<Endodoncia> Endodoncias => Set<Endodoncia>();
 
+    public DbSet<Protesis> Protesis => Set<Protesis>();
+    public DbSet<BloqueoAgenda> BloqueosAgenda => Set<BloqueoAgenda>();
+
+    public DbSet<DatosRecetario> DatosRecetarios => Set<DatosRecetario>();
+
+    public DbSet<Recetario> Recetarios => Set<Recetario>();
+
+    public DbSet<MedicamentoReceta> MedicamentosReceta => Set<MedicamentoReceta>();
+
+    public DbSet<Panoramica> Panoramicas => Set<Panoramica>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -202,6 +213,23 @@ public class ApplicationDbContext : DbContext
                   .HasForeignKey(c => c.IdEstadoCita);
         });
 
+        modelBuilder.Entity<BloqueoAgenda>(entity =>
+        {
+            entity.ToTable("BloqueoAgenda");
+            entity.HasKey(b => b.IdBloqueoAgenda);
+            entity.Property(b => b.IdBloqueoAgenda).HasColumnName("ID_BloqueoAgenda");
+            entity.Property(b => b.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(b => b.Fecha).HasColumnName("Fecha");
+            entity.Property(b => b.Motivo).HasColumnName("Motivo").HasMaxLength(200);
+            entity.Property(b => b.CreadoEn).HasColumnName("CreadoEn");
+
+            entity.HasOne(b => b.Usuario)
+                  .WithMany()
+                  .HasForeignKey(b => b.IdUsuario);
+
+            entity.HasIndex(b => new { b.IdUsuario, b.Fecha }).IsUnique();
+        });
+
         modelBuilder.Entity<Endodoncia>(entity =>
         {
             entity.ToTable("Endodoncia");
@@ -237,6 +265,101 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.ObservacionesEndodoncia)
                 .HasColumnName("ObservacionesEndodoncia")
                 .HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Protesis>(entity =>
+        {
+            entity.ToTable("Protesis");
+            entity.HasKey(p => p.IdProtesis);
+            entity.Property(p => p.IdProtesis).HasColumnName("ID_Protesis");
+            entity.Property(p => p.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(p => p.PPF).HasColumnName("PPF");
+            entity.Property(p => p.PPRSup).HasColumnName("PPRSup");
+            entity.Property(p => p.PPRInf).HasColumnName("PPRInf");
+            entity.Property(p => p.PTSup).HasColumnName("PT_Sup");
+            entity.Property(p => p.PTInf).HasColumnName("PT_Inf");
+            entity.Property(p => p.ObservacionesProtesis)
+                .HasColumnName("ObservacionesProtesis")
+                .HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<DatosRecetario>(entity =>
+        {
+            entity.ToTable("DatosRecetario");
+            entity.HasKey(d => d.IdDatosRecetario);
+            entity.Property(d => d.IdDatosRecetario).HasColumnName("ID_DatosRecetario");
+            entity.Property(d => d.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(d => d.NombresOdontologo).HasColumnName("NombresOdontologo").HasMaxLength(100).IsRequired();
+            entity.Property(d => d.ApellidosOdontologo).HasColumnName("ApellidosOdontologo").HasMaxLength(100).IsRequired();
+            entity.Property(d => d.ColegiadoOdontologo).HasColumnName("ColegiadoOdontologo").HasMaxLength(50).IsRequired();
+            entity.Property(d => d.DireccionOdontologo).HasColumnName("DireccionOdontologo").HasMaxLength(200).IsRequired();
+            entity.Property(d => d.TelefonoOdontologo).HasColumnName("TelefonoOdontologo").HasMaxLength(20).IsRequired();
+            entity.Property(d => d.CorreoOdontologo).HasColumnName("CorreoOdontologo").HasMaxLength(150).IsRequired();
+            entity.Property(d => d.FirmaKeyR2).HasColumnName("Firma_KeyR2").HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Recetario>(entity =>
+        {
+            entity.ToTable("Recetario");
+            entity.HasKey(r => r.IdRecetario);
+            entity.Property(r => r.IdRecetario).HasColumnName("ID_Recetario");
+            entity.Property(r => r.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(r => r.IdDatosRecetario).HasColumnName("ID_DatosRecetario");
+            entity.Property(r => r.FechaEmisionRecetario).HasColumnName("FechaEmisionRecetario");
+            entity.Property(r => r.NotasAdicionalesRecetario).HasColumnName("NotasAdicionalesRecetario").HasMaxLength(500);
+
+            entity.HasOne(r => r.Paciente)
+                  .WithMany()
+                  .HasForeignKey(r => r.IdPaciente);
+
+            entity.HasOne(r => r.DatosRecetario)
+                  .WithMany()
+                  .HasForeignKey(r => r.IdDatosRecetario);
+        });
+
+        modelBuilder.Entity<MedicamentoReceta>(entity =>
+        {
+            entity.ToTable("MedicamentosReceta");
+            entity.HasKey(m => m.IdMedicamentosReceta);
+            entity.Property(m => m.IdMedicamentosReceta).HasColumnName("ID_MedicamentosReceta");
+            entity.Property(m => m.IdRecetario).HasColumnName("ID_Recetario");
+            entity.Property(m => m.Nombre).HasColumnName("MedicamentoReceta").HasMaxLength(150).IsRequired();
+            entity.Property(m => m.PresentacionReceta).HasColumnName("PresentacionReceta").HasMaxLength(100).IsRequired();
+            entity.Property(m => m.IndicacionesReceta).HasColumnName("IndicacionesReceta").HasMaxLength(300).IsRequired();
+        });
+
+        modelBuilder.Entity<Recetario>()
+            .HasMany(r => r.Medicamentos)
+            .WithOne()
+            .HasForeignKey(m => m.IdRecetario)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Panoramica>(entity =>
+        {
+            // Tabla ya definida en backend/src/db/PeredentScript_Sprint3.sql: se
+            // replican tipos y default exactos (VARCHAR/DATETIME, no los nvarchar(max)
+            // /datetime2 que EF usaría por convención) para que la migración generada
+            // coincida con ese script.
+            entity.ToTable("Panoramicas");
+            entity.HasKey(p => p.IdPanoramica);
+            entity.Property(p => p.IdPanoramica).HasColumnName("ID_Panoramica");
+            entity.Property(p => p.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(p => p.KeyPanoramicaR2).HasColumnName("Key_PanoramicaR2").HasColumnType("varchar(500)").IsRequired();
+            entity.Property(p => p.FechaSubida).HasColumnName("Fecha_Subida").HasColumnType("datetime").HasDefaultValueSql("GETDATE()").IsRequired();
+            entity.Property(p => p.FechaEliminacion).HasColumnName("Fecha_Eliminacion").HasColumnType("datetime");
+
+            // El script no declara ON DELETE CASCADE en esta FK (default NO ACTION);
+            // sin este OnDelete, EF Core generaría CASCADE por ser una relación requerida.
+            entity.HasOne(p => p.Paciente)
+                  .WithMany()
+                  .HasForeignKey(p => p.IdPaciente)
+                  .HasConstraintName("FK_Panoramicas_Paciente")
+                  .OnDelete(DeleteBehavior.NoAction);
+
+            // Soft-delete: se filtra por Fecha_Eliminacion IS NULL para "activas", por
+            // eso el índice compuesto (cubre también las búsquedas por sola ID_Paciente).
+            entity.HasIndex(p => new { p.IdPaciente, p.FechaEliminacion })
+                  .HasDatabaseName("IX_Panoramicas_Paciente_Activas");
         });
     }
 }

@@ -5,6 +5,7 @@ import { pacientesService } from '../../services/pacientes.service';
 import { citasService } from '../../services/citas.service';
 import { Loader, EmptyState } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
+import { formatearRangoHora } from '../Calendario/agenda.utils';
 import '../../styles/page-header.css';
 import './Dashboard.css';
 
@@ -76,7 +77,9 @@ const CitaRow = ({ cita }) => (
     className={`dash-cita ${ESTADO_CLASE[cita.estado] || ''}`}
     title={`Abrir expediente de ${cita.nombrePaciente || 'paciente'}`}
   >
-    <span className="dash-cita-hora">{(cita.hora || '').slice(0, 5)}</span>
+    <span className="dash-cita-hora">
+      {cita.hora ? formatearRangoHora(cita.hora, cita.duracionMinutos) : ''}
+    </span>
     <span className="dash-cita-body">
       <span className="dash-cita-nombre">{cita.nombrePaciente || 'Paciente'}</span>
       {cita.notasAdicionales ? <span className="dash-cita-nota">{cita.notasAdicionales}</span> : null}

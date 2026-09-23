@@ -9,6 +9,7 @@ import {
   claseDeEstado,
   ordenarPorHora,
   formatearFechaLarga,
+  formatearRangoHora,
   capitalizar,
 } from './agenda.utils';
 
@@ -16,7 +17,16 @@ const CELDAS_EN_GRILLA = 42; // 6 semanas x 7 días
 // Orden fijo en el que se muestran los puntos de estado del resumen de cada día.
 const ORDEN_ESTADOS = ['', 'pending', 'atendida', 'cancelada', 'no-asistio'];
 
-const VistaMes = ({ fechaActual, citas, onSeleccionarCita, onVerMas }) => {
+const VistaMes = ({
+  fechaActual,
+  citas,
+  bloqueos,
+  esOdontologo,
+  onSeleccionarCita,
+  onVerMas,
+  onMarcarBloqueo,
+  onQuitarBloqueo,
+}) => {
   const anio = fechaActual.getFullYear();
   const mes = fechaActual.getMonth();
   const hoyIso = toIsoDate(hoy());
@@ -42,6 +52,7 @@ const VistaMes = ({ fechaActual, citas, onSeleccionarCita, onVerMas }) => {
 
   const fechaSeleccionadaIso = toIsoDate(fechaSeleccionada);
   const citasDelDiaSeleccionado = ordenarPorHora(citasPorFecha.get(fechaSeleccionadaIso) || []);
+  const bloqueoDelDiaSeleccionado = bloqueos.find((b) => b.fecha === fechaSeleccionadaIso);
 
   return (
     <div className="month-wrap">
@@ -59,6 +70,7 @@ const VistaMes = ({ fechaActual, citas, onSeleccionarCita, onVerMas }) => {
             const fechaIso = toIsoDate(fechaCelda);
             const fueraDeMes = fechaCelda.getMonth() !== mes;
             const citasDelDia = citasPorFecha.get(fechaIso) || [];
+            const bloqueado = bloqueos.some((b) => b.fecha === fechaIso);
             const estadosPresentes = ORDEN_ESTADOS.filter((cls) =>
               citasDelDia.some((c) => claseDeEstado(c.estado) === cls),
             );
@@ -68,7 +80,7 @@ const VistaMes = ({ fechaActual, citas, onSeleccionarCita, onVerMas }) => {
                 key={fechaIso}
                 className={`month-cell ${fueraDeMes ? 'outside' : ''} ${fechaIso === hoyIso ? 'today' : ''} ${
                   fechaIso === fechaSeleccionadaIso ? 'selected' : ''
-                }`.trim()}
+                } ${bloqueado ? 'bloqueado' : ''}`.trim()}
                 onClick={() => setFechaSeleccionada(fechaCelda)}
                 role="button"
                 tabIndex={0}
@@ -77,6 +89,8 @@ const VistaMes = ({ fechaActual, citas, onSeleccionarCita, onVerMas }) => {
                 }}
               >
                 <div className="month-daynum">{fechaCelda.getDate()}</div>
+
+                {bloqueado && <div className="month-cell-bloqueado">No labora</div>}
 
                 {citasDelDia.length > 0 && (
                   <div className="resumen-badge">
@@ -97,10 +111,32 @@ const VistaMes = ({ fechaActual, citas, onSeleccionarCita, onVerMas }) => {
       <div className="side-panel">
         <div className="sp-head">
           <div className="sp-fecha">{capitalizar(formatearFechaLarga(fechaSeleccionada))}</div>
-          <Button variant="ghost" size="sm" onClick={() => onVerMas(fechaSeleccionada)}>
-            Ver día
-          </Button>
+          <div className="sp-head-actions">
+            {esOdontologo && (
+              <Button
+                variant={bloqueoDelDiaSeleccionado ? 'danger' : 'secondary'}
+                size="sm"
+                onClick={() =>
+                  bloqueoDelDiaSeleccionado
+                    ? onQuitarBloqueo(bloqueoDelDiaSeleccionado)
+                    : onMarcarBloqueo(fechaSeleccionada)
+                }
+              >
+                {bloqueoDelDiaSeleccionado ? 'Quitar bloqueo' : 'Marcar día no laboral'}
+              </Button>
+            )}
+            <Button variant="outline-teal" size="sm" onClick={() => onVerMas(fechaSeleccionada)}>
+              Ver día
+            </Button>
+          </div>
         </div>
+
+        {bloqueoDelDiaSeleccionado && (
+          <div className="dia-bloqueado-aviso">
+            No labora este día{bloqueoDelDiaSeleccionado.motivo ? `: ${bloqueoDelDiaSeleccionado.motivo}` : '.'}
+          </div>
+        )}
+
         <div className="sp-count">
           <b>{citasDelDiaSeleccionado.length}</b>{' '}
           {citasDelDiaSeleccionado.length === 1 ? 'cita programada' : 'citas programadas'}
@@ -116,7 +152,10 @@ const VistaMes = ({ fechaActual, citas, onSeleccionarCita, onVerMas }) => {
                 className={`sp-card ${claseDeEstado(cita.estado)}`.trim()}
                 onClick={() => onSeleccionarCita(cita)}
               >
-                {cita.hora.slice(0, 5)} · {cita.estado}
+                <div className="sp-top">
+                  <span className="sp-rango">{formatearRangoHora(cita.hora, cita.duracionMinutos)}</span>
+                  <span className="sp-dot" />
+                </div>
                 <b>{cita.nombrePaciente}</b>
               </div>
             ))}

@@ -5,9 +5,15 @@ export const MESES_LARGO = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
-// Horario de atención de la clínica, usado para calcular huecos libres entre citas.
+// Horario de atención de la clínica, usado para acotar la grilla de horas y
+// calcular la posición/tamaño de cada cita dentro de ella.
 export const HORA_INICIO = 7;
 export const HORA_FIN = 19;
+
+// Alto en px de una hora en la grilla de las vistas día/semana; controla tanto
+// las etiquetas del eje como la posición y el alto de cada bloque de cita.
+export const ALTURA_HORA_PX = 72;
+const PX_POR_MINUTO = ALTURA_HORA_PX / 60;
 
 export const hoy = () => {
   const d = new Date();
@@ -63,16 +69,30 @@ export const minutosDesdeInicio = (hora) => {
 export const ordenarPorHora = (citas) =>
   [...citas].sort((a, b) => minutosDesdeInicio(a.hora) - minutosDesdeInicio(b.hora));
 
-// Texto legible para el hueco libre entre el fin de una cita y el inicio de la
-// siguiente en la vista día (ej. "1 h 30 min libres").
-export const formatearHueco = (minutos) => {
-  const horas = Math.floor(minutos / 60);
-  const mins = minutos % 60;
-  const partes = [];
-  if (horas > 0) partes.push(`${horas} h`);
-  if (mins > 0) partes.push(`${mins} min`);
-  return `${partes.join(' ')} libres`;
+// Suma minutos a una hora "HH:mm[:ss]" y devuelve "HH:mm" (usado para mostrar
+// la hora de fin de una cita a partir de su hora de inicio + duración).
+export const sumarMinutos = (hora, minutos) => {
+  const [h, m] = hora.split(':').map(Number);
+  const total = h * 60 + m + minutos;
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 };
+
+// "09:00 a 09:30" -- rango completo de una cita, para mostrar cuánto va a durar.
+export const formatearRangoHora = (hora, duracionMinutos) =>
+  `${hora.slice(0, 5)} a ${sumarMinutos(hora, duracionMinutos)}`;
+
+// Posición (top) y alto de una cita dentro de la grilla de horas de las
+// vistas día/semana, en px, según su hora de inicio y duración.
+export const posicionEnGrid = (hora, duracionMinutos) => ({
+  top: minutosDesdeInicio(hora) * PX_POR_MINUTO,
+  height: duracionMinutos * PX_POR_MINUTO,
+});
+
+// Horas enteras del eje lateral de las vistas día/semana (7, 8, 9, ... 19).
+export const horasDelDia = () =>
+  Array.from({ length: HORA_FIN - HORA_INICIO + 1 }, (_, i) => HORA_INICIO + i);
 
 // Compara la fecha/hora de una cita (strings "yyyy-MM-dd" y "HH:mm[:ss]") contra
 // el reloj local del navegador. Solo es una ayuda de UX (deshabilitar campos,

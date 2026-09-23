@@ -1,13 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Peredent.Api</RootNamespace>
+    <UserSecretsId>e8000ea7-7d4f-472d-b76e-75b1c88b1bc6</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.103.3" />
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
@@ -58,12 +60,18 @@
     <Compile Include="Services/JwtTokenService.cs" />
     <Compile Include="Services/ICitaService.cs" />
     <Compile Include="Services/CitaService.cs" />
+    <Compile Include="Services/IBloqueoAgendaService.cs" />
+    <Compile Include="Services/BloqueoAgendaService.cs" />
     <Compile Include="Services/IPasswordHasher.cs" />
     <Compile Include="Services/PasswordHasher.cs" />
     <Compile Include="Services/IPlanTratamientoService.cs" />
     <Compile Include="Services/PlanTratamientoService.cs" />
     <Compile Include="Services/IPresupuestoPdfService.cs" />
     <Compile Include="Services/PresupuestoPdfService.cs" />
+    <Compile Include="Services/IRecetaPdfService.cs" />
+    <Compile Include="Services/RecetaPdfService.cs" />
+    <Compile Include="Services/IR2StorageService.cs" />
+    <Compile Include="Services/R2StorageService.cs" />
   </ItemGroup>
 
   <!-- Logo que se incrusta en el PDF del presupuesto (SCRUM-78). Se copia al

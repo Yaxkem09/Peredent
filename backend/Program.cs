@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Peredent.Api.Data;
+using Peredent.Api.Options;
 using Peredent.Api.Services;
 
 // Solo existe .env en local (esta gitignored); en la nube las variables de
@@ -70,6 +71,7 @@ builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
 // Scoped: usa ApplicationDbContext, que también es scoped por request.
 builder.Services.AddScoped<ICitaService, CitaService>();
+builder.Services.AddScoped<IBloqueoAgendaService, BloqueoAgendaService>();
 builder.Services.AddScoped<IPlanTratamientoService, PlanTratamientoService>();
 
 // Singleton: sin estado, solo funciones puras de hashing.
@@ -77,6 +79,15 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
 // Singleton: sin estado, arma el PDF del presupuesto a partir del DTO recibido.
 builder.Services.AddSingleton<IPresupuestoPdfService, PresupuestoPdfService>();
+
+// Singleton: sin estado, arma el PDF de la receta a partir del DTO recibido.
+builder.Services.AddSingleton<IRecetaPdfService, RecetaPdfService>();
+
+builder.Services.Configure<R2Options>(builder.Configuration.GetSection("R2"));
+
+// Scoped: crea un AmazonS3Client por request; ver R2StorageService para el
+// detalle de por qué el AmazonS3Config necesita esas propiedades para R2.
+builder.Services.AddScoped<IR2StorageService, R2StorageService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

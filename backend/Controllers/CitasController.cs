@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Peredent.Api.DTOs.Request;
@@ -11,6 +12,8 @@ namespace Peredent.Api.Controllers;
 [Authorize]
 public class CitasController : ControllerBase
 {
+    private const string RolOdontologo = "Odontologo";
+
     private readonly ICitaService _citaService;
 
     public CitasController(ICitaService citaService)
@@ -19,16 +22,30 @@ public class CitasController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CitaDto>>> GetByRango([FromQuery] DateOnly desde, [FromQuery] DateOnly hasta)
+    public async Task<ActionResult<IEnumerable<CitaDto>>> GetByRango(
+        [FromQuery] DateOnly desde,
+        [FromQuery] DateOnly hasta,
+        [FromQuery] int? idUsuario = null)
     {
         if (desde > hasta)
         {
             return BadRequest(new { message = "La fecha 'desde' no puede ser posterior a 'hasta'." });
         }
 
-        var citas = await _citaService.GetByRangoAsync(desde, hasta);
+        // Un odontólogo tiene su propio calendario: sin importar qué idUsuario venga
+        // en el query string, siempre se fuerza al de su propio token. Solo
+        // Asistentes (y cuentas sin ese rol clínico) pueden pedir el de otro.
+        if (User.IsInRole(RolOdontologo))
+        {
+            idUsuario = ObtenerIdUsuarioActual();
+        }
+
+        var citas = await _citaService.GetByRangoAsync(desde, hasta, idUsuario);
         return Ok(citas);
     }
+
+    private int? ObtenerIdUsuarioActual() =>
+        int.TryParse(User.FindFirstValue("idUsuario"), out var id) ? id : null;
 
     // Citas de hoy en adelante para el dashboard. "proximas" no matchea la
     // restricción {id:int} de abajo, así que no hay ambigüedad de rutas.
@@ -46,6 +63,24 @@ public class CitasController : ControllerBase
     {
         var estados = await _citaService.GetEstadosAsync();
         return Ok(estados);
+    }
+
+    // Historial completo de citas del paciente (futuras y pasadas) para la pestaña
+    // "Citas" del expediente. Ruta absoluta (con "/" al inicio) para que quede
+    // anidada bajo /api/pacientes/ en vez de /api/citas/, igual que hacen
+    // HistoriaMedicaController y PlanTratamientoController con sus propios
+    // sub-recursos de paciente.
+    [HttpGet("/api/pacientes/{pacienteId:int}/citas")]
+    public async Task<ActionResult<IEnumerable<CitaDto>>> GetByPaciente(
+        int pacienteId, [FromQuery] string? estado, [FromQuery] DateOnly? desde, [FromQuery] DateOnly? hasta)
+    {
+        var citas = await _citaService.GetByPacienteAsync(pacienteId, estado, desde, hasta);
+        if (citas is null)
+        {
+            return NotFound(new { message = "Paciente no encontrado." });
+        }
+
+        return Ok(citas);
     }
 
     [HttpGet("{id:int}")]
