@@ -81,6 +81,12 @@ const DatosTab = ({ paciente, idPaciente }) => (
           <span className="info-value">{paciente.correo || '—'}</span>
         </div>
         <div className="info-item">
+          <span className="info-label">NIT</span>
+          <span className="info-value">
+            {!paciente.nit || paciente.nit.toUpperCase() === 'CF' ? 'CF (consumidor final)' : paciente.nit}
+          </span>
+        </div>
+        <div className="info-item">
           <span className="info-label">Registrado el</span>
           <span className="info-value">{formatDate(paciente.fechaRegistro)}</span>
         </div>

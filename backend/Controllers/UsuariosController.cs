@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,12 @@ namespace Peredent.Api.Controllers;
 [Authorize]
 public class UsuariosController : ControllerBase
 {
+    private const int CorreoLongitudMaxima = 150;
+
+    // Validación básica de formato (algo@dominio.ext); la verificación real de que
+    // el correo existe llega cuando se use para recuperar la contraseña.
+    private static readonly Regex FormatoCorreo = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
+
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
 
@@ -57,16 +64,30 @@ public class UsuariosController : ControllerBase
     [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<UsuarioDto>> Create([FromBody] CreateUsuarioDto request)
     {
-        if (string.IsNullOrWhiteSpace(request.NombreUsuario) || string.IsNullOrWhiteSpace(request.Clave))
+        if (string.IsNullOrWhiteSpace(request.NombreUsuario) ||
+            string.IsNullOrWhiteSpace(request.Clave) ||
+            string.IsNullOrWhiteSpace(request.Correo))
         {
-            return BadRequest(new { message = "Nombre de usuario y contraseña son obligatorios." });
+            return BadRequest(new { message = "Nombre de usuario, correo y contraseña son obligatorios." });
         }
 
         var nombreUsuario = request.NombreUsuario.Trim();
+        // Se guarda en minúsculas para que "Ana@Correo.com" y "ana@correo.com" cuenten como el mismo.
+        var correo = request.Correo.Trim().ToLowerInvariant();
+
+        if (correo.Length > CorreoLongitudMaxima || !FormatoCorreo.IsMatch(correo))
+        {
+            return BadRequest(new { message = "Ingresa un correo electrónico válido." });
+        }
 
         if (await _db.Usuarios.AnyAsync(u => u.NombreUsuario == nombreUsuario))
         {
             return BadRequest(new { message = "Ya existe un usuario con ese nombre." });
+        }
+
+        if (await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo))
+        {
+            return BadRequest(new { message = "Ya existe un usuario con ese correo." });
         }
 
         if (!await _db.Roles.AnyAsync(r => r.IdRol == request.IdRol))
@@ -78,6 +99,7 @@ public class UsuariosController : ControllerBase
         var usuario = new Usuario
         {
             NombreUsuario = nombreUsuario,
+            CorreoUsuario = correo,
             Salt = salt,
             ContrasenaHash = _passwordHasher.HashClave(request.Clave, salt),
             IdRol = request.IdRol,
@@ -189,6 +211,7 @@ public class UsuariosController : ControllerBase
     {
         Id = usuario.IdUsuario,
         NombreUsuario = usuario.NombreUsuario,
+        Correo = usuario.CorreoUsuario,
         IdRol = usuario.IdRol,
         Rol = usuario.Rol?.NombreRol ?? string.Empty,
         Estado = usuario.Estado,

@@ -38,6 +38,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
   const { notify } = useNotification();
   const [filas, setFilas] = useState(() => PIEZAS_DENTALES.map(filaInicial));
   const [descuento, setDescuento] = useState(0);
+  const [observaciones, setObservaciones] = useState('');
   const [guardado, setGuardado] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(true);
@@ -58,6 +59,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
         if (!activo) return;
         setFilas(combinarConGuardado(data.piezas));
         setDescuento(data.descuento || 0);
+        setObservaciones(data.observacionesGenerales || '');
         setExistePlanActivo(Boolean(data.fechaInicio));
         setGuardado(true);
       })
@@ -122,6 +124,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
     try {
       const payload = {
         descuento: Number(descuento) || 0,
+        observacionesGenerales: observaciones.trim() === '' ? null : observaciones.trim(),
         piezas: filas.map((f) => ({
           pieza: f.etiqueta,
           tratamiento: f.tratamiento,
@@ -131,6 +134,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       const actualizado = await planTratamientoService.guardar(idPaciente, payload);
       setFilas(combinarConGuardado(actualizado.piezas));
       setDescuento(actualizado.descuento || 0);
+      setObservaciones(actualizado.observacionesGenerales || '');
       setExistePlanActivo(Boolean(actualizado.fechaInicio));
       setGuardado(true);
       notify('Plan de tratamiento guardado exitosamente.');
@@ -149,6 +153,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       await planTratamientoService.finalizar(idPaciente);
       setFilas(PIEZAS_DENTALES.map(filaInicial));
       setDescuento(0);
+      setObservaciones('');
       setExistePlanActivo(false);
       setGuardado(true);
       notify('Plan de tratamiento finalizado. Ya puedes iniciar uno nuevo.');
@@ -227,6 +232,20 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       <div className="plan-tablas">
         {renderTabla(columnaIzquierda, subtotalIzquierda)}
         {renderTabla(columnaDerecha, subtotalDerecha)}
+      </div>
+
+      <div className="plan-observaciones-field">
+        <label htmlFor="plan-observaciones">Observaciones generales</label>
+        <textarea
+          id="plan-observaciones"
+          rows={3}
+          placeholder="Notas relevantes sobre el tratamiento que no encajan en otros campos (opcional)"
+          value={observaciones}
+          onChange={(e) => {
+            setObservaciones(e.target.value);
+            marcarCambio();
+          }}
+        />
       </div>
 
       <div className="plan-resumen">

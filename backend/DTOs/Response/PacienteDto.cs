@@ -16,6 +16,8 @@ public class PacienteDto
 
     public string? Correo { get; set; }
 
+    public string Nit { get; set; } = "CF";
+
     public string? Direccion { get; set; }
 
     public string? EncargadoNombre { get; set; }

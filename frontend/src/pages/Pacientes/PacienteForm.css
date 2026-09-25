@@ -185,3 +185,394 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================================
+   Formulario de paciente (rediseño). Clases con prefijo pf- para no afectar
+   a .field / .form-card, que también usan Administración y los modales de cita.
+   ========================================================================= */
+
+.pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 920px;
+}
+
+.pf-section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px 24px 24px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04);
+}
+
+.pf-section-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pf-section-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.pf-section-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.pf-section-extra {
+  flex-shrink: 0;
+}
+
+/* Sección del encargado: se resalta porque aparece de golpe al ingresar
+   una fecha de nacimiento de menor de edad. */
+.pf-section-aviso {
+  border-color: var(--amber);
+  border-left-width: 4px;
+}
+
+.pf-section-aviso .pf-section-icon {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.pf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.pf-full {
+  grid-column: 1 / -1;
+}
+
+.pf-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pf-req {
+  color: var(--coral);
+  font-weight: 700;
+}
+
+.pf-opt {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: var(--surface-alt);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.pf-field input,
+.pf-field textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 13px;
+  border-radius: 9px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.pf-field textarea {
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.pf-field input::placeholder,
+.pf-field textarea::placeholder {
+  color: var(--ink-faint);
+}
+
+.pf-field input:hover,
+.pf-field textarea:hover {
+  border-color: #c3d0cc;
+}
+
+.pf-field input:focus,
+.pf-field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.pf-invalid input {
+  border-color: var(--coral);
+  background: var(--coral-soft);
+}
+
+.pf-invalid input:focus {
+  border-color: var(--coral);
+  box-shadow: 0 0 0 3px var(--coral-soft);
+  background: var(--surface);
+}
+
+.pf-warn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--coral);
+}
+
+.pf-help {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+/* Edad calculada: se muestra como dato, no como input deshabilitado. */
+.pf-readonly {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 13px;
+  border-radius: 9px;
+  background: var(--surface-alt);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pf-readonly-vacio {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pf-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.pf-chip-amber {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.pf-chip-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Sexo como selector segmentado (una sola opción, visible de un vistazo). */
+.pf-segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pf-segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 9px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.pf-segment:hover {
+  border-color: #c3d0cc;
+  color: var(--ink);
+}
+
+.pf-segment input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  min-height: 0;
+}
+
+.pf-segment-on {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.pf-segment:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* Historia médica */
+.pf-hm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pf-hm-item {
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.pf-hm-item:hover {
+  border-color: #c3d0cc;
+}
+
+.pf-hm-item-on,
+.pf-hm-item-on:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.pf-hm-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.pf-hm-check input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.pf-hm-num {
+  flex-shrink: 0;
+  min-width: 22px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.pf-hm-item-on .pf-hm-check {
+  font-weight: 600;
+}
+
+.pf-hm-item-on .pf-hm-num {
+  color: var(--accent);
+}
+
+.pf-hm-obs {
+  display: block;
+  width: calc(100% - 26px);
+  margin: 0 13px 12px;
+  padding: 8px 11px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.pf-hm-obs:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pf-hm-observaciones {
+  margin-top: 20px;
+}
+
+/* Barra de acciones: queda pegada abajo en formularios largos para no tener
+   que bajar hasta el final para guardar. */
+.pf-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 -4px 16px rgba(10, 38, 75, 0.06);
+}
+
+.pf-footer-nota {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pf-footer-botones {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .pf-section {
+    padding: 18px 16px 20px;
+  }
+
+  .pf-grid,
+  .pf-hm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-footer {
+    padding: 12px 14px;
+  }
+
+  .pf-footer-botones {
+    width: 100%;
+  }
+
+  .pf-footer-botones > * {
+    flex: 1;
+  }
+}

@@ -4,6 +4,8 @@ public class GuardarPlanTratamientoDto
 {
     public decimal Descuento { get; set; }
 
+    public string? ObservacionesGenerales { get; set; }
+
     public List<PiezaPlanDto> Piezas { get; set; } = new();
 }
 

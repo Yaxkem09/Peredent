@@ -118,6 +118,36 @@ textarea.plan-input-tratamiento {
   text-align: right;
 }
 
+.plan-observaciones-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.plan-observaciones-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.plan-observaciones-field textarea {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 70px;
+  resize: vertical;
+}
+
+.plan-observaciones-field textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
 .plan-resumen {
   display: flex;
   justify-content: space-between;

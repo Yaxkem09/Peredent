@@ -106,6 +106,13 @@ const HistorialPlanesTab = ({ idPaciente }) => {
           <div className="historial-resumen">
             <span>Descuento aplicado: {formatCurrency(seleccionado.descuento)}</span>
           </div>
+
+          {seleccionado.observacionesGenerales && (
+            <div className="historial-observaciones">
+              <div className="historial-observaciones-label">Observaciones generales</div>
+              <p>{seleccionado.observacionesGenerales}</p>
+            </div>
+          )}
         </div>
       </div>
     );
