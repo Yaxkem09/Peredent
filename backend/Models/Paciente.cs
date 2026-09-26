@@ -26,4 +26,8 @@ public class Paciente
     public string? TelefonoEncargado { get; set; }
 
     public DateTime FechaRegistro { get; set; }
+
+    // Consentimiento del paciente para recibir recordatorios de cita por
+    // WhatsApp en su Telefono. Sin él no se le envía nada.
+    public bool AceptaRecordatoriosWhatsApp { get; set; }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Peredent.Api.Data;
 
@@ -11,9 +12,11 @@ using Peredent.Api.Data;
 namespace Peredent.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926232455_SincronizarSnapshotConScriptsSprint2a4")]
+    partial class SincronizarSnapshotConScriptsSprint2a4
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -89,18 +92,6 @@ namespace Peredent.Api.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("NotasAdicionales");
-
-                    b.Property<DateTime?>("RecordatorioEnviadoEn")
-                        .HasColumnType("datetime")
-                        .HasColumnName("RecordatorioEnviadoEn");
-
-                    b.Property<string>("RecordatorioError")
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("RecordatorioError");
-
-                    b.Property<string>("RecordatorioMessageId")
-                        .HasColumnType("varchar(150)")
-                        .HasColumnName("RecordatorioMessageId");
 
                     b.HasKey("IdCita");
 
@@ -403,12 +394,6 @@ namespace Peredent.Api.Migrations
                         .HasColumnName("ID_Paciente");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPaciente"));
-
-                    b.Property<bool>("AceptaRecordatoriosWhatsApp")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false)
-                        .HasColumnName("AceptaRecordatoriosWhatsApp");
 
                     b.Property<string>("Apellidos")
                         .IsRequired()

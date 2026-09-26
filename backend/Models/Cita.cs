@@ -16,6 +16,17 @@ public class Cita
 
     public string? NotasAdicionales { get; set; }
 
+    // Recordatorio por WhatsApp del día anterior. RecordatorioEnviadoEn va en
+    // hora de Guatemala (igual que FechaInicio); null = todavía no se envió.
+    public DateTime? RecordatorioEnviadoEn { get; set; }
+
+    // "wamid" que devuelve la WhatsApp Cloud API al aceptar el mensaje.
+    public string? RecordatorioMessageId { get; set; }
+
+    // Último error al intentar enviar el recordatorio (teléfono inválido,
+    // rechazo de la API, etc.).
+    public string? RecordatorioError { get; set; }
+
     public Paciente Paciente { get; set; } = null!;
 
     public Usuario Usuario { get; set; } = null!;

@@ -84,4 +84,64 @@ public class PacientesControllerTests
         var ok = Assert.IsType<OkObjectResult>(resultado.Result);
         Assert.Equal("CF", Assert.IsType<PacienteDto>(ok.Value).Nit);
     }
+
+    [Fact]
+    public async Task Create_SinAceptaRecordatorios_GuardaFalse()
+    {
+        using var db = CrearContexto();
+        var controller = new PacientesController(db);
+
+        var creado = ExtraerCreado(await controller.Create(NuevoPaciente(null)));
+
+        Assert.False(creado.AceptaRecordatoriosWhatsApp);
+        Assert.False(db.Pacientes.Single().AceptaRecordatoriosWhatsApp);
+    }
+
+    [Fact]
+    public async Task Create_ConAceptaRecordatorios_GuardaTrue()
+    {
+        using var db = CrearContexto();
+        var controller = new PacientesController(db);
+        var request = NuevoPaciente(null);
+        request.AceptaRecordatoriosWhatsApp = true;
+
+        var creado = ExtraerCreado(await controller.Create(request));
+
+        Assert.True(creado.AceptaRecordatoriosWhatsApp);
+        Assert.True(db.Pacientes.Single().AceptaRecordatoriosWhatsApp);
+    }
+
+    [Fact]
+    public async Task Update_SinAceptaRecordatorios_ConservaElValorActual()
+    {
+        using var db = CrearContexto();
+        var controller = new PacientesController(db);
+        var request = NuevoPaciente(null);
+        request.AceptaRecordatoriosWhatsApp = true;
+        var creado = ExtraerCreado(await controller.Create(request));
+
+        var resultado = await controller.Update(creado.Id, NuevoPaciente(null));
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        Assert.True(Assert.IsType<PacienteDto>(ok.Value).AceptaRecordatoriosWhatsApp);
+        Assert.True(db.Pacientes.Single().AceptaRecordatoriosWhatsApp);
+    }
+
+    [Fact]
+    public async Task Update_ConAceptaRecordatoriosFalse_RevocaElConsentimiento()
+    {
+        using var db = CrearContexto();
+        var controller = new PacientesController(db);
+        var request = NuevoPaciente(null);
+        request.AceptaRecordatoriosWhatsApp = true;
+        var creado = ExtraerCreado(await controller.Create(request));
+        var revocar = NuevoPaciente(null);
+        revocar.AceptaRecordatoriosWhatsApp = false;
+
+        var resultado = await controller.Update(creado.Id, revocar);
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        Assert.False(Assert.IsType<PacienteDto>(ok.Value).AceptaRecordatoriosWhatsApp);
+        Assert.False(db.Pacientes.Single().AceptaRecordatoriosWhatsApp);
+    }
 }

@@ -355,5 +355,7 @@ public class CitaService : ICitaService
         NotasAdicionales = cita.NotasAdicionales,
         IdEstadoCita = cita.IdEstadoCita,
         Estado = cita.EstadoCita.TipoEstadoCita,
+        RecordatorioEnviadoEn = cita.RecordatorioEnviadoEn,
+        RecordatorioError = cita.RecordatorioError,
     };
 }

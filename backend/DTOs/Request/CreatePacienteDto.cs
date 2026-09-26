@@ -22,4 +22,9 @@ public class CreatePacienteDto
     public string? EncargadoNombre { get; set; }
 
     public string? EncargadoTelefono { get; set; }
+
+    // Nullable a propósito: este DTO también lo usa el PUT, y un cliente que no
+    // envíe el campo no debe revocar el consentimiento sin querer. En create,
+    // null => false; en update, null => se conserva el valor actual.
+    public bool? AceptaRecordatoriosWhatsApp { get; set; }
 }
