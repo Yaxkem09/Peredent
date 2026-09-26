@@ -147,6 +147,10 @@ builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+// Scoped: usa ApplicationDbContext. El candado contra ejecuciones simultáneas
+// es estático dentro del servicio, no depende de este lifetime.
+builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

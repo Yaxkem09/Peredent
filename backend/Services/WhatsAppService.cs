@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using Peredent.Api.Helpers;
 using Peredent.Api.Options;
 
 namespace Peredent.Api.Services;
@@ -24,7 +25,7 @@ public class WhatsAppService : IWhatsAppService
     public async Task<WhatsAppEnvioResultado> EnviarRecordatorioCitaAsync(
         string telefono, string nombrePaciente, string fecha, string hora, CancellationToken ct)
     {
-        var telefonoEnmascarado = Enmascarar(telefono);
+        var telefonoEnmascarado = TelefonoWhatsApp.Enmascarar(telefono);
 
         if (!_opciones.Enabled)
         {
@@ -136,8 +137,4 @@ public class WhatsAppService : IWhatsAppService
 
         return (null, "Respuesta sin detalle de error");
     }
-
-    // Solo los últimos 4 dígitos: el teléfono del paciente no debe quedar completo en los logs.
-    private static string Enmascarar(string telefono) =>
-        telefono.Length <= 4 ? "****" : new string('*', telefono.Length - 4) + telefono[^4..];
 }

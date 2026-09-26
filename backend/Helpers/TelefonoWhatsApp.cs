@@ -30,4 +30,15 @@ public static class TelefonoWhatsApp
 
         return null;
     }
+
+    // Para logs y respuestas de API: solo los últimos 4 dígitos, el teléfono
+    // del paciente nunca debe quedar completo ("*******8707").
+    public static string Enmascarar(string? telefono)
+    {
+        var digitos = new string((telefono ?? string.Empty).Where(char.IsAsciiDigit).ToArray());
+
+        return digitos.Length <= 4
+            ? "****"
+            : new string('*', digitos.Length - 4) + digitos[^4..];
+    }
 }

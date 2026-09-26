@@ -74,6 +74,8 @@
     <Compile Include="Services/R2StorageService.cs" />
     <Compile Include="Services/IWhatsAppService.cs" />
     <Compile Include="Services/WhatsAppService.cs" />
+    <Compile Include="Services/IRecordatorioService.cs" />
+    <Compile Include="Services/RecordatorioService.cs" />
   </ItemGroup>
 
   <!-- Logo que se incrusta en el PDF del presupuesto (SCRUM-78). Se copia al

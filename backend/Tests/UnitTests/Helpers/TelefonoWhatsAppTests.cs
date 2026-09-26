@@ -59,4 +59,23 @@ public class TelefonoWhatsAppTests
     {
         Assert.Null(TelefonoWhatsApp.Normalizar(telefono));
     }
+
+    [Theory]
+    [InlineData("50245278707", "*******8707")]
+    [InlineData("4527-8707", "****8707")]
+    [InlineData("+502 4527 8707", "*******8707")]
+    public void Enmascarar_DejaSoloLosUltimos4Digitos(string telefono, string esperado)
+    {
+        Assert.Equal(esperado, TelefonoWhatsApp.Enmascarar(telefono));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("123")]
+    [InlineData("8707")]
+    public void Enmascarar_CuatroDigitosOMenos_NoMuestraNinguno(string? telefono)
+    {
+        Assert.Equal("****", TelefonoWhatsApp.Enmascarar(telefono));
+    }
 }
