@@ -300,6 +300,57 @@ public class PlanTratamientoControllerTests
     }
 
     [Fact]
+    public async Task Guardar_ObservacionesGenerales_SeGuardanSinEspaciosYSeRecuperanConGet()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        var request = new GuardarPlanTratamientoDto
+        {
+            ObservacionesGenerales = "  Paciente prefiere citas por la mañana.  ",
+            Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } },
+        };
+
+        await controller.Guardar(paciente.IdPaciente, request);
+        var recuperado = ExtraerDto(await controller.GetByPaciente(paciente.IdPaciente));
+
+        Assert.Equal("Paciente prefiere citas por la mañana.", recuperado.ObservacionesGenerales);
+    }
+
+    [Fact]
+    public async Task Guardar_ObservacionesVacias_BorraLasObservacionesAnteriores()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+        var piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 250 } };
+
+        await controller.Guardar(paciente.IdPaciente, new GuardarPlanTratamientoDto { ObservacionesGenerales = "Nota", Piezas = piezas });
+        var editado = ExtraerDto(await controller.Guardar(
+            paciente.IdPaciente, new GuardarPlanTratamientoDto { ObservacionesGenerales = "   ", Piezas = piezas }));
+
+        Assert.Null(editado.ObservacionesGenerales);
+    }
+
+    [Fact]
+    public async Task Guardar_ObservacionesDemasiadoLargas_Devuelve400()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var controller = new PlanTratamientoController(db, new PlanTratamientoService(db), new PresupuestoPdfService());
+
+        var resultado = await controller.Guardar(
+            paciente.IdPaciente, new GuardarPlanTratamientoDto { ObservacionesGenerales = new string('a', 1001) });
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Empty(db.PresupuestosPlan);
+    }
+
+    [Fact]
     public async Task Finalizar_PacienteInexistente_Devuelve404()
     {
         using var db = CrearContexto();

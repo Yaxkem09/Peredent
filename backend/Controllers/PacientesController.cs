@@ -13,6 +13,9 @@ namespace Peredent.Api.Controllers;
 [Authorize]
 public class PacientesController : ControllerBase
 {
+    private const string NitConsumidorFinal = "CF";
+    private const int NitLongitudMaxima = 15;
+
     private readonly ApplicationDbContext _db;
 
     public PacientesController(ApplicationDbContext db)
@@ -70,6 +73,11 @@ public class PacientesController : ControllerBase
             return BadRequest(new { message = "Nombres, apellidos y teléfono son obligatorios." });
         }
 
+        if (NitExcedeLongitud(request.Nit))
+        {
+            return BadRequest(new { message = $"El NIT no puede tener más de {NitLongitudMaxima} caracteres." });
+        }
+
         var paciente = new Paciente
         {
             Nombres = request.Nombres.Trim(),
@@ -78,6 +86,7 @@ public class PacientesController : ControllerBase
             FechaNacimiento = request.FechaNacimiento,
             Telefono = request.Telefono.Trim(),
             Correo = request.Correo,
+            Nit = NormalizarNit(request.Nit),
             Direccion = request.Direccion,
             NombreEncargado = request.EncargadoNombre,
             TelefonoEncargado = request.EncargadoTelefono,
@@ -99,12 +108,18 @@ public class PacientesController : ControllerBase
             return NotFound();
         }
 
+        if (NitExcedeLongitud(request.Nit))
+        {
+            return BadRequest(new { message = $"El NIT no puede tener más de {NitLongitudMaxima} caracteres." });
+        }
+
         paciente.Nombres = request.Nombres.Trim();
         paciente.Apellidos = request.Apellidos.Trim();
         paciente.Sexo = request.Sexo;
         paciente.FechaNacimiento = request.FechaNacimiento;
         paciente.Telefono = request.Telefono.Trim();
         paciente.Correo = request.Correo;
+        paciente.Nit = NormalizarNit(request.Nit);
         paciente.Direccion = request.Direccion;
         paciente.NombreEncargado = request.EncargadoNombre;
         paciente.TelefonoEncargado = request.EncargadoTelefono;
@@ -127,6 +142,20 @@ public class PacientesController : ControllerBase
         return NoContent();
     }
 
+    // SCRUM-223 / SCRUM-224: vacío => "CF"; cualquier otro valor se guarda tal cual (sin espacios de más).
+    private static string NormalizarNit(string? nit)
+    {
+        var limpio = nit?.Trim();
+        if (string.IsNullOrEmpty(limpio) || limpio.Equals(NitConsumidorFinal, StringComparison.OrdinalIgnoreCase))
+        {
+            return NitConsumidorFinal;
+        }
+
+        return limpio;
+    }
+
+    private static bool NitExcedeLongitud(string? nit) => (nit?.Trim().Length ?? 0) > NitLongitudMaxima;
+
     private static PacienteDto ToDto(Paciente paciente) => new()
     {
         Id = paciente.IdPaciente,
@@ -136,6 +165,7 @@ public class PacientesController : ControllerBase
         FechaNacimiento = paciente.FechaNacimiento,
         Telefono = paciente.Telefono,
         Correo = paciente.Correo,
+        Nit = paciente.Nit,
         Direccion = paciente.Direccion,
         EncargadoNombre = paciente.NombreEncargado,
         EncargadoTelefono = paciente.TelefonoEncargado,

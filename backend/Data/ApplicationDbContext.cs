@@ -59,6 +59,7 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(u => u.IdUsuario);
             entity.Property(u => u.IdUsuario).HasColumnName("ID_Usuario");
             entity.Property(u => u.NombreUsuario).HasColumnName("NombreUsuario").HasMaxLength(50).IsRequired();
+            entity.Property(u => u.CorreoUsuario).HasColumnName("CorreoUsuario").HasColumnType("varchar(150)");
             entity.Property(u => u.Salt).HasColumnName("Salt").HasMaxLength(36).IsRequired();
             entity.Property(u => u.ContrasenaHash).HasColumnName("Contrasena_Hash").HasMaxLength(64).IsRequired();
             entity.Property(u => u.IdRol).HasColumnName("ID_Rol");
@@ -83,6 +84,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(p => p.FechaNacimiento).HasColumnName("Fecha_Nacimiento");
             entity.Property(p => p.Telefono).HasColumnName("Telefono").HasMaxLength(20).IsRequired();
             entity.Property(p => p.Correo).HasColumnName("Correo").HasMaxLength(100);
+            entity.Property(p => p.Nit).HasColumnName("NIT").HasColumnType("varchar(15)").IsRequired();
             entity.Property(p => p.Direccion).HasColumnName("Direccion").HasMaxLength(200);
             entity.Property(p => p.NombreEncargado).HasColumnName("Nombre_Encargado").HasMaxLength(100);
             entity.Property(p => p.TelefonoEncargado).HasColumnName("Telefono_Encargado").HasMaxLength(20);
@@ -146,6 +148,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(p => p.FechaInicioPlan).HasColumnName("FechaInicioPlan");
             entity.Property(p => p.CantidadDescuento).HasColumnName("CantidadDescuento").HasColumnType("decimal(10,2)");
             entity.Property(p => p.FechaCierre).HasColumnName("FechaCierre");
+            entity.Property(p => p.ObservacionesGenerales).HasColumnName("ObservacionesGenerales").HasColumnType("varchar(1000)");
 
             // Un paciente puede tener muchos planes cerrados (historial), pero solo
             // uno activo (FechaCierre NULL) a la vez — reforzado también en la BD

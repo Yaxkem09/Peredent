@@ -6,6 +6,9 @@ public class Usuario
 
     public string NombreUsuario { get; set; } = string.Empty;
 
+    // Nullable en la BD: los usuarios creados antes del Sprint 4 no tienen correo.
+    public string? CorreoUsuario { get; set; }
+
     public string Salt { get; set; } = string.Empty;
 
     public string ContrasenaHash { get; set; } = string.Empty;

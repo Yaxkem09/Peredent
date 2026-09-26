@@ -6,7 +6,10 @@ import { Alert, Button, EmptyState, Loader, Modal } from '../../components/commo
 import '../../styles/page-header.css';
 import './AdministracionUsuarios.css';
 
-const FORM_INICIAL = { nombreUsuario: '', clave: '', idRol: '', esAdmin: false };
+const FORM_INICIAL = { nombreUsuario: '', correo: '', clave: '', idRol: '', esAdmin: false };
+
+// Misma regla que valida el backend (algo@dominio.ext).
+const FORMATO_CORREO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 const mensajeError = (err, fallback) => err?.response?.data?.message || fallback;
 
@@ -71,8 +74,15 @@ const AdministracionUsuarios = () => {
   const guardarUsuario = async () => {
     setErrorCrear(null);
 
-    if (!formulario.nombreUsuario.trim() || !formulario.clave.trim() || !formulario.idRol) {
-      setErrorCrear('Completa usuario, contraseña y rol antes de guardar.');
+    const correo = formulario.correo.trim();
+
+    if (!formulario.nombreUsuario.trim() || !correo || !formulario.clave.trim() || !formulario.idRol) {
+      setErrorCrear('Completa usuario, correo, contraseña y rol antes de guardar.');
+      return;
+    }
+
+    if (!FORMATO_CORREO.test(correo)) {
+      setErrorCrear('Ingresa un correo electrónico válido (ej. nombre@correo.com).');
       return;
     }
 
@@ -80,6 +90,7 @@ const AdministracionUsuarios = () => {
     try {
       const nuevo = await usuariosService.create({
         nombreUsuario: formulario.nombreUsuario.trim(),
+        correo,
         clave: formulario.clave,
         idRol: Number(formulario.idRol),
         esAdmin: formulario.esAdmin,
@@ -186,6 +197,7 @@ const AdministracionUsuarios = () => {
             <thead>
               <tr>
                 <th>Usuario</th>
+                <th>Correo</th>
                 <th>Rol</th>
                 <th>Estado</th>
                 <th>Admin</th>
@@ -201,6 +213,7 @@ const AdministracionUsuarios = () => {
                 return (
                   <tr key={usuario.id}>
                     <td className="users-table-nombre">{usuario.nombreUsuario}</td>
+                    <td className={usuario.correo ? undefined : 'users-table-vacio'}>{usuario.correo || 'Sin correo'}</td>
                     <td>{usuario.rol}</td>
                     <td>
                       <span className={`badge ${usuario.estado ? 'badge-activo' : 'badge-inactivo'}`}>
@@ -268,6 +281,20 @@ const AdministracionUsuarios = () => {
               type="text"
               placeholder="Ej. jperez"
               value={formulario.nombreUsuario}
+              onChange={handleChange}
+              disabled={creando}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="correo">Correo electrónico</label>
+            <input
+              id="correo"
+              name="correo"
+              type="email"
+              autoComplete="off"
+              placeholder="Ej. jperez@correo.com"
+              value={formulario.correo}
               onChange={handleChange}
               disabled={creando}
             />

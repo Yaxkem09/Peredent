@@ -35,6 +35,11 @@
   color: var(--ink);
 }
 
+.users-table-vacio {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
 .users-table-acciones {
   display: flex;
   gap: 8px;
