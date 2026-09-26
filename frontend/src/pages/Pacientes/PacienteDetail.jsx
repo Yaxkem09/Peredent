@@ -19,20 +19,123 @@ import FotosPanoramicasTab from './FotosPanoramicasTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
-const TABS = [
-  { id: 'datos', label: 'Datos y contacto' },
-  { id: 'historia', label: 'Historia médica' },
-  { id: 'citas', label: 'Citas' },
-  { id: 'plan', label: 'Plan de tratamiento' },
-  { id: 'historial-planes', label: 'Historial de planes' },
-  { id: 'pendientes', label: 'Tratamiento pendiente' },
-  { id: 'historial', label: 'Historial' },
-  { id: 'endodoncia', label: 'Endodoncia y restauración' },
-  { id: 'fotos', label: 'Fotos panorámicas' },
-  { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
-  { id: 'presupuesto', label: 'Presupuesto' },
-  { id: 'saldo', label: 'Saldo y abonos' },
+// Íconos (trazos de 24x24) de cada pestaña del expediente.
+const ICONOS_TAB = {
+  datos: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="9" cy="11" r="2.2" />
+      <path d="M5.8 16.2c.7-1.7 1.9-2.5 3.2-2.5s2.5.8 3.2 2.5M14.5 10h4M14.5 13.5h3" />
+    </>
+  ),
+  historia: (
+    <>
+      <path d="M12 20s-7.5-4.6-7.5-10.2A4.1 4.1 0 0 1 12 7.4a4.1 4.1 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20z" />
+      <path d="M7.5 12h2.3l1.2-2 2 4 1.2-2h2.3" />
+    </>
+  ),
+  citas: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4M8 13.5h3M8 16.5h6" />
+    </>
+  ),
+  plan: (
+    <>
+      <rect x="5" y="4.5" width="14" height="16.5" rx="2" />
+      <path d="M9 3h6v3H9zM8.5 11h7M8.5 14.5h7M8.5 18h4" />
+    </>
+  ),
+  'historial-planes': (
+    <>
+      <path d="M4 12a8 8 0 1 0 2.3-5.7" />
+      <path d="M4 4v4h4M12 8v4.2l3 1.8" />
+    </>
+  ),
+  pendientes: (
+    <>
+      <path d="M7 3h10M7 21h10" />
+      <path d="M8 3v2.5c0 2.2 4 3.8 4 6.5s-4 4.3-4 6.5V21M16 3v2.5c0 2.2-4 3.8-4 6.5s4 4.3 4 6.5V21" />
+    </>
+  ),
+  historial: (
+    <>
+      <path d="M10 6.5h10M10 12h10M10 17.5h10" />
+      <path d="M4 6.5l1.2 1.2L7.5 5.4M4 12l1.2 1.2 2.3-2.3M4 17.5l1.2 1.2 2.3-2.3" />
+    </>
+  ),
+  endodoncia: (
+    <path d="M12 4.6c-2-1.6-6.5-1.3-7.4 2.5-.6 2.9 1 4.8 1.3 7.7.3 2.9 1 7.2 2.9 7.2 1.6 0 1.3-5 3.2-5s1.6 5 3.2 5c1.9 0 2.6-4.3 2.9-7.2.3-2.9 1.9-4.8 1.3-7.7-.9-3.8-5.4-4.1-7.4-2.5z" />
+  ),
+  fotos: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="8.5" cy="10" r="1.7" />
+      <path d="M21 15.5l-5-5-8.5 8.5" />
+    </>
+  ),
+  recetario: (
+    <>
+      <path d="M7.5 3.5h9a1 1 0 0 1 1 1V19a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2V4.5a1 1 0 0 1 1-1Z" />
+      <path d="M9.5 8h5M9.5 11.5h5M9.5 15h3" />
+    </>
+  ),
+  presupuesto: (
+    <>
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" />
+      <path d="M9 8h6M9 12h6M9 16h3.5" />
+    </>
+  ),
+  saldo: (
+    <>
+      <rect x="3" y="6" width="18" height="13" rx="2" />
+      <path d="M3 10h18M15.5 14.5h2.5" />
+    </>
+  ),
+};
+
+// Pestañas agrupadas por tema, para que al abrir el expediente se ubique
+// rápido cada sección (antes eran 12 pestañas sueltas en dos renglones).
+const GRUPOS_TABS = [
+  {
+    id: 'paciente',
+    label: 'Paciente',
+    tabs: [
+      { id: 'datos', label: 'Datos y contacto' },
+      { id: 'historia', label: 'Historia médica' },
+      { id: 'citas', label: 'Citas' },
+    ],
+  },
+  {
+    id: 'tratamientos',
+    label: 'Tratamientos',
+    tabs: [
+      { id: 'plan', label: 'Plan de tratamiento' },
+      { id: 'historial-planes', label: 'Historial de planes' },
+      { id: 'pendientes', label: 'Tratamiento pendiente' },
+      { id: 'historial', label: 'Historial' },
+      { id: 'endodoncia', label: 'Endodoncia y restauración' },
+    ],
+  },
+  {
+    id: 'documentos',
+    label: 'Documentos',
+    tabs: [
+      { id: 'fotos', label: 'Fotos panorámicas' },
+      { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
+    ],
+  },
+  {
+    id: 'finanzas',
+    label: 'Finanzas',
+    tabs: [
+      { id: 'presupuesto', label: 'Presupuesto' },
+      { id: 'saldo', label: 'Saldo y abonos' },
+    ],
+  },
 ];
+
+const TABS = GRUPOS_TABS.flatMap((grupo) => grupo.tabs);
 
 const TABS_DISPONIBLES = new Set([
   'datos',
@@ -346,7 +449,6 @@ const PacienteDetail = () => {
         <div>
           <div className="eyebrow">Expediente completo</div>
           <h2>{paciente ? `${paciente.nombres} ${paciente.apellidos}` : 'Cargando…'}</h2>
-          <p>Ficha, historia médica, citas, tratamientos y saldo en una sola vista.</p>
         </div>
       </div>
 
@@ -356,18 +458,43 @@ const PacienteDetail = () => {
         <Alert type="error">{errorPaciente}</Alert>
       ) : (
         <>
-          <div className="tabs">
-            {visibleTabs.map((tab) => (
-              <button
-                type="button"
-                key={tab.id}
-                className={`tab${activeTab === tab.id ? ' active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <nav className="exp-nav" aria-label="Secciones del expediente">
+            {GRUPOS_TABS.map((grupo) => {
+              const tabsDelGrupo = grupo.tabs.filter((tab) => visibleTabs.some((v) => v.id === tab.id));
+              if (tabsDelGrupo.length === 0) return null;
+              return (
+                <div className={`exp-grupo ${grupo.id}`} key={grupo.id}>
+                  <div className="exp-grupo-label">{grupo.label}</div>
+                  <div className="exp-grupo-tabs">
+                    {tabsDelGrupo.map((tab) => (
+                      <button
+                        type="button"
+                        key={tab.id}
+                        className={`exp-tab${activeTab === tab.id ? ' active' : ''}`}
+                        aria-current={activeTab === tab.id ? 'page' : undefined}
+                        onClick={() => setActiveTab(tab.id)}
+                      >
+                        <svg
+                          width="17"
+                          height="17"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          {ICONOS_TAB[tab.id]}
+                        </svg>
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </nav>
 
           {activeTab === 'datos' && <DatosTab paciente={paciente} idPaciente={id} />}
           {activeTab === 'historia' && (

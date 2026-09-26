@@ -12,8 +12,22 @@ export const HORA_FIN = 19;
 
 // Alto en px de una hora en la grilla de las vistas día/semana; controla tanto
 // las etiquetas del eje como la posición y el alto de cada bloque de cita.
-export const ALTURA_HORA_PX = 72;
-const PX_POR_MINUTO = ALTURA_HORA_PX / 60;
+export const ALTURA_HORA_PX = 96;
+export const PX_POR_MINUTO = ALTURA_HORA_PX / 60;
+
+// Igual que CitaConstantes.IncrementoMinutos en el backend: la agenda trabaja
+// en bloques de 15 min (arrastre, duración mínima y horas de inicio/fin).
+export const INCREMENTO_MINUTOS = 15;
+
+// Minutos desde medianoche <-> "HH:mm". Se usan en el arrastre y en los
+// formularios de inicio/fin, donde es más cómodo sumar/restar enteros.
+export const horaAMinutos = (hora) => {
+  const [h, m] = hora.split(':').map(Number);
+  return h * 60 + m;
+};
+
+export const minutosAHora = (minutos) =>
+  `${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`;
 
 export const hoy = () => {
   const d = new Date();
@@ -121,3 +135,22 @@ const CLASES_POR_ESTADO = {
 };
 
 export const claseDeEstado = (estado) => CLASES_POR_ESTADO[estado] ?? '';
+
+// Solo se pueden arrastrar citas vigentes: ni las ya cerradas (canceladas,
+// atendidas, no asistió) ni las de días pasados, que el backend trata como
+// historial y no deja reprogramar.
+const ESTADOS_NO_REPROGRAMABLES = ['Cancelada', 'Atendida', 'No Asistio'];
+
+export const esCitaReprogramable = (cita) =>
+  !ESTADOS_NO_REPROGRAMABLES.includes(cita.estado) && cita.fecha >= toIsoDate(hoy());
+
+// ¿El intervalo [inicio, fin) (minutos desde medianoche) de `fecha` se cruza
+// con otra cita del mismo día? Mismo criterio que HayConflictoHorarioAsync:
+// las canceladas no ocupan horario.
+export const hayTraslape = (citas, { idCita, fecha, inicio, fin }) =>
+  citas.some((otra) => {
+    if (otra.idCita === idCita || otra.fecha !== fecha || otra.estado === 'Cancelada') return false;
+    const otraInicio = horaAMinutos(otra.hora);
+    const otraFin = otraInicio + otra.duracionMinutos;
+    return otraInicio < fin && inicio < otraFin;
+  });

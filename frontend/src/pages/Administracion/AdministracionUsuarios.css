@@ -134,3 +134,327 @@
     white-space: normal;
   }
 }
+
+/* ---- Rediseño: tarjetas de resumen, barra de búsqueda y tabla ---- */
+.btn.admin-nuevo {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px -4px rgba(10, 38, 75, 0.45);
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.admin-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px -14px rgba(10, 38, 75, 0.5);
+}
+
+.admin-stat-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.admin-stat.total .admin-stat-icono {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.admin-stat.activos .admin-stat-icono {
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.admin-stat.inactivos .admin-stat-icono {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.admin-stat.admins .admin-stat-icono {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.admin-stat-num {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.admin-stat-label {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-alt);
+}
+
+.admin-buscar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-faint);
+}
+
+.admin-buscar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(21, 147, 156, 0.14);
+}
+
+.admin-buscar input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.admin-filtros {
+  display: flex;
+  gap: 2px;
+  height: 40px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.admin-filtros button {
+  border: none;
+  background: transparent;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.admin-filtros button:hover:not(.active) {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.admin-filtros button.active {
+  background: var(--teal);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.users-table-wrap {
+  border-radius: 14px;
+  box-shadow: 0 6px 18px -14px rgba(10, 38, 75, 0.5);
+}
+
+.users-table {
+  font-size: 13.5px;
+}
+
+.users-table th {
+  background: var(--surface);
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.users-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.users-table tbody tr:hover {
+  background: #f7faf9;
+}
+
+.users-table tbody tr.fila-inactiva td {
+  color: var(--ink-faint);
+}
+
+.users-table tbody tr.fila-inactiva .users-avatar {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.users-table-usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.users-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 12.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #ffffff;
+  background: var(--gris);
+}
+
+.users-avatar.rol-odontologo {
+  background: linear-gradient(135deg, #0a264b, #13507e);
+}
+
+.users-avatar.rol-asistente {
+  background: linear-gradient(135deg, #15939c, #0f6f76);
+}
+
+.users-table-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.users-tu {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge {
+  gap: 6px;
+}
+
+.badge-rol.rol-odontologo {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.badge-rol.rol-asistente {
+  background: var(--accent-soft);
+  color: #0f6f76;
+}
+
+.badge-rol.rol-otro {
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+}
+
+.badge.badge-activo {
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.badge-punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.users-table td.users-table-sin-resultados {
+  text-align: center;
+  color: var(--ink-faint);
+  padding: 28px 16px;
+}
+
+.admin-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-accion:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-accion.peligro {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.admin-accion.peligro:hover:not(:disabled) {
+  background: var(--coral);
+  color: #ffffff;
+}
+
+.admin-accion.exito {
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.admin-accion.exito:hover:not(:disabled) {
+  background: var(--verde);
+  color: #ffffff;
+}
+
+.admin-accion.admin {
+  background: var(--accent-soft);
+  color: #0f6f76;
+}
+
+.admin-accion.admin:hover:not(:disabled) {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.admin-accion.neutra {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.admin-accion.neutra:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}

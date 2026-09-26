@@ -24,38 +24,6 @@
   flex-shrink: 0;
 }
 
-.tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 22px;
-}
-
-.tab {
-  padding: 9px 14px;
-  font-size: 13px;
-  color: var(--ink-soft);
-  cursor: pointer;
-  border: none;
-  background: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  user-select: none;
-  white-space: nowrap;
-  font-family: 'Inter', sans-serif;
-}
-
-.tab:hover {
-  color: var(--ink);
-}
-
-.tab.active {
-  color: var(--teal);
-  border-bottom-color: var(--teal);
-  font-weight: 500;
-}
-
 .detail-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -309,3 +277,134 @@
   font-size: 0.9rem;
   resize: vertical;
 }
+
+/* ---- Navegación del expediente: pestañas agrupadas por tema ----
+   Cada grupo tiene su color (etiqueta + íconos) para reconocerlo de un
+   vistazo; la pestaña activa siempre se pinta en azul marino. */
+.exp-nav {
+  --grupo: var(--teal);
+  --grupo-soft: var(--teal-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 0;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px -14px rgba(10, 38, 75, 0.5);
+}
+
+.exp-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 18px;
+  border-left: 1px solid var(--line);
+}
+
+.exp-grupo:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.exp-grupo.paciente {
+  --grupo: #0a264b;
+  --grupo-soft: #e7ebf1;
+}
+
+.exp-grupo.tratamientos {
+  --grupo: #0f7f88;
+  --grupo-soft: #e1f2f3;
+}
+
+.exp-grupo.documentos {
+  --grupo: #9a6412;
+  --grupo-soft: #fbf0dd;
+}
+
+.exp-grupo.finanzas {
+  --grupo: #2f8f57;
+  --grupo-soft: #e2f3e8;
+}
+
+.exp-grupo-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--grupo);
+}
+
+.exp-grupo-label::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--grupo);
+}
+
+.exp-grupo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.exp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.exp-tab svg {
+  flex-shrink: 0;
+  color: var(--grupo);
+}
+
+.exp-tab:hover:not(.active) {
+  background: var(--grupo-soft);
+  border-color: var(--grupo);
+  transform: translateY(-1px);
+}
+
+.exp-tab.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 6px 14px -6px rgba(10, 38, 75, 0.6);
+}
+
+.exp-tab.active svg {
+  color: #7fe0e6;
+}
+
+@media (max-width: 860px) {
+  .exp-grupo {
+    padding: 0;
+    border-left: none;
+    width: 100%;
+  }
+}
+
