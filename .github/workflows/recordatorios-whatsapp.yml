@@ -1,0 +1,141 @@
+name: Recordatorios WhatsApp
+
+on:
+  schedule:
+    # Guatemala es UTC-6 todo el año (sin horario de verano):
+    # 9:07 a. m. en Guatemala = 9:07 + 6 h = 15:07 UTC.
+    # Minuto 7 (no 0) porque GitHub retrasa o descarta más ejecuciones
+    # programadas en punto, cuando hay más carga.
+    # Solo corre desde la rama por defecto (main).
+    - cron: "7 15 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Solo simular (no envía mensajes ni modifica la base)"
+        type: boolean
+        default: false
+
+# El workflow solo llama a la API; no necesita leer ni escribir el repositorio.
+permissions: {}
+
+# Nunca dos ejecuciones a la vez (p. ej. una manual mientras corre la programada).
+concurrency:
+  group: recordatorios-whatsapp
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    name: Enviar recordatorios de mañana
+    runs-on: ubuntu-latest
+    # 3 intentos x (120 s de curl + 30 s de espera) = 7.5 min como máximo.
+    timeout-minutes: 10
+
+    steps:
+      - name: Validar secrets
+        env:
+          PEREDENT_API_URL: ${{ secrets.PEREDENT_API_URL }}
+          RECORDATORIOS_API_KEY: ${{ secrets.RECORDATORIOS_API_KEY }}
+        run: |
+          faltantes=0
+          if [ -z "$PEREDENT_API_URL" ]; then
+            echo "::error::Falta el secret PEREDENT_API_URL (URL base de la API, p. ej. https://mi-api.somee.com)."
+            faltantes=1
+          fi
+          if [ -z "$RECORDATORIOS_API_KEY" ]; then
+            echo "::error::Falta el secret RECORDATORIOS_API_KEY (mismo valor que REMINDERS_API_KEY en el servidor)."
+            faltantes=1
+          fi
+          exit "$faltantes"
+
+      - name: Llamar al endpoint de recordatorios
+        env:
+          PEREDENT_API_URL: ${{ secrets.PEREDENT_API_URL }}
+          RECORDATORIOS_API_KEY: ${{ secrets.RECORDATORIOS_API_KEY }}
+          # En la ejecución programada no hay inputs: se envía de verdad.
+          DRY_RUN: ${{ inputs.dry_run == true && 'true' || 'false' }}
+        run: |
+          set -uo pipefail
+
+          url="${PEREDENT_API_URL%/}/api/recordatorios/enviar?dryRun=${DRY_RUN}"
+          respuesta="$RUNNER_TEMP/respuesta.json"
+          trap 'rm -f "$respuesta"' EXIT
+
+          echo "dryRun=${DRY_RUN}"
+
+          max_intentos=3
+          espera_segundos=30
+          status="000"
+
+          for intento in $(seq 1 "$max_intentos"); do
+            # Sin -v ni -i: nunca se imprimen los headers (llevan la API key).
+            # curl deja status=000 si hubo error de red o timeout.
+            status=$(curl -sS -o "$respuesta" -w '%{http_code}' --max-time 120 \
+              -X POST -H "X-Api-Key: ${RECORDATORIOS_API_KEY}" "$url") || true
+            status=${status:-000}
+            echo "Intento ${intento}/${max_intentos}: HTTP ${status}"
+
+            # Solo se reintenta ante error de red/timeout (000) o 5xx: el
+            # servidor de Somee puede estar "dormido". 401/409/otros no.
+            if [ "$status" != "000" ] && [ "${status:0:1}" != "5" ]; then
+              break
+            fi
+
+            if [ "$intento" -lt "$max_intentos" ]; then
+              echo "Reintentando en ${espera_segundos} s..."
+              sleep "$espera_segundos"
+            fi
+          done
+
+          case "$status" in
+            200)
+              # Si el 200 no trae el resumen esperado (p. ej. una página de
+              # Somee en vez de la API), se falla en vez de pasar en verde.
+              if ! jq -e '(.fallidas | type) == "number"' "$respuesta" > /dev/null 2>&1; then
+                echo "::error::La API respondió 200 pero sin el resumen esperado. Revisa que PEREDENT_API_URL apunte a la API."
+                exit 1
+              fi
+
+              jq -r '
+                "Fecha objetivo:   \(.fechaObjetivo)",
+                "dryRun:           \(.dryRun)",
+                "Encontradas:      \(.totalEncontradas)",
+                "Enviadas:         \(.enviadas)",
+                "Fallidas:         \(.fallidas)",
+                "Omitidas:         \(.omitidas)",
+                "Por enviar:       \(.porEnviar)"
+              ' "$respuesta"
+
+              {
+                echo "### Recordatorios de $(jq -r '.fechaObjetivo' "$respuesta")"
+                echo ""
+                echo "| dryRun | Encontradas | Enviadas | Fallidas | Omitidas | Por enviar |"
+                echo "|---|---|---|---|---|---|"
+                jq -r '"| \(.dryRun) | \(.totalEncontradas) | \(.enviadas) | \(.fallidas) | \(.omitidas) | \(.porEnviar) |"' "$respuesta"
+              } >> "$GITHUB_STEP_SUMMARY"
+
+              fallidas=$(jq -r '.fallidas' "$respuesta")
+              if [ "$fallidas" -gt 0 ]; then
+                echo ""
+                echo "Citas con envío fallido (solo id y error, sin datos del paciente):"
+                jq -r '.detalle[] | select(.resultado == "Fallido") | "  - Cita \(.idCita): \(.motivo)"' "$respuesta"
+                echo "::error::${fallidas} recordatorio(s) fallaron. Las citas fallidas quedan pendientes: se puede volver a ejecutar este workflow manualmente (Run workflow) hoy mismo y solo se reintentarán esas."
+                exit 1
+              fi
+              ;;
+            409)
+              echo "::warning::Ya había una ejecución de recordatorios en curso (probablemente un reintento). No se envió nada en esta llamada."
+              ;;
+            401)
+              echo "::error::La API respondió 401. Revisa que el secret RECORDATORIOS_API_KEY coincida con REMINDERS_API_KEY del servidor."
+              exit 1
+              ;;
+            000)
+              echo "::error::No se pudo conectar con la API tras ${max_intentos} intentos (error de red o timeout). Revisa el secret PEREDENT_API_URL y que el sitio esté en línea."
+              exit 1
+              ;;
+            *)
+              # Sin imprimir el cuerpo: en Development puede incluir los headers de la petición.
+              echo "::error::La API respondió HTTP ${status} tras ${intento} intento(s). Revisa los logs del servidor."
+              exit 1
+              ;;
+          esac
