@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Data;
 using Peredent.Api.DTOs.Request;
 using Peredent.Api.DTOs.Response;
+using Peredent.Api.Helpers;
 using Peredent.Api.Models;
 
 namespace Peredent.Api.Services;
@@ -29,7 +30,7 @@ public class BloqueoAgendaService : IBloqueoAgendaService
 
     public async Task<BloqueoAgendaResultado> CrearAsync(int idUsuario, CreateBloqueoAgendaDto request)
     {
-        if (request.Fecha < DateOnly.FromDateTime(AhoraGuatemala()))
+        if (request.Fecha < DateOnly.FromDateTime(FechaHoraGuatemala.Ahora()))
         {
             return BloqueoAgendaResultado.Fallo(BloqueoAgendaError.FechaEnElPasado, "No se puede bloquear una fecha ya pasada.");
         }
@@ -45,7 +46,7 @@ public class BloqueoAgendaService : IBloqueoAgendaService
             IdUsuario = idUsuario,
             Fecha = request.Fecha,
             Motivo = string.IsNullOrWhiteSpace(request.Motivo) ? null : request.Motivo.Trim(),
-            CreadoEn = AhoraGuatemala(),
+            CreadoEn = FechaHoraGuatemala.Ahora(),
         };
 
         _db.BloqueosAgenda.Add(bloqueo);
@@ -74,10 +75,6 @@ public class BloqueoAgendaService : IBloqueoAgendaService
         await _db.SaveChangesAsync();
         return true;
     }
-
-    // Misma referencia horaria que CitaService: Guatemala es UTC-6 todo el
-    // año (sin horario de verano).
-    private static DateTime AhoraGuatemala() => DateTime.UtcNow.AddHours(-6);
 
     private static BloqueoAgendaDto ToDto(BloqueoAgenda b) => new()
     {

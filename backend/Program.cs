@@ -58,6 +58,24 @@ if (Encoding.UTF8.GetByteCount(jwtSecret) < 32)
     throw new InvalidOperationException("JWT_SECRET debe tener al menos 32 bytes (256 bits) para HMACSHA256");
 }
 
+// Recordatorios por WhatsApp: apagados por defecto, así el CI y los demás
+// desarrolladores arrancan sin estas variables. Solo cuando se encienden se
+// exige el Phone Number ID y el token de la WhatsApp Cloud API.
+var whatsAppEnabled = bool.TryParse(builder.Configuration["WHATSAPP_ENABLED"], out var whatsAppEnabledConfigurado)
+    && whatsAppEnabledConfigurado;
+var whatsAppPhoneNumberId = builder.Configuration["WHATSAPP_PHONE_NUMBER_ID"];
+var whatsAppToken = builder.Configuration["WHATSAPP_TOKEN"];
+
+if (whatsAppEnabled && string.IsNullOrWhiteSpace(whatsAppPhoneNumberId))
+{
+    throw new InvalidOperationException("WHATSAPP_PHONE_NUMBER_ID no está configurada (requerida cuando WHATSAPP_ENABLED=true)");
+}
+
+if (whatsAppEnabled && string.IsNullOrWhiteSpace(whatsAppToken))
+{
+    throw new InvalidOperationException("WHATSAPP_TOKEN no está configurada (requerida cuando WHATSAPP_ENABLED=true)");
+}
+
 var jwtExpirationMinutes = int.TryParse(builder.Configuration["JWT_EXPIRATION_MINUTES"], out var minutosConfigurados)
     ? minutosConfigurados
     : 480; // 8 horas: un turno clínico completo
@@ -88,6 +106,38 @@ builder.Services.Configure<R2Options>(builder.Configuration.GetSection("R2"));
 // Scoped: crea un AmazonS3Client por request; ver R2StorageService para el
 // detalle de por qué el AmazonS3Config necesita esas propiedades para R2.
 builder.Services.AddScoped<IR2StorageService, R2StorageService>();
+
+// Nombres planos (WHATSAPP_*, REMINDERS_API_KEY) en vez de una sección, igual
+// que DB_HOST y JWT_SECRET; los que no vienen conservan el default de la clase.
+builder.Services.Configure<WhatsAppOptions>(options =>
+{
+    options.Enabled = whatsAppEnabled;
+    options.PhoneNumberId = whatsAppPhoneNumberId ?? string.Empty;
+    options.AccessToken = whatsAppToken ?? string.Empty;
+
+    var apiVersion = builder.Configuration["WHATSAPP_API_VERSION"];
+    if (!string.IsNullOrWhiteSpace(apiVersion))
+    {
+        options.ApiVersion = apiVersion;
+    }
+
+    var templateName = builder.Configuration["WHATSAPP_TEMPLATE_NAME"];
+    if (!string.IsNullOrWhiteSpace(templateName))
+    {
+        options.TemplateName = templateName;
+    }
+
+    var templateLanguage = builder.Configuration["WHATSAPP_TEMPLATE_LANGUAGE"];
+    if (!string.IsNullOrWhiteSpace(templateLanguage))
+    {
+        options.TemplateLanguage = templateLanguage;
+    }
+});
+
+builder.Services.Configure<RecordatoriosOptions>(options =>
+{
+    options.ApiKey = builder.Configuration["REMINDERS_API_KEY"] ?? string.Empty;
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
