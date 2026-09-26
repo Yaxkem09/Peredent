@@ -139,6 +139,14 @@ builder.Services.Configure<RecordatoriosOptions>(options =>
     options.ApiKey = builder.Configuration["REMINDERS_API_KEY"] ?? string.Empty;
 });
 
+// HttpClient tipado: IHttpClientFactory administra el handler (sin agotar
+// sockets). El token no va en los headers por defecto, lo pone cada request.
+builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>(client =>
+{
+    client.BaseAddress = new Uri("https://graph.facebook.com/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
