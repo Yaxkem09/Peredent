@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import { citasService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { Button, Modal } from '../../components/common';
-import { esCitaPasada, estaFueraDeHorarioClinica, toIsoDate } from './agenda.utils';
+import {
+  INCREMENTO_MINUTOS,
+  esCitaPasada,
+  estaFueraDeHorarioClinica,
+  horaAMinutos,
+  minutosAHora,
+  sumarMinutos,
+  toIsoDate,
+} from './agenda.utils';
 import './CitaModal.css';
 
 const ESTADOS_QUE_REQUIEREN_CITA_YA_OCURRIDA = ['Atendida', 'No Asistio'];
@@ -18,7 +26,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState('');
-  const [duracionMinutos, setDuracionMinutos] = useState(30);
+  const [horaFin, setHoraFin] = useState('');
   const [idEstadoCita, setIdEstadoCita] = useState('');
   const [notas, setNotas] = useState('');
 
@@ -31,7 +39,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
     setFecha(cita.fecha);
     setHora(cita.hora.slice(0, 5));
-    setDuracionMinutos(cita.duracionMinutos);
+    setHoraFin(sumarMinutos(cita.hora, cita.duracionMinutos));
     setIdEstadoCita(String(cita.idEstadoCita));
     setNotas(cita.notasAdicionales || '');
     setError(null);
@@ -57,6 +65,17 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
 
   if (!cita) return null;
 
+  const duracionMinutos = hora && horaFin ? horaAMinutos(horaFin) - horaAMinutos(hora) : 0;
+
+  // Al mover la hora de inicio se conserva la duración elegida (la hora de fin
+  // se corre junto con ella), igual que al arrastrar la cita en la agenda.
+  const cambiarHoraInicio = (nuevaHora) => {
+    if (nuevaHora && hora && horaFin && duracionMinutos > 0) {
+      setHoraFin(minutosAHora(Math.min(horaAMinutos(nuevaHora) + duracionMinutos, 24 * 60 - 1)));
+    }
+    setHora(nuevaHora);
+  };
+
   // La cita original ya pasó: la fecha/hora queda fija (no se puede reprogramar
   // historial). El backend es la autoridad real de esto; acá solo es UX.
   const citaYaPaso = esCitaPasada(cita.fecha, cita.hora);
@@ -64,11 +83,14 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
   // Con la fecha/hora que hay AHORA en el formulario (no la original): decide si
   // Atendida/No Asistió tienen sentido todavía y si cae fuera de 7:00-19:00.
   const nuevaCitaTodaviaNoLlega = fecha && hora ? !esCitaPasada(fecha, hora) : false;
-  const fueraDeHorario = hora ? estaFueraDeHorarioClinica(hora, duracionMinutos) : false;
+  const fueraDeHorario = hora && duracionMinutos > 0 ? estaFueraDeHorarioClinica(hora, duracionMinutos) : false;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    if (duracionMinutos < INCREMENTO_MINUTOS) {
+      return setError(`La hora de fin debe ser al menos ${INCREMENTO_MINUTOS} min después de la de inicio.`);
+    }
     setGuardando(true);
 
     try {
@@ -107,7 +129,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
   return (
     <Modal open={open} onClose={onClose} title="Modificar cita" wide>
       <p className="cita-modal-sub">
-        Ajusta la fecha, hora, duración o estado de la cita de <strong>{cita.nombrePaciente}</strong>.
+        Ajusta la fecha, horario o estado de la cita de <strong>{cita.nombrePaciente}</strong>.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -130,26 +152,31 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
           </div>
 
           <div className="field">
-            <label htmlFor="editar-hora">Hora</label>
+            <label htmlFor="editar-hora">Hora de inicio</label>
             <input
               id="editar-hora"
               type="time"
               value={hora}
-              onChange={(e) => setHora(e.target.value)}
+              onChange={(e) => cambiarHoraInicio(e.target.value)}
+              min="07:00"
+              max="19:00"
+              step={INCREMENTO_MINUTOS * 60}
               disabled={citaYaPaso}
             />
           </div>
 
           <div className="field">
-            <label htmlFor="editar-duracion">Duración</label>
-            <select
-              id="editar-duracion"
-              value={duracionMinutos}
-              onChange={(e) => setDuracionMinutos(Number(e.target.value))}
-            >
-              <option value={30}>30 min</option>
-              <option value={60}>1 hora</option>
-            </select>
+            <label htmlFor="editar-hora-fin">Hora de fin</label>
+            <input
+              id="editar-hora-fin"
+              type="time"
+              value={horaFin}
+              onChange={(e) => setHoraFin(e.target.value)}
+              min="07:00"
+              max="19:00"
+              step={INCREMENTO_MINUTOS * 60}
+              disabled={citaYaPaso}
+            />
           </div>
 
           <div className="field">

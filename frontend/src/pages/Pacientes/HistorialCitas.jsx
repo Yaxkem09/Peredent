@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../routes/routes';
 import { formatDate } from '../../utils/formatters';
 import { citasService } from '../../services/citas.service';
+import { formatearRangoHora } from '../Calendario/agenda.utils';
 import { Alert, EmptyState, Loader } from '../../components/common';
 import './HistorialCitas.css';
 
@@ -17,6 +20,7 @@ const CLASE_POR_ESTADO = {
 };
 
 const HistorialCitas = ({ idPaciente }) => {
+  const navigate = useNavigate();
   const [citas, setCitas] = useState([]);
   const [filtros, setFiltros] = useState(FILTROS_INICIALES);
   const [cargando, setCargando] = useState(true);
@@ -72,6 +76,13 @@ const HistorialCitas = ({ idPaciente }) => {
 
   const cambiarFiltro = (campo, valor) => setFiltros((prev) => ({ ...prev, [campo]: valor }));
   const limpiarFiltros = () => setFiltros(FILTROS_INICIALES);
+
+  // Abre la agenda directo en el día de la cita, en el calendario de su
+  // odontólogo, con la cita resaltada (ver Calendario.jsx).
+  const verEnAgenda = (cita) => {
+    const params = new URLSearchParams({ fecha: cita.fecha, odontologo: cita.idUsuario, cita: cita.idCita });
+    navigate(`${ROUTES.CALENDARIO}?${params}`);
+  };
 
   if (error) return <Alert type="error">{error}</Alert>;
 
@@ -148,18 +159,29 @@ const HistorialCitas = ({ idPaciente }) => {
               <th>Odontólogo</th>
               <th>Estado</th>
               <th>Notas</th>
+              <th aria-label="Acciones" />
             </tr>
           </thead>
           <tbody>
             {citas.map((cita) => (
               <tr key={cita.idCita}>
                 <td>{formatDate(cita.fecha)}</td>
-                <td>{cita.hora.slice(0, 5)}</td>
+                <td className="hc-hora">{formatearRangoHora(cita.hora, cita.duracionMinutos)}</td>
                 <td>{cita.nombreOdontologo}</td>
                 <td>
                   <span className={`tag ${CLASE_POR_ESTADO[cita.estado] || ''}`}>{cita.estado}</span>
                 </td>
                 <td className="hc-notas">{cita.notasAdicionales || '—'}</td>
+                <td className="hc-acciones">
+                  <button type="button" className="hc-ver-agenda" onClick={() => verEnAgenda(cita)}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+                      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+                      <path d="M10 13.5h4M12.5 11.5l2 2-2 2" />
+                    </svg>
+                    Ver en agenda
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

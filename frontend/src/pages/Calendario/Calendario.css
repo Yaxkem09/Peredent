@@ -2,26 +2,30 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
 }
 
 /* ---- Selector de vista (Día / Semana / Mes) ---- */
 .view-switch {
   display: flex;
-  gap: 4px;
-  background: var(--teal-soft);
-  border-radius: 8px;
+  gap: 2px;
+  height: 40px;
   padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.06);
 }
 
 .view-switch button {
   border: none;
   background: transparent;
-  padding: 7px 14px;
-  border-radius: 6px;
-  font-size: 12.5px;
+  padding: 0 18px;
+  border-radius: 7px;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--teal);
+  color: var(--ink-soft);
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition:
@@ -30,46 +34,41 @@
 }
 
 .view-switch button:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--teal-soft);
+  color: var(--teal);
 }
 
 .view-switch button.active {
   background: var(--teal);
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(10, 38, 75, 0.24);
+  box-shadow: 0 3px 8px -2px rgba(10, 38, 75, 0.45);
 }
 
 .day-nav {
   display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Los botones de navegación y el selector de odontólogo usan el <Button>
-   compartido con el resto de la app -- se recolorean solo aquí, con
-   selectores más específicos que Button.css, para no afectar otras pantallas. */
-.day-nav .btn-secondary {
-  color: var(--teal);
-  font-weight: 500;
-}
-
-.day-nav .btn-secondary:hover:not(:disabled) {
-  background: var(--teal-soft);
-  border-color: var(--teal);
+  align-items: stretch;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.06);
 }
 
 /* ---- Selector de odontólogo (solo Asistente): a qué calendario ver ---- */
 .odontologo-switch {
-  border: 1px solid var(--teal-soft);
-  background: var(--teal-soft);
-  border-radius: 8px;
-  padding: 7px 10px;
-  font-size: 12.5px;
-  font-weight: 500;
+  height: 40px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
   font-family: 'Inter', sans-serif;
   color: var(--teal);
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.06);
   transition: border-color 0.15s ease;
 }
 
@@ -209,14 +208,18 @@
 
 .cita-block {
   position: absolute;
-  left: 6px;
-  right: 6px;
-  border-radius: 8px;
-  border-left: 4px solid var(--teal);
+  left: 8px;
+  right: 8px;
+  border-radius: 10px;
+  border-left: 5px solid var(--teal);
   background: var(--teal-soft);
-  padding: 5px 10px;
+  padding: 6px 14px;
   overflow: hidden;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
   transition:
     box-shadow 0.12s ease,
     transform 0.12s ease;
@@ -235,7 +238,7 @@
 }
 
 .cb-rango {
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--ink-soft);
   white-space: nowrap;
@@ -243,30 +246,42 @@
 }
 
 .cb-dot {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
   background: var(--teal);
 }
 
 .cb-nombre {
-  font-size: 12.5px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--ink);
-  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .cb-nota {
-  font-size: 11px;
-  color: var(--ink-soft);
-  margin-top: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 60%;
+  padding: 2px 10px 2px 3px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(10, 38, 75, 0.12);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.06);
 }
 
 /* ---- Vista semana: mismo eje de horas + una columna por día ---- */
@@ -295,15 +310,17 @@
 }
 
 .week-head-cell .wd-name {
-  font-size: 10px;
-  color: var(--ink-faint);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .week-head-cell .wd-num {
   font-family: 'Fraunces', serif;
-  font-size: 15px;
+  font-size: 22px;
+  font-weight: 600;
   margin-top: 2px;
 }
 
@@ -336,13 +353,13 @@
   position: absolute;
   left: 3px;
   right: 3px;
-  border-radius: 6px;
-  border-left: 3px solid var(--teal);
+  border-radius: 7px;
+  border-left: 4px solid var(--teal);
   background: var(--teal-soft);
-  padding: 3px 6px;
+  padding: 4px 7px;
   overflow: hidden;
   cursor: pointer;
-  font-size: 10.5px;
+  font-size: 12px;
   line-height: 1.3;
 }
 
@@ -353,13 +370,14 @@
 .wk-rango {
   display: block;
   font-weight: 700;
-  font-size: 9.5px;
+  font-size: 10.5px;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
 
 .wk-nombre {
   display: block;
+  font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
@@ -390,12 +408,13 @@
 }
 
 .month-head-cell {
-  padding: 8px;
+  padding: 10px 8px;
   text-align: center;
-  font-size: 11px;
-  color: var(--ink-faint);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
 }
 
 .month-grid {
@@ -404,15 +423,17 @@
 }
 
 .month-cell {
-  min-height: 82px;
+  min-height: 108px;
+  min-width: 0;
   border-right: 1px solid var(--ink-faint);
   border-bottom: 1px solid var(--ink-faint);
-  padding: 6px;
+  padding: 6px 8px 8px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   box-sizing: border-box;
   cursor: pointer;
+  transition: background 0.12s ease;
 }
 
 .month-cell:hover {
@@ -421,6 +442,7 @@
 
 .month-cell.selected {
   background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .month-cell:nth-child(7n) {
@@ -443,7 +465,7 @@
 }
 
 .month-cell-bloqueado {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--gris);
   text-transform: uppercase;
@@ -452,9 +474,10 @@
 
 .month-daynum {
   font-family: 'Fraunces', serif;
-  font-size: 12.5px;
-  width: 22px;
-  height: 22px;
+  font-size: 15px;
+  font-weight: 600;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -467,81 +490,69 @@
   color: #ffffff;
 }
 
-.resumen-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.resumen-num {
-  font-size: 15px;
-  font-weight: 600;
-  font-family: 'Fraunces', serif;
-}
-
-.resumen-dots {
-  display: flex;
-  gap: 3px;
-}
-
-.resumen-dots .rd {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--teal);
-}
-
 .side-panel {
-  width: 280px;
+  width: clamp(320px, 26vw, 440px);
   flex-shrink: 0;
-  background: var(--surface-alt);
-  border-radius: 12px;
-  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
   position: sticky;
-  top: 0;
+  top: 16px;
+  box-shadow: 0 12px 28px -18px rgba(10, 38, 75, 0.45);
 }
 
 .sp-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 2px;
+  position: relative;
+  padding: 20px 22px 18px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(21, 147, 156, 0.55), transparent 60%),
+    linear-gradient(150deg, #0a264b 0%, #0d4a63 100%);
 }
 
 .sp-head-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
 .sp-fecha {
   font-family: 'Fraunces', serif;
-  font-size: 15px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
 }
 
 .sp-count {
-  font-size: 11.5px;
-  color: var(--ink-soft);
-  margin-bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .sp-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 460px;
+  gap: 10px;
+  max-height: calc(100vh - 220px);
   overflow-y: auto;
 }
 
 .sp-card {
   background: var(--teal-soft);
-  border-left: 3px solid var(--teal);
-  border-radius: 8px;
-  padding: 7px 9px;
-  font-size: 12px;
+  border-left: 5px solid var(--teal);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
   cursor: pointer;
+  transition: box-shadow 0.12s ease;
 }
 
 .sp-card:hover {
@@ -556,7 +567,7 @@
 }
 
 .sp-rango {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
@@ -572,15 +583,17 @@
 
 .sp-card b {
   display: block;
-  font-size: 11.5px;
-  font-weight: 500;
-  margin-top: 3px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 4px;
   word-break: break-word;
 }
 
 .sp-empty {
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--ink-faint);
+  padding: 18px 0;
+  text-align: center;
 }
 
 @media (max-width: 860px) {
@@ -657,18 +670,580 @@
   text-decoration: line-through;
 }
 
-.resumen-dots .rd.pending {
-  background: var(--naranja);
+/* ---- Arrastre de citas (vistas día/semana) ----
+   Mover: se toma el cuerpo del bloque. Cambiar duración: sus bordes
+   superior/inferior. Siempre en bloques de 15 min dentro de 7:00-19:00. */
+.cita-block.arrastrable,
+.wk-block.arrastrable {
+  cursor: grab;
+  touch-action: pan-y;
 }
 
-.resumen-dots .rd.cancelada {
-  background: var(--gris);
+.cita-resize {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 7px;
+  cursor: ns-resize;
+  z-index: 1;
 }
 
-.resumen-dots .rd.atendida {
-  background: var(--verde);
+.cita-resize.arriba {
+  top: 0;
 }
 
-.resumen-dots .rd.no-asistio {
-  background: var(--rojo);
+.cita-resize.abajo {
+  bottom: 0;
+}
+
+.cita-block.arrastrable:hover .cita-resize.abajo::after,
+.wk-block.arrastrable:hover .cita-resize.abajo::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 22px;
+  height: 3px;
+  margin-left: -11px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.25;
+}
+
+.cita-block.en-arrastre,
+.wk-block.en-arrastre {
+  z-index: 5;
+  opacity: 0.92;
+  box-shadow: 0 8px 20px rgba(10, 38, 75, 0.22);
+  transform: none;
+  transition: none;
+}
+
+.cita-block.en-arrastre .cb-rango,
+.wk-block.en-arrastre .wk-rango {
+  color: var(--ink);
+}
+
+.cita-block.invalida,
+.wk-block.invalida {
+  border-left-color: var(--rojo);
+  background: var(--rojo-soft);
+  outline: 2px dashed var(--rojo);
+  outline-offset: -2px;
+}
+
+.cb-aviso {
+  color: var(--rojo);
+  font-weight: 600;
+}
+
+/* Citas de 15 min: una sola línea, a su alto real. */
+.cita-block.compacta {
+  padding: 0 14px;
+}
+
+.cita-block.compacta .cb-nombre {
+  font-size: 13.5px;
+}
+
+.cita-block.compacta .cb-nota {
+  font-size: 11.5px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.wk-block.compacta {
+  padding: 1px 6px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.wk-block.compacta .wk-rango {
+  display: inline;
+  white-space: nowrap;
+}
+
+body.arrastrando-cita,
+body.arrastrando-cita * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+body.redimensionando-cita,
+body.redimensionando-cita * {
+  cursor: ns-resize !important;
+  user-select: none;
+}
+
+/* ---- Bloques de la vista día: nombre + nota en la misma línea ---- */
+.cb-linea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cb-nota-label {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cb-aviso {
+  font-size: 12.5px;
+}
+
+.wk-nota {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+/* ---- Título de la agenda: fecha grande + "tarjeta" de calendario ---- */
+.agenda-titulo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.fecha-tile {
+  width: 58px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(10, 38, 75, 0.08);
+}
+
+.fecha-tile-mes {
+  display: block;
+  padding: 3px 0;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.fecha-tile-dia {
+  display: block;
+  padding: 4px 0 6px;
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.fecha-tile.hoy .fecha-tile-mes {
+  background: var(--accent);
+}
+
+.page-head h2.agenda-fecha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.hoy-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 860px) {
+  .page-head h2.agenda-fecha {
+    font-size: 23px;
+  }
+}
+
+/* ---- Vista mes: viñetas de cita dentro de cada día ---- */
+.mc-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  border-left: 3px solid var(--teal);
+  border-radius: 5px;
+  background: var(--teal-soft);
+  padding: 4px 7px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mc-chip:hover {
+  box-shadow: 0 2px 6px rgba(10, 38, 75, 0.14);
+}
+
+.mc-hora {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.mc-nombre {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mc-chip.pending {
+  border-left-color: var(--naranja);
+  background: var(--naranja-soft);
+}
+
+.mc-chip.atendida {
+  border-left-color: var(--verde);
+  background: var(--verde-soft);
+}
+
+.mc-chip.cancelada {
+  border-left-color: var(--gris);
+  background: var(--gris-soft);
+  opacity: 0.8;
+}
+
+.mc-chip.no-asistio {
+  border-left-color: var(--rojo);
+  background: var(--rojo-soft);
+}
+
+.mc-chip.cancelada .mc-nombre,
+.mc-chip.no-asistio .mc-nombre {
+  text-decoration: line-through;
+}
+
+.mc-mas {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--teal);
+  padding-left: 4px;
+}
+
+.month-cell.outside .mc-chip {
+  opacity: 0.6;
+}
+
+@media (max-width: 860px) {
+  .month-cell {
+    min-height: 84px;
+    padding: 4px;
+  }
+
+  .mc-hora {
+    display: none;
+  }
+}
+
+/* ---- Agenda a todo el ancho ----
+   El resto de pantallas mantiene el ancho máximo de .app-main (formularios y
+   expedientes se leen mejor acotados); el calendario sí aprovecha la pantalla. */
+.app-main:has(.agenda-page) {
+  max-width: none;
+}
+
+.page-head.agenda-head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+
+/* Mismo alto con o sin la tarjeta de fecha (solo sale en la vista día), para
+   que la barra de controles no suba y baje al cambiar de vista. */
+.agenda-titulo {
+  min-height: 64px;
+}
+
+.agenda-controls-grupo {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn.agenda-nueva-cita {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 6px;
+  box-shadow: 0 4px 12px -4px rgba(10, 38, 75, 0.45);
+}
+
+/* ---- "Marcar día no laboral" junto a "+ Nueva cita" ---- */
+.agenda-bloqueo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #e7c98f;
+  background: var(--amber-soft);
+  color: #8a5a0c;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.agenda-bloqueo-btn:hover {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #ffffff;
+  box-shadow: 0 4px 12px -4px rgba(180, 121, 26, 0.55);
+}
+
+.agenda-bloqueo-btn.quitar {
+  border-color: #eab3a3;
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.agenda-bloqueo-btn.quitar:hover {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #ffffff;
+  box-shadow: 0 4px 12px -4px rgba(200, 90, 60, 0.55);
+}
+
+/* ---- Cita a la que se llegó desde el expediente del paciente ---- */
+.cita-block.resaltada {
+  z-index: 3;
+  animation: cita-resaltar 1.4s ease-out 4;
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+@keyframes cita-resaltar {
+  0% {
+    box-shadow: 0 0 0 3px var(--accent), 0 0 0 3px rgba(21, 147, 156, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 3px var(--accent), 0 0 0 16px rgba(21, 147, 156, 0);
+  }
+}
+
+/* ---- Vista mes: el calendario llena el alto de la pantalla ----
+   Las filas (semanas) se reparten el alto disponible en vez de dejar un
+   hueco vacío debajo en monitores altos; en pantallas bajas no bajan de
+   108px por fila y la página simplemente hace scroll. */
+.month-calendar {
+  display: flex;
+  flex-direction: column;
+  height: max(600px, calc(100vh - 300px));
+  height: max(600px, calc(100dvh - 300px));
+}
+
+.month-grid {
+  flex: 1;
+  grid-auto-rows: minmax(108px, 1fr);
+}
+
+.month-cell {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .month-calendar {
+    height: auto;
+  }
+}
+
+/* ---- Flechas + "Hoy": un solo grupo segmentado ---- */
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  color: var(--teal);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.nav-btn + .nav-btn {
+  border-left: 1px solid var(--line);
+}
+
+.nav-btn-icono {
+  width: 40px;
+  padding: 0;
+}
+
+.nav-btn:hover {
+  background: var(--teal-soft);
+}
+
+.nav-btn:active {
+  background: var(--teal);
+  color: #ffffff;
+}
+
+/* ---- Panel lateral del mes: cabecera azul + cuerpo ---- */
+.sp-dia-semana {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7fe0e6;
+  margin-bottom: 2px;
+}
+
+.sp-count b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--teal);
+  font-size: 12.5px;
+}
+
+.sp-body {
+  padding: 18px 20px 20px;
+  background: linear-gradient(180deg, #f3f8f8 0%, var(--surface) 140px);
+}
+
+.sp-ver-dia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--teal);
+  background: var(--teal);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px -4px rgba(10, 38, 75, 0.45);
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sp-ver-dia:hover {
+  background: #0f3563;
+}
+
+.sp-ver-dia:hover svg {
+  transform: translateX(2px);
+}
+
+.sp-ver-dia svg {
+  transition: transform 0.15s ease;
+}
+
+.side-panel .agenda-bloqueo-btn {
+  flex: 1;
+}
+
+/* ---- "Agenda del odontólogo": etiqueta + selector en un solo bloque ---- */
+.odontologo-selector {
+  display: inline-flex;
+  align-items: stretch;
+  height: 40px;
+  margin-left: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.06);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.odontologo-selector:hover,
+.odontologo-selector:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(21, 147, 156, 0.14);
+}
+
+.odontologo-selector-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  background: var(--accent-soft);
+  border-right: 1px solid var(--line);
+  color: #0f6f76;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.odontologo-selector .odontologo-switch {
+  height: 100%;
+  min-width: 150px;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 12px;
+  background: transparent;
+  outline: none;
 }

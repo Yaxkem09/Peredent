@@ -80,6 +80,7 @@ const Sidebar = ({ open, onNavigate }) => {
         <p className="brand-doctors">Dr. Pereira Barrios / Dr. Pereira Torres</p>
       </div>
 
+      <p className="nav-titulo">Menú</p>
       <nav>
         {visibleItems.map((item) => (
           <NavLink

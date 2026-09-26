@@ -64,28 +64,72 @@
   overflow: hidden;
 }
 
-.login-tooth {
+/* Capa por muela para el parallax con el mouse (--px/--py van de -0.5 a
+   0.5 y los escribe Login.jsx); --prof hace que las grandes se muevan más. */
+.login-tooth-capa {
   position: absolute;
-  height: auto;
-  color: rgba(255, 255, 255, 0.10);
-  filter: drop-shadow(0 0 14px rgba(21, 147, 156, 0.35));
-  transform: rotate(var(--giro, 0deg));
-  animation: login-flotar ease-in-out infinite;
+  display: block;
+  transform: translate(calc(var(--px, 0) * var(--prof, 3) * -12px), calc(var(--py, 0) * var(--prof, 3) * -12px));
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.login-tooth {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: #ffffff;
+  opacity: 0.13;
+  filter: drop-shadow(0 0 16px rgba(21, 147, 156, 0.55));
+  transform: rotate(var(--giro, 0deg));
+  animation: login-flotar ease-in-out infinite;
+  animation-duration: var(--dur, 10s);
+}
+
+/* Instrumentos un poco más tenues que las muelas para no competir con ellas. */
+.login-tooth.instrumento {
+  opacity: 0.11;
+}
+
+/* Deriva en varias direcciones + giro + un leve cambio de tamaño, para que
+   el movimiento se note sin distraer del formulario. */
 @keyframes login-flotar {
   0%,
   100% {
-    transform: translateY(0) rotate(var(--giro, 0deg));
+    transform: translate(0, 0) rotate(var(--giro, 0deg)) scale(1);
+  }
+  25% {
+    transform: translate(18px, -28px) rotate(calc(var(--giro, 0deg) + 12deg)) scale(1.06);
   }
   50% {
-    transform: translateY(-26px) rotate(calc(var(--giro, 0deg) + 10deg));
+    transform: translate(-8px, -52px) rotate(calc(var(--giro, 0deg) - 8deg)) scale(1);
+  }
+  75% {
+    transform: translate(-22px, -20px) rotate(calc(var(--giro, 0deg) + 6deg)) scale(0.96);
+  }
+}
+
+/* Con "reducir movimiento" (p. ej. Windows con los efectos de animación
+   apagados) no se quita la animación del todo: queda una deriva mucho más
+   lenta y corta, y sin parallax, que es lo que suele molestar. */
+@keyframes login-flotar-suave {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(var(--giro, 0deg));
+  }
+  50% {
+    transform: translate(6px, -14px) rotate(calc(var(--giro, 0deg) + 4deg));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .login-tooth {
-    animation: none;
+    animation-name: login-flotar-suave;
+    animation-duration: calc(var(--dur, 10s) * 2);
+  }
+
+  .login-tooth-capa {
+    transform: none;
+    transition: none;
   }
 }
 

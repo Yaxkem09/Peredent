@@ -119,7 +119,7 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.FechaEnElPasado, "No se puede crear una cita en una fecha ya pasada.");
         }
 
-        if (!CitaConstantes.DuracionesPermitidas.Contains(request.DuracionMinutos))
+        if (!EsDuracionValida(request.DuracionMinutos))
         {
             return CitaResultado.Fallo(CitaError.DuracionInvalida, MensajeDuracionInvalida);
         }
@@ -211,7 +211,7 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.FechaEnElPasado, "Esta cita ya pasó; no se puede reprogramar su fecha u hora.");
         }
 
-        if (!CitaConstantes.DuracionesPermitidas.Contains(request.DuracionMinutos))
+        if (!EsDuracionValida(request.DuracionMinutos))
         {
             return CitaResultado.Fallo(CitaError.DuracionInvalida, MensajeDuracionInvalida);
         }
@@ -276,7 +276,10 @@ public class CitaService : ICitaService
         $"El horario de atención es de {CitaConstantes.HoraAperturaClinica}:00 a {CitaConstantes.HoraCierreClinica}:00.";
 
     private static readonly string MensajeDuracionInvalida =
-        $"La duración de la cita debe ser de {string.Join(" o ", CitaConstantes.DuracionesPermitidas)} minutos.";
+        $"La duración de la cita debe ser de al menos {CitaConstantes.IncrementoMinutos} minutos y en bloques de {CitaConstantes.IncrementoMinutos} minutos.";
+
+    private static bool EsDuracionValida(int duracionMinutos) =>
+        duracionMinutos >= CitaConstantes.IncrementoMinutos && duracionMinutos % CitaConstantes.IncrementoMinutos == 0;
 
     private static bool EstaDentroDelHorario(TimeOnly hora, int duracionMinutos)
     {

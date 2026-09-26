@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react';
 import { citasService, pacientesService, usuariosService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { Button, Modal } from '../../components/common';
-import { estaFueraDeHorarioClinica, toIsoDate } from './agenda.utils';
+import {
+  INCREMENTO_MINUTOS,
+  estaFueraDeHorarioClinica,
+  horaAMinutos,
+  minutosAHora,
+  toIsoDate,
+} from './agenda.utils';
 import './CitaModal.css';
 
 const HORA_INICIAL = '09:00';
-const DURACION_INICIAL = 30;
+const HORA_FIN_INICIAL = '09:30';
 const DEMORA_BUSQUEDA_MS = 400;
 
 const mensajeError = (err) =>
@@ -28,7 +34,7 @@ const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada 
   const [idUsuario, setIdUsuario] = useState('');
   const [fecha, setFecha] = useState('');
   const [hora, setHora] = useState(HORA_INICIAL);
-  const [duracionMinutos, setDuracionMinutos] = useState(DURACION_INICIAL);
+  const [horaFin, setHoraFin] = useState(HORA_FIN_INICIAL);
   const [notas, setNotas] = useState('');
 
   const [guardando, setGuardando] = useState(false);
@@ -43,7 +49,7 @@ const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada 
     setIdPaciente('');
     setFecha(toIsoDate(fechaInicial));
     setHora(HORA_INICIAL);
-    setDuracionMinutos(DURACION_INICIAL);
+    setHoraFin(HORA_FIN_INICIAL);
     setNotas('');
     setError(null);
     setErrorListas(null);
@@ -129,7 +135,18 @@ const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada 
     setResultadosPacientes([]);
   };
 
-  const fueraDeHorario = hora ? estaFueraDeHorarioClinica(hora, duracionMinutos) : false;
+  const duracionMinutos = hora && horaFin ? horaAMinutos(horaFin) - horaAMinutos(hora) : 0;
+
+  // Al mover la hora de inicio se conserva la duración elegida (la hora de fin
+  // se corre junto con ella), igual que al arrastrar la cita en la agenda.
+  const cambiarHoraInicio = (nuevaHora) => {
+    if (nuevaHora && hora && horaFin && duracionMinutos > 0) {
+      setHoraFin(minutosAHora(Math.min(horaAMinutos(nuevaHora) + duracionMinutos, 24 * 60 - 1)));
+    }
+    setHora(nuevaHora);
+  };
+
+  const fueraDeHorario = hora && duracionMinutos > 0 ? estaFueraDeHorarioClinica(hora, duracionMinutos) : false;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -137,6 +154,9 @@ const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada 
 
     if (!idPaciente) return setError('Selecciona un paciente.');
     if (!idUsuario) return setError('Selecciona un odontólogo.');
+    if (duracionMinutos < INCREMENTO_MINUTOS) {
+      return setError(`La hora de fin debe ser al menos ${INCREMENTO_MINUTOS} min después de la de inicio.`);
+    }
     setGuardando(true);
     try {
       const citaCreada = await citasService.create({
@@ -198,20 +218,29 @@ const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada 
           </div>
 
           <div className="field">
-            <label htmlFor="cita-hora">Hora</label>
-            <input id="cita-hora" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
+            <label htmlFor="cita-hora">Hora de inicio</label>
+            <input
+              id="cita-hora"
+              type="time"
+              value={hora}
+              onChange={(e) => cambiarHoraInicio(e.target.value)}
+              min="07:00"
+              max="19:00"
+              step={INCREMENTO_MINUTOS * 60}
+            />
           </div>
 
           <div className="field">
-            <label htmlFor="cita-duracion">Duración</label>
-            <select
-              id="cita-duracion"
-              value={duracionMinutos}
-              onChange={(e) => setDuracionMinutos(Number(e.target.value))}
-            >
-              <option value={30}>30 min</option>
-              <option value={60}>1 hora</option>
-            </select>
+            <label htmlFor="cita-hora-fin">Hora de fin</label>
+            <input
+              id="cita-hora-fin"
+              type="time"
+              value={horaFin}
+              onChange={(e) => setHoraFin(e.target.value)}
+              min="07:00"
+              max="19:00"
+              step={INCREMENTO_MINUTOS * 60}
+            />
           </div>
 
           <div className="field">

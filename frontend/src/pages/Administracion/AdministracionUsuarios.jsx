@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usuariosService } from '../../services/usuarios.service';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotification } from '../../hooks/useNotification';
@@ -12,6 +12,70 @@ const FORM_INICIAL = { nombreUsuario: '', correo: '', clave: '', idRol: '', esAd
 const FORMATO_CORREO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 const mensajeError = (err, fallback) => err?.response?.data?.message || fallback;
+
+const FILTROS = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'activos', label: 'Activos' },
+  { id: 'inactivos', label: 'Inactivos' },
+  { id: 'admins', label: 'Administradores' },
+];
+
+const inicialesDe = (nombre) => (nombre || '?').slice(0, 2).toUpperCase();
+
+// Rol -> modificador de color del avatar y del badge de rol.
+const claseDeRol = (rol) => {
+  const r = (rol || '').toLowerCase();
+  if (r.startsWith('odont')) return 'rol-odontologo';
+  if (r.startsWith('asist')) return 'rol-asistente';
+  return 'rol-otro';
+};
+
+const Icono = ({ children, size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
+
+const ICONOS = {
+  usuarios: (
+    <>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" />
+      <circle cx="17" cy="7" r="2.4" />
+      <path d="M15 20c0-2.6 1.7-4.5 4-4.9" />
+    </>
+  ),
+  activo: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+    </>
+  ),
+  inactivo: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M6 18L18 6" />
+    </>
+  ),
+  escudo: <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z" />,
+  buscar: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M20 20l-4.2-4.2" />
+    </>
+  ),
+  mas: <path d="M12 5v14M5 12h14" />,
+};
 
 const AdministracionUsuarios = () => {
   const { user } = useAuth();
@@ -34,6 +98,9 @@ const AdministracionUsuarios = () => {
 
   const [usuarioAConfirmarAdmin, setUsuarioAConfirmarAdmin] = useState(null);
   const [otorgandoAdmin, setOtorgandoAdmin] = useState(false);
+
+  const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('todos');
 
   useEffect(() => {
     let activo = true;
@@ -167,6 +234,27 @@ const AdministracionUsuarios = () => {
 
   const esUsuarioActual = (usuario) => usuario.nombreUsuario === user?.usuario;
 
+  const resumen = useMemo(
+    () => [
+      { id: 'total', label: 'Usuarios registrados', valor: usuarios.length, icono: ICONOS.usuarios },
+      { id: 'activos', label: 'Activos', valor: usuarios.filter((u) => u.estado).length, icono: ICONOS.activo },
+      { id: 'inactivos', label: 'Inactivos', valor: usuarios.filter((u) => !u.estado).length, icono: ICONOS.inactivo },
+      { id: 'admins', label: 'Administradores', valor: usuarios.filter((u) => u.esAdmin).length, icono: ICONOS.escudo },
+    ],
+    [usuarios],
+  );
+
+  const usuariosFiltrados = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    return usuarios.filter((u) => {
+      if (filtro === 'activos' && !u.estado) return false;
+      if (filtro === 'inactivos' && u.estado) return false;
+      if (filtro === 'admins' && !u.esAdmin) return false;
+      if (!termino) return true;
+      return [u.nombreUsuario, u.correo, u.rol].some((campo) => (campo || '').toLowerCase().includes(termino));
+    });
+  }, [usuarios, busqueda, filtro]);
+
   return (
     <div className="page-block">
       <div className="page-head">
@@ -175,8 +263,9 @@ const AdministracionUsuarios = () => {
           <h2>Administración de usuarios</h2>
           <p>Creá cuentas para el personal y gestioná quién puede acceder al sistema.</p>
         </div>
-        <Button variant="primary" onClick={abrirModal}>
-          + Nuevo usuario
+        <Button variant="primary" className="admin-nuevo" onClick={abrirModal}>
+          <Icono>{ICONOS.mas}</Icono>
+          Nuevo usuario
         </Button>
       </div>
 
@@ -192,67 +281,137 @@ const AdministracionUsuarios = () => {
           description="Los usuarios que crees van a aparecer en este listado."
         />
       ) : (
-        <div className="users-table-wrap">
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Admin</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((usuario) => {
-                const esActual = esUsuarioActual(usuario);
-                const procesando = accionEnCurso === usuario.id;
-                const tituloBloqueo = esActual ? 'No podés modificar tu propio usuario.' : undefined;
+        <>
+          <div className="admin-stats">
+            {resumen.map((item) => (
+              <div className={`admin-stat ${item.id}`} key={item.id}>
+                <span className="admin-stat-icono">
+                  <Icono size={20}>{item.icono}</Icono>
+                </span>
+                <div>
+                  <div className="admin-stat-num">{item.valor}</div>
+                  <div className="admin-stat-label">{item.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-                return (
-                  <tr key={usuario.id}>
-                    <td className="users-table-nombre">{usuario.nombreUsuario}</td>
-                    <td className={usuario.correo ? undefined : 'users-table-vacio'}>{usuario.correo || 'Sin correo'}</td>
-                    <td>{usuario.rol}</td>
-                    <td>
-                      <span className={`badge ${usuario.estado ? 'badge-activo' : 'badge-inactivo'}`}>
-                        {usuario.estado ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${usuario.esAdmin ? 'badge-admin' : 'badge-neutro'}`}>
-                        {usuario.esAdmin ? 'Sí' : 'No'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="users-table-acciones">
-                        <Button
-                          variant={usuario.estado ? 'danger' : 'outline-teal'}
-                          size="sm"
-                          disabled={esActual || procesando}
-                          title={tituloBloqueo}
-                          onClick={() => toggleEstado(usuario)}
-                        >
-                          {usuario.estado ? 'Deshabilitar' : 'Habilitar'}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={esActual || procesando}
-                          title={tituloBloqueo}
-                          onClick={() => toggleAdmin(usuario)}
-                        >
-                          {usuario.esAdmin ? 'Quitar admin' : 'Dar admin'}
-                        </Button>
-                      </div>
+          <div className="users-table-wrap">
+            <div className="admin-toolbar">
+              <label className="admin-buscar">
+                <Icono>{ICONOS.buscar}</Icono>
+                <input
+                  type="search"
+                  placeholder="Buscar por usuario, correo o rol"
+                  aria-label="Buscar usuarios"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                />
+              </label>
+              <div className="admin-filtros" role="group" aria-label="Filtrar usuarios">
+                {FILTROS.map((f) => (
+                  <button
+                    type="button"
+                    key={f.id}
+                    className={filtro === f.id ? 'active' : ''}
+                    onClick={() => setFiltro(f.id)}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Correo</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Admin</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usuariosFiltrados.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="users-table-sin-resultados">
+                      Ningún usuario coincide con la búsqueda.
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                )}
+                {usuariosFiltrados.map((usuario) => {
+                  const esActual = esUsuarioActual(usuario);
+                  const procesando = accionEnCurso === usuario.id;
+                  const tituloBloqueo = esActual ? 'No podés modificar tu propio usuario.' : undefined;
+
+                  return (
+                    <tr key={usuario.id} className={usuario.estado ? undefined : 'fila-inactiva'}>
+                      <td>
+                        <div className="users-table-usuario">
+                          <span className={`users-avatar ${claseDeRol(usuario.rol)}`}>
+                            {inicialesDe(usuario.nombreUsuario)}
+                          </span>
+                          <span className="users-table-nombre">
+                            {usuario.nombreUsuario}
+                            {esActual && <span className="users-tu">Tú</span>}
+                          </span>
+                        </div>
+                      </td>
+                      <td className={usuario.correo ? undefined : 'users-table-vacio'}>
+                        {usuario.correo || 'Sin correo'}
+                      </td>
+                      <td>
+                        <span className={`badge badge-rol ${claseDeRol(usuario.rol)}`}>{usuario.rol}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${usuario.estado ? 'badge-activo' : 'badge-inactivo'}`}>
+                          <span className="badge-punto" />
+                          {usuario.estado ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td>
+                        {usuario.esAdmin ? (
+                          <span className="badge badge-admin">
+                            <Icono size={13}>{ICONOS.escudo}</Icono>
+                            Admin
+                          </span>
+                        ) : (
+                          <span className="users-table-vacio">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="users-table-acciones">
+                          <button
+                            type="button"
+                            className={`admin-accion ${usuario.estado ? 'peligro' : 'exito'}`}
+                            disabled={esActual || procesando}
+                            title={tituloBloqueo}
+                            onClick={() => toggleEstado(usuario)}
+                          >
+                            <Icono size={15}>{usuario.estado ? ICONOS.inactivo : ICONOS.activo}</Icono>
+                            {usuario.estado ? 'Deshabilitar' : 'Habilitar'}
+                          </button>
+                          <button
+                            type="button"
+                            className={`admin-accion ${usuario.esAdmin ? 'neutra' : 'admin'}`}
+                            disabled={esActual || procesando}
+                            title={tituloBloqueo}
+                            onClick={() => toggleAdmin(usuario)}
+                          >
+                            <Icono size={15}>{ICONOS.escudo}</Icono>
+                            {usuario.esAdmin ? 'Quitar admin' : 'Dar admin'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <Modal
