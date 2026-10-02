@@ -11,7 +11,6 @@ import './Recetario.css';
 
 const DEMORA_BUSQUEDA_MS = 400;
 
-const TONOS = ['teal', 'accent', 'amber'];
 
 const esHoy = (fechaIso) => {
   const fecha = new Date(fechaIso);
@@ -314,10 +313,10 @@ const Recetario = () => {
           />
         ) : (
           <div className="recetario-lista">
-            {recetas.map((r, i) => (
+            {recetas.map((r) => (
               <button
                 type="button"
-                className={`recetario-item tono-${TONOS[i % TONOS.length]}`}
+                className="recetario-item"
                 key={r.idReceta}
                 onClick={() => verReceta(r)}
               >

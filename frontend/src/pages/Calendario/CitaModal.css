@@ -143,3 +143,176 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Formulario de cita (nueva / modificar): secciones con título claro,
+   etiquetas legibles y campos más altos. Va con prefijo .cita-form porque
+   .field también lo usa Administración. ---- */
+.cita-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cita-seccion {
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f6f8fb;
+}
+
+.cita-seccion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.cita-seccion-icono {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+}
+
+.cita-duracion {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  color: #0f6f76;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cita-duracion.invalida {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.cita-seccion-nota {
+  margin: -4px 0 12px;
+  font-size: 12.5px;
+  color: var(--amber);
+}
+
+.cita-horario {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 12px;
+}
+
+.cita-form .field {
+  gap: 6px;
+}
+
+.cita-form .field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.cita-form .field input,
+.cita-form .field select,
+.cita-form .field textarea {
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--surface);
+}
+
+.cita-form .field textarea {
+  min-height: 72px;
+}
+
+.cita-form .field select {
+  cursor: pointer;
+}
+
+.cita-form .field input:focus,
+.cita-form .field select:focus,
+.cita-form .field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.cita-form .field input:disabled,
+.cita-form .field select:disabled {
+  cursor: not-allowed;
+}
+
+/* Paciente fijo en "Modificar cita": tarjeta en lugar de un campo gris. */
+.cita-seccion-paciente {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cita-seccion-paciente .cita-seccion-icono {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+
+.cita-paciente-etiqueta {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.cita-paciente-nombre {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Select de estado con el punto de color del estado elegido. */
+.cita-estado-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cita-estado-select select {
+  width: 100%;
+  padding-left: 32px !important;
+}
+
+.cita-estado-punto {
+  position: absolute;
+  left: 12px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--teal);
+  pointer-events: none;
+}
+
+.cita-estado-punto.pending { background: var(--naranja); }
+.cita-estado-punto.atendida { background: var(--verde); }
+.cita-estado-punto.cancelada { background: var(--gris); }
+.cita-estado-punto.no-asistio { background: var(--rojo); }
+
+.cita-form + .cita-modal-mensaje,
+.cita-form .cita-modal-mensaje.aviso {
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .cita-horario {
+    grid-template-columns: 1fr;
+  }
+}

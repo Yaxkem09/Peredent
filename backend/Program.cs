@@ -83,6 +83,9 @@ builder.Services.AddSingleton<IPresupuestoPdfService, PresupuestoPdfService>();
 // Singleton: sin estado, arma el PDF de la receta a partir del DTO recibido.
 builder.Services.AddSingleton<IRecetaPdfService, RecetaPdfService>();
 
+// Singleton: sin estado, arma el PDF del consentimiento de exodoncia (SCRUM-254).
+builder.Services.AddSingleton<IConsentimientoPdfService, ConsentimientoPdfService>();
+
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection("R2"));
 
 // Scoped: crea un AmazonS3Client por request; ver R2StorageService para el

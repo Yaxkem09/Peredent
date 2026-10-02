@@ -124,7 +124,7 @@ const Campo = ({ id, label, requerido, opcional, error, mensajeError, ayuda, ful
   </div>
 );
 
-const OPCIONES_SEXO = ['Femenino', 'Masculino', 'Otro'];
+const OPCIONES_SEXO = ['Femenino', 'Masculino'];
 
 const PacienteForm = () => {
   const { id } = useParams();

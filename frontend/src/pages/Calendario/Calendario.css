@@ -334,6 +334,48 @@
   color: var(--accent);
 }
 
+/* Encabezado de día clicable: el día elegido es el que usa "+ Nueva cita". */
+button.week-head-cell {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+button.week-head-cell:hover {
+  background: var(--surface-alt);
+  border-radius: 8px 8px 0 0;
+}
+
+.week-head-cell.today:hover {
+  background: var(--accent-soft);
+}
+
+.week-head-cell.bloqueado:hover {
+  background: var(--gris-soft);
+}
+
+.week-head-cell.seleccionado,
+.week-head-cell.seleccionado:hover {
+  background: var(--teal);
+  border-radius: 8px 8px 0 0;
+}
+
+.week-head-cell.seleccionado .wd-name,
+.week-head-cell.seleccionado .wd-num,
+.week-head-cell.seleccionado .wd-bloqueado {
+  color: #ffffff;
+}
+
+button.week-head-cell:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .week-days {
   flex: 1;
   display: flex;
@@ -986,9 +1028,95 @@ body.redimensionando-cita * {
 }
 
 .page-head.agenda-head {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+
+.agenda-head-main {
+  display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 16px;
+  min-width: 0;
+}
+
+/* ---- Leyenda de colores por estado (arriba a la derecha) ---- */
+.agenda-leyenda {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(10, 38, 75, 0.05);
+}
+
+.agenda-leyenda-titulo {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.agenda-leyenda ul {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 7px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.agenda-leyenda-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--teal);
+  flex-shrink: 0;
+}
+
+.agenda-leyenda-color.pending {
+  background: var(--naranja);
+}
+
+.agenda-leyenda-color.atendida {
+  background: var(--verde);
+}
+
+.agenda-leyenda-color.no-asistio {
+  background: var(--rojo);
+}
+
+.agenda-leyenda-color.cancelada {
+  background: var(--gris);
+}
+
+/* Igual que en los bloques: el nombre de la cita sale tachado. */
+.agenda-leyenda-texto.tachado {
+  text-decoration: line-through;
+}
+
+@media (max-width: 720px) {
+  .agenda-leyenda {
+    width: 100%;
+  }
+
+  .agenda-leyenda ul {
+    grid-template-columns: repeat(2, auto);
+  }
 }
 
 /* Mismo alto con o sin la tarjeta de fecha (solo sale en la vista día), para
@@ -1246,4 +1374,136 @@ body.redimensionando-cita * {
   padding: 0 12px;
   background: transparent;
   outline: none;
+}
+
+/* ---- Horario de la cita más visible: píldora blanca con texto oscuro en
+   negrita sobre el color del estado (día, semana y panel del mes). ---- */
+.cb-rango,
+.wk-rango,
+.sp-rango {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.12);
+  color: var(--ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cb-rango {
+  font-size: 13px;
+}
+
+.wk-rango {
+  font-size: 11.5px;
+  margin-bottom: 3px;
+}
+
+.wk-block.compacta .wk-rango {
+  padding: 0 6px;
+  margin-bottom: 0;
+}
+
+.sp-rango {
+  font-size: 13px;
+}
+
+/* ---- Encabezado de la agenda: banner azul a todo lo ancho con la fecha a
+   la izquierda y la leyenda de estados a la derecha; los controles quedan
+   en su propia fila debajo. ---- */
+.page-head.agenda-head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+}
+
+.agenda-banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding: 20px 26px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #0a264b 0%, #15467d 62%, #15939c 140%);
+  box-shadow: 0 18px 32px -24px rgba(10, 38, 75, 0.95);
+}
+
+.agenda-banner::before {
+  content: '';
+  position: absolute;
+  top: -90px;
+  right: 30%;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(127, 224, 230, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.agenda-banner > * {
+  position: relative;
+}
+
+.agenda-banner .eyebrow {
+  color: #7fe0e6;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.agenda-banner h2.agenda-fecha {
+  color: #ffffff;
+  font-size: 32px;
+}
+
+.agenda-banner .hoy-chip {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.agenda-banner .fecha-tile {
+  width: 64px;
+  border: none;
+  box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.45);
+}
+
+.agenda-banner .agenda-leyenda {
+  border: none;
+  box-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 860px) {
+  .agenda-banner h2.agenda-fecha {
+    font-size: 24px;
+  }
+}
+
+/* Leyenda de estados un poco más grande para leerla mejor. */
+.agenda-leyenda {
+  padding: 12px 18px;
+}
+
+.agenda-leyenda-titulo {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.agenda-leyenda ul {
+  gap: 9px 22px;
+}
+
+.agenda-leyenda li {
+  gap: 9px;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.agenda-leyenda-color {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
 }
