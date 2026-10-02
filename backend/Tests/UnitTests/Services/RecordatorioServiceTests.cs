@@ -63,7 +63,7 @@ public class RecordatorioServiceTests
         ApplicationDbContext db,
         DateTime fechaInicio,
         int idEstado = IdPendiente,
-        string telefono = "4527-8707",
+        string telefono = "5123-4567",
         bool acepta = true,
         string nombres = "Juan",
         string apellidos = "Pérez")
@@ -147,7 +147,7 @@ public class RecordatorioServiceTests
     {
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
-        var sinConsentimiento = await CrearCitaAsync(db, Manana.AddHours(9), acepta: false, telefono: "45278707");
+        var sinConsentimiento = await CrearCitaAsync(db, Manana.AddHours(9), acepta: false, telefono: "51234567");
         var telefonoInvalido = await CrearCitaAsync(db, Manana.AddHours(10), telefono: "123-45");
         var valida = await CrearCitaAsync(db, Manana.AddHours(11), telefono: "5555-1234");
         var whatsApp = new FakeWhatsAppService();
@@ -195,13 +195,13 @@ public class RecordatorioServiceTests
     {
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
-        await CrearCitaAsync(db, Manana.AddHours(9), telefono: "4527-8707");
+        await CrearCitaAsync(db, Manana.AddHours(9), telefono: "5123-4567");
 
         var resumen = await Ejecutar(db, new FakeWhatsAppService());
 
         var detalle = Assert.Single(resumen.Detalle);
-        Assert.Equal("****8707", detalle.TelefonoEnmascarado);
-        Assert.DoesNotContain("4527", detalle.TelefonoEnmascarado);
+        Assert.Equal("****4567", detalle.TelefonoEnmascarado);
+        Assert.DoesNotContain("5123", detalle.TelefonoEnmascarado);
     }
 
     [Fact]

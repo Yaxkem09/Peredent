@@ -5,9 +5,9 @@ public static class TelefonoWhatsApp
     private const string CodigoGuatemala = "502";
     private const int DigitosLocalesGuatemala = 8;
 
-    // Convierte el teléfono guardado (texto libre: "5555-5555", "+502 4527 8707"...)
+    // Convierte el teléfono guardado (texto libre: "5555-5555", "+502 5123 4567"...)
     // al formato que pide la WhatsApp Cloud API: solo dígitos con código de
-    // país y sin "+" (ej. "50245278707"). 8 dígitos se asumen de Guatemala.
+    // país y sin "+" (ej. "50251234567"). 8 dígitos se asumen de Guatemala.
     // Devuelve null si no se puede normalizar. No modifica el dato guardado.
     public static string? Normalizar(string? telefono)
     {
@@ -32,7 +32,7 @@ public static class TelefonoWhatsApp
     }
 
     // Para logs y respuestas de API: solo los últimos 4 dígitos, el teléfono
-    // del paciente nunca debe quedar completo ("*******8707").
+    // del paciente nunca debe quedar completo ("*******4567").
     public static string Enmascarar(string? telefono)
     {
         var digitos = new string((telefono ?? string.Empty).Where(char.IsAsciiDigit).ToArray());

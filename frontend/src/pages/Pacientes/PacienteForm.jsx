@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { pacientesService } from '../../services/pacientes.service';
 import { historiaMedicaService } from '../../services/historia-medica.service';
 import { calcularEdadTexto, esMenorDeEdad } from '../../utils/edad';
+import { esTelefonoWhatsAppValido } from '../../utils/validators';
 import { useNotification } from '../../hooks/useNotification';
 import { Alert, Button, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
@@ -20,7 +21,11 @@ const CAMPOS_INICIALES = {
   direccion: '',
   encargadoNombre: '',
   encargadoTelefono: '',
+  aceptaRecordatoriosWhatsApp: false,
 };
+
+const MENSAJE_TELEFONO_WHATSAPP =
+  'Para recordatorios por WhatsApp usa 8 dígitos de Guatemala (ej. 5512 3344 o 5512-3344) o +502 seguido de 8 dígitos.';
 
 // El NIT es opcional: si se deja vacío se guarda como consumidor final ("CF").
 const NIT_CONSUMIDOR_FINAL = 'CF';
@@ -194,6 +199,7 @@ const PacienteForm = () => {
           direccion: data.direccion || '',
           encargadoNombre: data.encargadoNombre || '',
           encargadoTelefono: data.encargadoTelefono || '',
+          aceptaRecordatoriosWhatsApp: Boolean(data.aceptaRecordatoriosWhatsApp),
         });
       })
       .catch(() => {
@@ -229,6 +235,17 @@ const PacienteForm = () => {
     setDatos((prev) => ({ ...prev, [name]: value }));
     if (errores[name] && value.trim() !== '') {
       setErrores((prev) => ({ ...prev, [name]: false }));
+    }
+    if (name === 'telefono' && errores.telefonoWhatsApp) {
+      setErrores((prev) => ({ ...prev, telefonoWhatsApp: false }));
+    }
+  };
+
+  const handleCambioRecordatorios = (e) => {
+    const { checked } = e.target;
+    setDatos((prev) => ({ ...prev, aceptaRecordatoriosWhatsApp: checked }));
+    if (!checked && errores.telefonoWhatsApp) {
+      setErrores((prev) => ({ ...prev, telefonoWhatsApp: false }));
     }
   };
 
@@ -266,6 +283,17 @@ const PacienteForm = () => {
         return;
       }
 
+      // Con consentimiento, el teléfono tiene que servir para WhatsApp (misma
+      // regla que el backend); si no, el recordatorio se omitiría sin avisar.
+      if (datos.aceptaRecordatoriosWhatsApp && !esTelefonoWhatsAppValido(datos.telefono)) {
+        setErrores({ ...nuevosErrores, telefonoWhatsApp: true });
+        document.getElementById('telefono')?.focus();
+        setError('El teléfono no tiene un formato válido para WhatsApp. Corrígelo o desmarca los recordatorios.');
+        return;
+      }
+
+      // aceptaRecordatoriosWhatsApp va siempre (también en el PUT), sin depender
+      // de que el backend conserve el valor cuando no llega.
       payload = { ...datos, nit: normalizarNit(datos.nit) };
       if (!esMenor) {
         delete payload.encargadoNombre;
@@ -391,7 +419,13 @@ const PacienteForm = () => {
 
         <Seccion icono="contacto" titulo="Contacto">
           <div className="pf-grid">
-            <Campo id="telefono" label="Teléfono" requerido error={errores.telefono} mensajeError="Ingresa al menos un teléfono.">
+            <Campo
+              id="telefono"
+              label="Teléfono"
+              requerido
+              error={errores.telefono || errores.telefonoWhatsApp}
+              mensajeError={errores.telefono ? 'Ingresa al menos un teléfono.' : MENSAJE_TELEFONO_WHATSAPP}
+            >
               <input
                 id="telefono"
                 name="telefono"
@@ -434,6 +468,22 @@ const PacienteForm = () => {
                 onChange={handleChange}
               />
             </Campo>
+            <div className="pf-field pf-full">
+              <label className="pf-hm-check pf-check-recordatorios" htmlFor="aceptaRecordatoriosWhatsApp">
+                <input
+                  type="checkbox"
+                  id="aceptaRecordatoriosWhatsApp"
+                  name="aceptaRecordatoriosWhatsApp"
+                  checked={datos.aceptaRecordatoriosWhatsApp}
+                  onChange={handleCambioRecordatorios}
+                  aria-describedby="aceptaRecordatoriosWhatsApp-ayuda"
+                />
+                <span>Acepta recibir recordatorios de citas por WhatsApp</span>
+              </label>
+              <div id="aceptaRecordatoriosWhatsApp-ayuda" className="pf-help">
+                Se enviará un mensaje al teléfono del paciente un día antes de cada cita.
+              </div>
+            </div>
           </div>
         </Seccion>
 

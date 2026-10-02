@@ -190,6 +190,10 @@ const DatosTab = ({ paciente, idPaciente }) => (
           </span>
         </div>
         <div className="info-item">
+          <span className="info-label">Recordatorios por WhatsApp</span>
+          <span className="info-value">{paciente.aceptaRecordatoriosWhatsApp ? 'Sí' : 'No'}</span>
+        </div>
+        <div className="info-item">
           <span className="info-label">Registrado el</span>
           <span className="info-value">{formatDate(paciente.fechaRegistro)}</span>
         </div>

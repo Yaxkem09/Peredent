@@ -486,6 +486,12 @@
   cursor: pointer;
 }
 
+/* Consentimiento de recordatorios por WhatsApp (sección Contacto): mismo
+   checkbox que la historia médica, pero sin la caja alrededor. */
+.pf-check-recordatorios {
+  padding: 4px 0 0;
+}
+
 .pf-hm-num {
   flex-shrink: 0;
   min-width: 22px;

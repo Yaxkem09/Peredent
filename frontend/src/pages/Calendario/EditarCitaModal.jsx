@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { citasService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
 import { Button, Modal } from '../../components/common';
+import { formatDate, formatTime } from '../../utils/formatters';
 import {
   INCREMENTO_MINUTOS,
   esCitaPasada,
@@ -17,6 +18,42 @@ const ESTADOS_QUE_REQUIEREN_CITA_YA_OCURRIDA = ['Atendida', 'No Asistio'];
 
 const mensajeError = (err) =>
   err?.response?.data?.message || 'No se pudo guardar la cita. Intenta de nuevo.';
+
+// Estados en los que ya no se enviará recordatorio (el backend solo envía a
+// Pendiente y Confirmada).
+const ESTADOS_SIN_RECORDATORIO = ['Cancelada', 'Atendida', 'No Asistio'];
+
+// Estado del recordatorio por WhatsApp del día anterior. recordatorioEnviadoEn
+// viene en hora de Guatemala sin zona, así que new Date() lo toma como hora local.
+const RecordatorioWhatsApp = ({ cita }) => {
+  let estado;
+  let clase = '';
+
+  if (cita.recordatorioEnviadoEn) {
+    estado = `Enviado el ${formatDate(cita.recordatorioEnviadoEn)} ${formatTime(cita.recordatorioEnviadoEn)}`;
+    clase = ' enviado';
+  } else if (cita.recordatorioError) {
+    estado = 'Error al enviar';
+    clase = ' error';
+  } else if (ESTADOS_SIN_RECORDATORIO.includes(cita.estado) || esCitaPasada(cita.fecha, cita.hora)) {
+    // Con la fecha/estado guardados de la cita, no con lo que se esté editando en el formulario.
+    estado = 'No aplica';
+  } else {
+    estado = 'Pendiente';
+  }
+
+  return (
+    <div className="cita-recordatorio">
+      <span className="cita-recordatorio-label">Recordatorio WhatsApp:</span>{' '}
+      <span className={`cita-recordatorio-estado${clase}`}>{estado}</span>
+      {!cita.recordatorioEnviadoEn && cita.recordatorioError && (
+        <div className="cita-recordatorio-detalle" title={cita.recordatorioError}>
+          {cita.recordatorioError}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) => {
   const { notify } = useNotification();
@@ -131,6 +168,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada, onCancelada }) =>
       <p className="cita-modal-sub">
         Ajusta la fecha, horario o estado de la cita de <strong>{cita.nombrePaciente}</strong>.
       </p>
+      <RecordatorioWhatsApp cita={cita} />
 
       <form onSubmit={handleSubmit}>
         <div className="field-grid">

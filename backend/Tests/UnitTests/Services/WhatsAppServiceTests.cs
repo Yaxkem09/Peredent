@@ -64,18 +64,18 @@ public class WhatsAppServiceTests
     }
 
     private static Task<WhatsAppEnvioResultado> Enviar(WhatsAppService servicio, CancellationToken ct = default) =>
-        servicio.EnviarRecordatorioCitaAsync("50245278707", "Juan Pérez", "lunes 28 de septiembre", "10:00 AM", ct);
+        servicio.EnviarRecordatorioCitaAsync("50251234567", "Juan Pérez", "lunes 28 de septiembre", "10:00 AM", ct);
 
     [Fact]
     public async Task Envio_Exitoso_ExtraeElMessageId()
     {
         var handler = FakeHttpMessageHandler.Responde(HttpStatusCode.OK,
-            """{"messaging_product":"whatsapp","contacts":[{"input":"50245278707","wa_id":"50245278707"}],"messages":[{"id":"wamid.HBgLNTAyNDUyNzg3MDcVAgARGBI"}]}""");
+            """{"messaging_product":"whatsapp","contacts":[{"input":"50251234567","wa_id":"50251234567"}],"messages":[{"id":"wamid.PRUEBA0000000001"}]}""");
 
         var resultado = await Enviar(CrearServicio(handler));
 
         Assert.True(resultado.Exitoso);
-        Assert.Equal("wamid.HBgLNTAyNDUyNzg3MDcVAgARGBI", resultado.MessageId);
+        Assert.Equal("wamid.PRUEBA0000000001", resultado.MessageId);
         Assert.Null(resultado.Error);
     }
 
@@ -95,7 +95,7 @@ public class WhatsAppServiceTests
         using var json = JsonDocument.Parse(handler.UltimoCuerpo!);
         var raiz = json.RootElement;
         Assert.Equal("whatsapp", raiz.GetProperty("messaging_product").GetString());
-        Assert.Equal("50245278707", raiz.GetProperty("to").GetString());
+        Assert.Equal("50251234567", raiz.GetProperty("to").GetString());
         Assert.Equal("template", raiz.GetProperty("type").GetString());
 
         var template = raiz.GetProperty("template");

@@ -1,5 +1,10 @@
 Aquí va la guía de contribución explicando cómo colaborar, estándares de código, proceso de pull requests y convenciones de commits.
 
+## Documentación de features
+
+- [Recordatorios de citas por WhatsApp](docs/recordatorios-whatsapp.md): funcionamiento, configuración, pruebas y pasos para producción.
+- [Configuración de Cloudflare R2](docs/cloudflare-r2.md)
+
 ## Esquema de base de datos: scripts SQL + EF Migrations
 
 El esquema combina dos mecanismos:

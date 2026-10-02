@@ -2,12 +2,18 @@ name: Recordatorios WhatsApp
 
 on:
   schedule:
-    # Guatemala es UTC-6 todo el año (sin horario de verano):
-    # 9:07 a. m. en Guatemala = 9:07 + 6 h = 15:07 UTC.
+    # Guatemala es UTC-6 todo el año (sin horario de verano), así que
+    # hora UTC = hora de Guatemala + 6 h:
+    #   9:07 a. m. Guatemala = 15:07 UTC -> corrida principal.
+    #   5:07 p. m. Guatemala = 23:07 UTC -> cubre las citas de mañana agendadas
+    #     después de la corrida de la mañana y reintenta las que fallaron. Sigue
+    #     siendo el mismo día en Guatemala, así que "mañana" es la misma fecha;
+    #     el endpoint es idempotente y no reenvía las ya enviadas.
     # Minuto 7 (no 0) porque GitHub retrasa o descarta más ejecuciones
     # programadas en punto, cuando hay más carga.
     # Solo corre desde la rama por defecto (main).
     - cron: "7 15 * * *"
+    - cron: "7 23 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
