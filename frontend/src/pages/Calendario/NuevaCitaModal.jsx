@@ -5,10 +5,12 @@ import { Button, Modal } from '../../components/common';
 import {
   INCREMENTO_MINUTOS,
   estaFueraDeHorarioClinica,
+  formatearDuracion,
   horaAMinutos,
   minutosAHora,
   toIsoDate,
 } from './agenda.utils';
+import SelectorHora from './SelectorHora';
 import './CitaModal.css';
 
 const HORA_INICIAL = '09:00';
@@ -180,10 +182,19 @@ const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada 
     <Modal open={open} onClose={onClose} title="Nueva cita" wide>
       <p className="cita-modal-sub">Agenda una cita para un paciente registrado.</p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="field-grid">
-          <div className="field full">
-            <label htmlFor="cita-paciente">Paciente</label>
+      <form className="cita-form" onSubmit={handleSubmit}>
+        <section className="cita-seccion">
+          <h4 className="cita-seccion-titulo">
+            <span className="cita-seccion-icono">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="3.6" />
+                <path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" />
+              </svg>
+            </span>
+            Paciente
+          </h4>
+          <div className="field">
+            <label htmlFor="cita-paciente">Buscar paciente</label>
             <input
               id="cita-paciente"
               type="text"
@@ -205,79 +216,90 @@ const NuevaCitaModal = ({ open, fechaInicial, odontologoFijo, onClose, onCreada 
               </ul>
             )}
           </div>
+        </section>
 
-          <div className="field">
-            <label htmlFor="cita-fecha">Fecha</label>
-            <input
-              id="cita-fecha"
-              type="date"
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-              min={toIsoDate(new Date())}
-            />
+        <section className="cita-seccion">
+          <h4 className="cita-seccion-titulo">
+            <span className="cita-seccion-icono">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.5" />
+                <path d="M12 7.5V12l3 2" />
+              </svg>
+            </span>
+            Fecha y horario
+            <span className={`cita-duracion${duracionMinutos > 0 ? '' : ' invalida'}`}>
+              Duración: {formatearDuracion(duracionMinutos)}
+            </span>
+          </h4>
+          <div className="cita-horario">
+            <div className="field">
+              <label htmlFor="cita-fecha">Fecha</label>
+              <input
+                id="cita-fecha"
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                min={toIsoDate(new Date())}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="cita-hora">Hora de inicio</label>
+              <SelectorHora id="cita-hora" value={hora} onChange={cambiarHoraInicio} />
+            </div>
+            <div className="field">
+              <label htmlFor="cita-hora-fin">Hora de fin</label>
+              <SelectorHora id="cita-hora-fin" value={horaFin} onChange={setHoraFin} />
+            </div>
           </div>
+        </section>
 
-          <div className="field">
-            <label htmlFor="cita-hora">Hora de inicio</label>
-            <input
-              id="cita-hora"
-              type="time"
-              value={hora}
-              onChange={(e) => cambiarHoraInicio(e.target.value)}
-              min="07:00"
-              max="19:00"
-              step={INCREMENTO_MINUTOS * 60}
-            />
-          </div>
+        <section className="cita-seccion">
+          <h4 className="cita-seccion-titulo">
+            <span className="cita-seccion-icono">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 3.5h9l4 4V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 20z" />
+                <path d="M9 11h6M9 14.5h6M9 18h3.5" />
+              </svg>
+            </span>
+            Detalles
+          </h4>
+          <div className="field-grid">
+            <div className="field">
+              <label htmlFor="cita-odontologo">Odontólogo</label>
+              {odontologoFijo ? (
+                <input id="cita-odontologo" type="text" value={odontologoFijo.nombreUsuario} disabled />
+              ) : (
+                <select
+                  id="cita-odontologo"
+                  value={idUsuario}
+                  onChange={(e) => setIdUsuario(e.target.value)}
+                  disabled={cargandoListas}
+                >
+                  <option value="">{cargandoListas ? 'Cargando...' : 'Selecciona un odontólogo'}</option>
+                  {odontologos.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.nombreUsuario}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-          <div className="field">
-            <label htmlFor="cita-hora-fin">Hora de fin</label>
-            <input
-              id="cita-hora-fin"
-              type="time"
-              value={horaFin}
-              onChange={(e) => setHoraFin(e.target.value)}
-              min="07:00"
-              max="19:00"
-              step={INCREMENTO_MINUTOS * 60}
-            />
+            <div className="field full">
+              <label htmlFor="cita-notas">Notas</label>
+              <textarea
+                id="cita-notas"
+                placeholder="Notas para la cita (opcional)"
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+              />
+            </div>
           </div>
-
-          <div className="field">
-            <label htmlFor="cita-odontologo">Odontólogo</label>
-            {odontologoFijo ? (
-              <input id="cita-odontologo" type="text" value={odontologoFijo.nombreUsuario} disabled />
-            ) : (
-              <select
-                id="cita-odontologo"
-                value={idUsuario}
-                onChange={(e) => setIdUsuario(e.target.value)}
-                disabled={cargandoListas}
-              >
-                <option value="">{cargandoListas ? 'Cargando...' : 'Selecciona un odontólogo'}</option>
-                {odontologos.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.nombreUsuario}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="field full">
-            <label htmlFor="cita-notas">Notas</label>
-            <textarea
-              id="cita-notas"
-              placeholder="Notas para la cita"
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-            />
-          </div>
-        </div>
+        </section>
 
         {fueraDeHorario && (
           <p className="cita-modal-mensaje aviso">
-            Fuera del horario 7:00–19:00 — el sistema no permitirá guardar.
+            Fuera del horario 7:00 AM – 7:00 PM — el sistema no permitirá guardar.
           </p>
         )}
 

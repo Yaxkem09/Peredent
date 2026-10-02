@@ -43,6 +43,10 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Panoramica> Panoramicas => Set<Panoramica>();
 
+    public DbSet<ConsentimientoExodoncia> ConsentimientosExodoncia => Set<ConsentimientoExodoncia>();
+
+    public DbSet<ConsentimientoImpresion> ConsentimientosImpresion => Set<ConsentimientoImpresion>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -363,6 +367,48 @@ public class ApplicationDbContext : DbContext
             // eso el índice compuesto (cubre también las búsquedas por sola ID_Paciente).
             entity.HasIndex(p => new { p.IdPaciente, p.FechaEliminacion })
                   .HasDatabaseName("IX_Panoramicas_Paciente_Activas");
+        });
+
+        // SCRUM-254: tablas de backend/src/db/PeredentScript_Sprint4_Consentimientos.sql.
+        modelBuilder.Entity<ConsentimientoExodoncia>(entity =>
+        {
+            entity.ToTable("ConsentimientoExodoncia");
+            entity.HasKey(c => c.IdConsentimiento);
+            entity.Property(c => c.IdConsentimiento).HasColumnName("ID_Consentimiento");
+            entity.Property(c => c.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(c => c.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(c => c.NombrePaciente).HasColumnName("NombrePaciente").HasColumnType("varchar(200)").IsRequired();
+            entity.Property(c => c.DocumentoPaciente).HasColumnName("DocumentoPaciente").HasColumnType("varchar(30)").IsRequired();
+            entity.Property(c => c.NombreRepresentante).HasColumnName("NombreRepresentante").HasColumnType("varchar(200)");
+            entity.Property(c => c.NombreDoctor).HasColumnName("NombreDoctor").HasColumnType("varchar(200)").IsRequired();
+            entity.Property(c => c.ColegiadoDoctor).HasColumnName("ColegiadoDoctor").HasColumnType("varchar(50)");
+            entity.Property(c => c.Procedimiento).HasColumnName("Procedimiento").HasColumnType("varchar(300)").IsRequired();
+            entity.Property(c => c.RiesgosEspecificos).HasColumnName("RiesgosEspecificos").HasColumnType("varchar(1000)");
+            entity.Property(c => c.Observaciones).HasColumnName("Observaciones").HasColumnType("varchar(1000)");
+            entity.Property(c => c.Lugar).HasColumnName("Lugar").HasColumnType("varchar(100)");
+            entity.Property(c => c.FechaConsentimiento).HasColumnName("FechaConsentimiento").HasColumnType("date");
+            entity.Property(c => c.Estado).HasColumnName("Estado").HasColumnType("varchar(20)").IsRequired();
+            entity.Property(c => c.FechaCreacion).HasColumnName("FechaCreacion").HasColumnType("datetime");
+            entity.Property(c => c.FechaModificacion).HasColumnName("FechaModificacion").HasColumnType("datetime");
+
+            entity.HasMany(c => c.Impresiones)
+                  .WithOne()
+                  .HasForeignKey(i => i.IdConsentimiento)
+                  .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ConsentimientoImpresion>(entity =>
+        {
+            entity.ToTable("ConsentimientoImpresion");
+            entity.HasKey(i => i.IdConsentimientoImpresion);
+            entity.Property(i => i.IdConsentimientoImpresion).HasColumnName("ID_ConsentimientoImpresion");
+            entity.Property(i => i.IdConsentimiento).HasColumnName("ID_Consentimiento");
+            entity.Property(i => i.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(i => i.FechaImpresion).HasColumnName("FechaImpresion").HasColumnType("datetime");
+
+            entity.HasOne(i => i.Usuario)
+                  .WithMany()
+                  .HasForeignKey(i => i.IdUsuario);
         });
     }
 }

@@ -195,7 +195,6 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  max-width: 920px;
 }
 
 .pf-section {
@@ -575,4 +574,74 @@
   .pf-footer-botones > * {
     flex: 1;
   }
+}
+
+/* Pantallas anchas: Datos personales y Contacto lado a lado; el resto de
+   secciones (encargado, historia médica) y la barra de botones a todo lo ancho. */
+@media (min-width: 1280px) {
+  .pf-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .pf-form > .pf-section:nth-of-type(n + 3),
+  .pf-form > .pf-footer {
+    grid-column: 1 / -1;
+  }
+
+  .pf-hm-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1700px) {
+  .pf-hm-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---- Secciones del formulario: tarjeta blanca con un solo color (azul
+   marino) en el ícono y el título. Sin franjas de color a los lados para no
+   parecerse a los bloques de citas del calendario. ---- */
+.pf-section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 26px 26px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.pf-section-head {
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.pf-section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+}
+
+.pf-section-title {
+  color: var(--teal);
+  font-size: 18px;
+}
+
+/* Encargado: aparece de golpe al poner una fecha de menor de edad, así que
+   conserva un acento ámbar (solo ícono y borde), no un color de fondo. */
+.pf-section-aviso {
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+  border-left-width: 1px;
+}
+
+.pf-section-aviso .pf-section-icon {
+  background: linear-gradient(135deg, #b4791a 0%, #e0a33d 100%);
+  color: #ffffff;
+}
+
+.pf-section-aviso .pf-section-title {
+  color: var(--amber);
 }

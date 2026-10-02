@@ -103,3 +103,313 @@
     overflow-x: auto;
   }
 }
+
+/* ---- Historial de tratamientos: resumen, filtros en tarjeta y lista de
+   tratamientos con la pieza como insignia. ---- */
+.htx-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.htx-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+}
+
+.htx-stat-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%);
+  color: #ffffff;
+}
+
+.htx-stat:first-child .htx-stat-icono {
+  background: linear-gradient(135deg, #2f8f57 0%, #4fb77a 100%);
+}
+
+.htx-stat:last-child .htx-stat-icono {
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+}
+
+.htx-stat-num {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.htx-stat-label {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.htx .htx-filtros {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 16px 20px 18px;
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+}
+
+.htx-filtros-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.htx-filtros-icono {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+}
+
+.htx-filtros-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.htx-contador {
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #e3e9f3;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.htx .htx-limpiar {
+  margin: 0 0 0 auto;
+  padding: 7px 14px;
+  border: 1px solid #c9d3e1;
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--teal);
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.htx .htx-limpiar:hover:not(:disabled) {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #ffffff;
+}
+
+.htx .htx-limpiar:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.htx-filtros-cuerpo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+}
+
+.htx .htx-filtro label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.htx .htx-filtro select,
+.htx .htx-filtro input {
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.htx .htx-filtro select:focus,
+.htx .htx-filtro input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.htx-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.htx-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px 14px 14px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+}
+
+.htx-pieza-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+}
+
+.htx-pieza-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.htx-pieza-num {
+  font-family: 'Fraunces', serif;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.htx-item-cuerpo {
+  min-width: 0;
+}
+
+.htx-item-tratamiento {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.htx-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.htx-item-fecha,
+.htx-item-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.htx-item-fecha {
+  background: #dde7f6;
+  color: #1a3f73;
+}
+
+.htx-item-estado {
+  background: var(--verde-soft);
+  color: #23744a;
+}
+
+@media (max-width: 520px) {
+  .htx-lista {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Lista de tratamientos como tabla (igual que el historial de citas) ---- */
+.htx .htx-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+  font-size: 14px;
+}
+
+.htx .htx-table th {
+  padding: 13px 16px;
+  background: linear-gradient(120deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.htx .htx-table td {
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.htx .htx-table tbody tr:nth-child(even) {
+  background: #f7f9fb;
+}
+
+.htx .htx-table tbody tr:hover {
+  background: #eef4fa;
+}
+
+.htx .htx-pieza-badge {
+  display: inline-grid;
+  place-items: center;
+  width: auto;
+  min-width: 42px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.htx-tratamiento {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .htx .htx-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* Pieza en tono suave (como la fecha del historial de citas) y en Inter
+   para distinguir bien números y letras (p. ej. "5b", "21l"). */
+.htx .htx-pieza-badge {
+  background: #e3e9f3;
+  color: var(--teal);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}

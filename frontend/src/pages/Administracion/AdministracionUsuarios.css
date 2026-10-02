@@ -458,3 +458,98 @@
   border-color: var(--ink-soft);
   color: var(--ink);
 }
+
+/* ---- Administración con más color: resumen en tarjetas sólidas, barra de
+   búsqueda azul y tabla con encabezado azul marino. ---- */
+.admin-stat {
+  border: none;
+  color: #ffffff;
+  padding: 18px 20px;
+  box-shadow: 0 12px 24px -16px rgba(10, 38, 75, 0.75);
+}
+
+.admin-stat.total { background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%); }
+.admin-stat.activos { background: linear-gradient(135deg, #2f8f57 0%, #4fb77a 100%); }
+.admin-stat.inactivos { background: linear-gradient(135deg, #c85a3c 0%, #e08262 100%); }
+.admin-stat.admins { background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%); }
+
+.admin-stat.total .admin-stat-icono,
+.admin-stat.activos .admin-stat-icono,
+.admin-stat.inactivos .admin-stat-icono,
+.admin-stat.admins .admin-stat-icono {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.admin-stat-num {
+  color: #ffffff;
+  font-size: 28px;
+}
+
+.admin-stat-label {
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 600;
+}
+
+.users-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+}
+
+.admin-toolbar {
+  padding: 16px 18px;
+  border-bottom: none;
+  background: linear-gradient(120deg, #0a264b 0%, #1f5590 100%);
+}
+
+.admin-buscar {
+  max-width: 460px;
+  height: 44px;
+  border-color: transparent;
+  color: var(--teal);
+}
+
+.admin-buscar:focus-within {
+  border-color: #7fe0e6;
+  box-shadow: 0 0 0 4px rgba(127, 224, 230, 0.3);
+}
+
+.admin-filtros {
+  height: 44px;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.admin-filtros button {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.admin-filtros button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.admin-filtros button.active {
+  background: #ffffff;
+  color: var(--teal);
+}
+
+.users-table th {
+  background: #eef2f7;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.users-table tbody tr:nth-child(even) td {
+  background: #f7f9fb;
+}
+
+.users-table tbody tr:hover td {
+  background: #eef4fa;
+}
+
+.users-avatar {
+  box-shadow: 0 4px 10px -6px rgba(10, 38, 75, 0.7);
+}

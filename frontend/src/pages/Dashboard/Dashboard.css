@@ -170,7 +170,7 @@
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
-  width: 96px;
+  width: 150px;
   flex-shrink: 0;
 }
 
@@ -245,5 +245,202 @@
 
   .dash-cita-arrow {
     display: none;
+  }
+}
+
+/* Pantallas anchas: las 3 tarjetas en una fila y los dos paneles de citas
+   mitad y mitad, ocupando todo el ancho disponible. */
+@media (min-width: 900px) {
+  .stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---- Colores vivos: tarjetas de números sólidas con degradado y paneles
+   con encabezado de color, para que resalten sobre el fondo. ---- */
+.stat-card {
+  border: none;
+  color: #ffffff;
+  padding: 22px 24px;
+  box-shadow: 0 10px 22px -14px rgba(10, 38, 75, 0.7);
+}
+
+.stat-card.tono-teal {
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+}
+
+.stat-card.tono-accent {
+  background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%);
+}
+
+.stat-card.tono-amber {
+  background: linear-gradient(135deg, #b4791a 0%, #e0a33d 100%);
+}
+
+.stat-card.tono-teal .stat-icon,
+.stat-card.tono-accent .stat-icon,
+.stat-card.tono-amber .stat-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.stat-card .label {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.stat-card .value {
+  color: #ffffff;
+  font-size: 30px;
+}
+
+.dash-panel {
+  --tono: var(--teal);
+  --tono-soft: var(--teal-soft);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--tono) 20%, transparent);
+  border-top: 4px solid var(--tono);
+  box-shadow: 0 8px 20px -14px rgba(10, 38, 75, 0.5);
+}
+
+.dash-panel.tono-accent {
+  --tono: #0f7f88;
+  --tono-soft: #dcf1f2;
+}
+
+.dash-panel.tono-amber {
+  --tono: #b4791a;
+  --tono-soft: #fbefd9;
+}
+
+.dash-panel .dash-panel-head {
+  background: var(--tono-soft);
+  padding: 14px 20px;
+  margin-bottom: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--tono) 20%, transparent);
+}
+
+.dash-panel .dash-panel-head h3 {
+  color: var(--tono);
+  font-weight: 600;
+}
+
+.dash-panel .dash-count {
+  background: var(--tono);
+}
+
+.dash-panel > :not(.dash-panel-head) {
+  margin: 6px 20px 12px;
+}
+
+.dash-panel .dash-cita {
+  margin: 0;
+}
+/* Accesos rápidos en el banner del dashboard */
+.dash-head-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn.dash-head-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+/* ---- Citas del dashboard: cada cita es una tarjeta con la hora en una
+   píldora, iniciales del paciente, nombre grande y estado de color. ---- */
+.dash-panel .dash-cita-list {
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.dash-panel .dash-cita {
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 6px 14px -12px rgba(10, 38, 75, 0.5);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.dash-panel .dash-cita:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.dash-panel .dash-cita:hover {
+  background: #f7f9fb;
+  box-shadow: 0 10px 20px -12px rgba(10, 38, 75, 0.55);
+  transform: translateY(-1px);
+}
+
+.dash-cita-hora {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-width: 170px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  background: #e3e9f3;
+  color: var(--teal);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dash-cita-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dash-cita-nombre {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dash-cita-nota {
+  font-size: 12.5px;
+}
+
+.dash-cita-estado {
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+@media (max-width: 1280px) {
+  .dash-cita-avatar {
+    display: none;
+  }
+
+  .dash-cita-hora {
+    min-width: 0;
   }
 }

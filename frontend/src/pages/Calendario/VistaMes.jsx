@@ -9,6 +9,7 @@ import {
   hoy,
   claseDeEstado,
   ordenarPorHora,
+  formatearHora12,
   formatearRangoHora,
 } from './agenda.utils';
 
@@ -107,7 +108,7 @@ const VistaMes = ({
                       onSeleccionarCita(cita);
                     }}
                   >
-                    <span className="mc-hora">{cita.hora.slice(0, 5)}</span>
+                    <span className="mc-hora">{formatearHora12(cita.hora)}</span>
                     <span className="mc-nombre">{cita.nombrePaciente}</span>
                   </button>
                 ))}

@@ -89,48 +89,56 @@ const HistorialTratamientosTab = ({ idPaciente }) => {
   return (
     <div className="htx">
       <div className="htx-filtros">
-        <div className="htx-filtro">
-          <label htmlFor="htx-pieza">Pieza dental</label>
-          <select id="htx-pieza" value={filtros.pieza} onChange={(e) => cambiarFiltro('pieza', e.target.value)}>
-            <option value="">Todas</option>
-            {piezasDisponibles.map((pieza) => (
-              <option key={pieza} value={pieza}>
-                {pieza}
-              </option>
-            ))}
-          </select>
+        <div className="htx-filtros-head">
+          <span className="htx-filtros-icono" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 5h16l-6.5 7.5V19l-3 1.5v-8z" />
+            </svg>
+          </span>
+          <span className="htx-filtros-titulo">Filtrar tratamientos</span>
+          <span className="htx-contador">
+            {filtrados.length} de {tratamientos.length}
+          </span>
+          <button type="button" className="htx-limpiar" onClick={limpiarFiltros} disabled={!hayFiltrosActivos}>
+            Limpiar filtros
+          </button>
         </div>
 
-        <div className="htx-filtro">
-          <label htmlFor="htx-desde">Desde</label>
-          <input
-            id="htx-desde"
-            type="date"
-            value={filtros.desde}
-            max={filtros.hasta || undefined}
-            onChange={(e) => cambiarFiltro('desde', e.target.value)}
-          />
-        </div>
+        <div className="htx-filtros-cuerpo">
+          <div className="htx-filtro">
+            <label htmlFor="htx-pieza">Pieza dental</label>
+            <select id="htx-pieza" value={filtros.pieza} onChange={(e) => cambiarFiltro('pieza', e.target.value)}>
+              <option value="">Todas</option>
+              {piezasDisponibles.map((pieza) => (
+                <option key={pieza} value={pieza}>
+                  {pieza}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="htx-filtro">
-          <label htmlFor="htx-hasta">Hasta</label>
-          <input
-            id="htx-hasta"
-            type="date"
-            value={filtros.hasta}
-            min={filtros.desde || undefined}
-            onChange={(e) => cambiarFiltro('hasta', e.target.value)}
-          />
-        </div>
+          <div className="htx-filtro">
+            <label htmlFor="htx-desde">Desde</label>
+            <input
+              id="htx-desde"
+              type="date"
+              value={filtros.desde}
+              max={filtros.hasta || undefined}
+              onChange={(e) => cambiarFiltro('desde', e.target.value)}
+            />
+          </div>
 
-        <button
-          type="button"
-          className="btn btn-outline-teal btn-sm htx-limpiar"
-          onClick={limpiarFiltros}
-          disabled={!hayFiltrosActivos}
-        >
-          Limpiar filtros
-        </button>
+          <div className="htx-filtro">
+            <label htmlFor="htx-hasta">Hasta</label>
+            <input
+              id="htx-hasta"
+              type="date"
+              value={filtros.hasta}
+              min={filtros.desde || undefined}
+              onChange={(e) => cambiarFiltro('hasta', e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       {filtrados.length === 0 ? (
@@ -151,14 +159,33 @@ const HistorialTratamientosTab = ({ idPaciente }) => {
               <th>Pieza</th>
               <th>Tratamiento</th>
               <th>Fecha</th>
+              <th>Estado</th>
             </tr>
           </thead>
           <tbody>
             {filtrados.map((t, i) => (
               <tr key={`${t.pieza}-${soloFecha(t.fecha)}-${i}`}>
-                <td className="htx-pieza">{t.pieza}</td>
-                <td>{t.tratamiento}</td>
-                <td>{formatDate(t.fecha)}</td>
+                <td>
+                  <span className="htx-pieza-badge">{t.pieza}</span>
+                </td>
+                <td className="htx-tratamiento">{t.tratamiento}</td>
+                <td>
+                  <span className="htx-item-fecha">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+                      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+                    </svg>
+                    {formatDate(t.fecha)}
+                  </span>
+                </td>
+                <td>
+                  <span className="htx-item-estado">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    </svg>
+                    Completado
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>

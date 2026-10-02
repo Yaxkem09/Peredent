@@ -78,7 +78,20 @@ const CitaRow = ({ cita }) => (
     title={`Abrir expediente de ${cita.nombrePaciente || 'paciente'}`}
   >
     <span className="dash-cita-hora">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.5V12l3 2" />
+      </svg>
       {cita.hora ? formatearRangoHora(cita.hora, cita.duracionMinutos) : ''}
+    </span>
+    <span className="dash-cita-avatar" aria-hidden="true">
+      {(cita.nombrePaciente || 'P')
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((parte) => parte[0])
+        .join('')
+        .toUpperCase()}
     </span>
     <span className="dash-cita-body">
       <span className="dash-cita-nombre">{cita.nombrePaciente || 'Paciente'}</span>
@@ -102,8 +115,8 @@ const CitaRow = ({ cita }) => (
   </Link>
 );
 
-const PanelCitas = ({ titulo, citas, error, vacio }) => (
-  <section className="dash-panel">
+const PanelCitas = ({ titulo, citas, error, vacio, tono }) => (
+  <section className={`dash-panel tono-${tono}`}>
     <div className="dash-panel-head">
       <h3>{titulo}</h3>
       {!error && <span className="dash-count">{citas.length}</span>}
@@ -200,6 +213,21 @@ const Dashboard = () => {
           </h2>
           <p>Resumen de la actividad clínica · {etiquetaHoy}</p>
         </div>
+        <div className="dash-head-acciones">
+          <Link to={ROUTES.CALENDARIO} className="btn btn-primary btn-md dash-head-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3.5" y="5" width="17" height="15" rx="2" />
+              <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+            </svg>
+            Ir a la agenda
+          </Link>
+          <Link to={ROUTES.PACIENTE_NUEVO} className="btn btn-md btn-head-sec dash-head-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nuevo paciente
+          </Link>
+        </div>
       </div>
 
       <div className="stat-grid">
@@ -216,6 +244,7 @@ const Dashboard = () => {
 
       <div className="dashboard-columns">
         <PanelCitas
+          tono="accent"
           titulo="Por atender hoy"
           citas={porAtenderHoy}
           error={errores.citas}
@@ -225,6 +254,7 @@ const Dashboard = () => {
           }}
         />
         <PanelCitas
+          tono="amber"
           titulo={`Agenda de mañana · ${etiquetaManana}`}
           citas={citasManana}
           error={errores.citas}

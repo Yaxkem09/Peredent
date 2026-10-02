@@ -13,7 +13,8 @@
 .app-main {
   flex: 1;
   padding: 32px 40px;
-  max-width: 1080px;
+  /* Sin tope de ancho: cada pantalla usa todo el espacio a la derecha del
+     menú (antes 1080px dejaba media pantalla vacía en monitores grandes). */
   width: 100%;
   box-sizing: border-box;
 }
