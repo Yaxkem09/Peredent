@@ -47,6 +47,10 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<ConsentimientoImpresion> ConsentimientosImpresion => Set<ConsentimientoImpresion>();
 
+    // SCRUM-64: abonos del paciente (tabla dbo.AbonoPaciente de
+    // backend/src/db/PeredentScript_Sprint4.sql).
+    public DbSet<AbonoPaciente> AbonosPaciente => Set<AbonoPaciente>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -409,6 +413,28 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(i => i.Usuario)
                   .WithMany()
                   .HasForeignKey(i => i.IdUsuario);
+        });
+
+        // SCRUM-64: se replica tal cual la tabla dbo.AbonoPaciente de
+        // backend/src/db/PeredentScript_Sprint4.sql y su ampliación de anulación
+        // (PeredentScript_Sprint4_AnulacionAbonos.sql): BIT, DATETIME y
+        // VARCHAR(300), no los tipos que EF usaría por convención.
+        // A propósito NO se usa HasDefaultValueSql ni ValueGeneratedOnAdd en
+        // FechaAbono ni en Anulado: la fecha la asigna el backend en hora de
+        // Guatemala y el INSERT manda Anulado explícito en false.
+        modelBuilder.Entity<AbonoPaciente>(entity =>
+        {
+            entity.ToTable("AbonoPaciente");
+            entity.HasKey(a => a.IdAbonoPaciente);
+            entity.Property(a => a.IdAbonoPaciente).HasColumnName("ID_AbonoPaciente");
+            entity.Property(a => a.IdPresupuestoPlan).HasColumnName("ID_PresupuestoPlan");
+            entity.Property(a => a.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(a => a.MontoAbono).HasColumnName("MontoAbono").HasColumnType("decimal(10,2)");
+            entity.Property(a => a.FechaAbono).HasColumnName("FechaAbono").HasColumnType("datetime");
+            entity.Property(a => a.Anulado).HasColumnName("Anulado").HasColumnType("bit");
+            entity.Property(a => a.FechaAnulacion).HasColumnName("FechaAnulacion").HasColumnType("datetime");
+            entity.Property(a => a.IdUsuarioAnulacion).HasColumnName("ID_UsuarioAnulacion");
+            entity.Property(a => a.MotivoAnulacion).HasColumnName("MotivoAnulacion").HasColumnType("varchar(300)");
         });
     }
 }

@@ -14,6 +14,7 @@ import EndodonciaTab from './EndodonciaTab';
 import TratamientoPendienteTab from './TratamientoPendienteTab';
 import HistorialTratamientosTab from './HistorialTratamientosTab';
 import PresupuestoTab from './PresupuestoTab';
+import SaldoAbonosTab from './SaldoAbonosTab';
 import RecetarioTab from './RecetarioTab';
 import FotosPanoramicasTab from './FotosPanoramicasTab';
 import ConsentimientosTab from './ConsentimientosTab';
@@ -155,6 +156,7 @@ const TABS_DISPONIBLES = new Set([
   'pendientes',
   'historial',
   'presupuesto',
+  'saldo',
   'recetario',
   'fotos',
   'consentimientos',
@@ -614,6 +616,7 @@ const PacienteDetail = () => {
           {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}
           {activeTab === 'historial' && <HistorialTratamientosTab idPaciente={id} />}
           {activeTab === 'presupuesto' && <PresupuestoTab idPaciente={id} />}
+          {activeTab === 'saldo' && <SaldoAbonosTab idPaciente={id} />}
           {activeTab === 'recetario' && <RecetarioTab idPaciente={id} paciente={paciente} />}
           {activeTab === 'fotos' && <FotosPanoramicasTab idPaciente={id} />}
           {activeTab === 'consentimientos' && <ConsentimientosTab idPaciente={id} paciente={paciente} />}
