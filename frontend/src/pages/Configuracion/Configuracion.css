@@ -1,0 +1,115 @@
+/* SCRUM-237 a 239: pantalla de configuración de usuario. */
+
+.configuracion {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 720px;
+  width: 100%;
+}
+
+.configuracion-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+}
+
+.configuracion-card h3 {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.configuracion-nota {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.configuracion-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 26px;
+}
+
+.configuracion-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.configuracion-dato-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.configuracion-dato-valor {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.configuracion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.configuracion-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.configuracion-campo label {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.configuracion-campo input {
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface-alt);
+}
+
+.configuracion-campo input:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.configuracion-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.configuracion-clave {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.configuracion-clave input {
+  flex: 1;
+}
+
+.configuracion-ver {
+  border: 1px solid var(--line);
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}

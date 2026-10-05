@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../routes/routes';
 import logo from '../../assets/logo.png';
@@ -127,6 +127,11 @@ const Login = () => {
             <button type="submit" className="login-submit" disabled={loading}>
               {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
+
+            {/* SCRUM-231: enlace para quien no recuerda su contraseña. */}
+            <Link className="login-olvide" to={ROUTES.OLVIDE_CONTRASENA}>
+              ¿Olvidaste tu contraseña?
+            </Link>
           </form>
         </div>
       </div>

@@ -29,12 +29,24 @@ public class AuthController : ControllerBase
             .Include(u => u.Rol)
             .FirstOrDefaultAsync(u => u.NombreUsuario == request.Usuario);
 
+        // SCRUM-230: la verificación es dual (bcrypt o el SHA2_256 legado de los
+        // usuarios sembrados por SQL) y la resuelve el propio IPasswordHasher.
+        var clave = request.Clave ?? string.Empty;
         var hashCoincide = usuario is not null &&
-            string.Equals(_passwordHasher.HashClave(request.Clave, usuario.Salt), usuario.ContrasenaHash, StringComparison.OrdinalIgnoreCase);
+            _passwordHasher.Verificar(clave, usuario.ContrasenaHash, usuario.Salt);
 
         if (usuario is null || !usuario.Estado || !hashCoincide)
         {
             return Unauthorized(new { message = "Credenciales incorrectas" });
+        }
+
+        // SCRUM-230: si el usuario todavía tenía el hash legado, entra igual y acá se
+        // le recalcula con bcrypt (Salt vacío: el salt va dentro del hash) sin pedirle
+        // nada. Se guarda junto con UltimoAcceso, en el mismo SaveChanges.
+        if (_passwordHasher.NecesitaMigracion(usuario.ContrasenaHash))
+        {
+            usuario.ContrasenaHash = _passwordHasher.Hashear(clave);
+            usuario.Salt = string.Empty;
         }
 
         // Guatemala es UTC-6 todo el año (no observa horario de verano); guardamos

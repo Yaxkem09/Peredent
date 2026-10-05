@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Controllers;
@@ -33,21 +35,32 @@ public class AuthControllerTests
     private static AuthController CrearController(ApplicationDbContext db) =>
         new(db, new JwtTokenServiceFake(), new PasswordHasher());
 
+    // hashLegado: true siembra el usuario como lo deja el script SQL (SHA2_256 con
+    // salt); false lo siembra con el formato nuevo (bcrypt y Salt vacío).
     private static async Task<Usuario> SembrarUsuarioAsync(
-        ApplicationDbContext db, bool estado = true, string nombreUsuario = "dra.solis")
+        ApplicationDbContext db, bool estado = true, string nombreUsuario = "dra.solis", bool hashLegado = false)
     {
         db.Roles.Add(new Rol { IdRol = 1, NombreRol = "Odontologo" });
 
         var hasher = new PasswordHasher();
-        var salt = hasher.GenerarSalt();
         var usuario = new Usuario
         {
             NombreUsuario = nombreUsuario,
-            Salt = salt,
-            ContrasenaHash = hasher.HashClave(ClaveValida, salt),
             IdRol = 1,
             Estado = estado,
         };
+
+        if (hashLegado)
+        {
+            usuario.Salt = "salt-viejo";
+            usuario.ContrasenaHash = HashLegadoComoLaBase(ClaveValida, usuario.Salt);
+        }
+        else
+        {
+            usuario.Salt = string.Empty;
+            usuario.ContrasenaHash = hasher.Hashear(ClaveValida);
+        }
+
         db.Usuarios.Add(usuario);
         await db.SaveChangesAsync();
         return usuario;
@@ -100,5 +113,60 @@ public class AuthControllerTests
         var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = ClaveValida });
 
         Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
+    }
+
+    // SCRUM-230: el usuario con hash legado entra igual y, al entrar, se le migra el
+    // hash a bcrypt sin pedirle nada.
+    [Fact]
+    public async Task Login_ConHashLegado_EntraYMigraABcrypt()
+    {
+        using var db = CrearContexto();
+        var usuario = await SembrarUsuarioAsync(db, hashLegado: true);
+        var controller = CrearController(db);
+
+        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = ClaveValida });
+
+        Assert.IsType<OkObjectResult>(resultado.Result);
+
+        var guardado = await db.Usuarios.SingleAsync(u => u.IdUsuario == usuario.IdUsuario);
+        Assert.StartsWith("$2", guardado.ContrasenaHash);
+        Assert.Equal(60, guardado.ContrasenaHash.Length);
+        Assert.Equal(string.Empty, guardado.Salt);
+        Assert.True(new PasswordHasher().Verificar(ClaveValida, guardado.ContrasenaHash, guardado.Salt));
+    }
+
+    [Fact]
+    public async Task Login_ConHashLegadoYClaveIncorrecta_Devuelve401YNoMigra()
+    {
+        using var db = CrearContexto();
+        var usuario = await SembrarUsuarioAsync(db, hashLegado: true);
+        var controller = CrearController(db);
+
+        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = "claveIncorrecta" });
+
+        Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
+        var guardado = await db.Usuarios.SingleAsync(u => u.IdUsuario == usuario.IdUsuario);
+        Assert.Equal(usuario.ContrasenaHash, guardado.ContrasenaHash);
+    }
+
+    // Ya migrado, un login correcto no vuelve a hashear.
+    [Fact]
+    public async Task Login_ConHashBcrypt_NoVuelveAMigrar()
+    {
+        using var db = CrearContexto();
+        var usuario = await SembrarUsuarioAsync(db);
+        var controller = CrearController(db);
+
+        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = ClaveValida });
+
+        Assert.IsType<OkObjectResult>(resultado.Result);
+        var guardado = await db.Usuarios.SingleAsync(u => u.IdUsuario == usuario.IdUsuario);
+        Assert.Equal(usuario.ContrasenaHash, guardado.ContrasenaHash);
+    }
+
+    private static string HashLegadoComoLaBase(string clave, string salt)
+    {
+        var bytes = Encoding.UTF8.GetBytes(clave + salt);
+        return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
     }
 }

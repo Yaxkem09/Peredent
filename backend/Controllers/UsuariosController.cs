@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,12 +15,6 @@ namespace Peredent.Api.Controllers;
 [Authorize]
 public class UsuariosController : ControllerBase
 {
-    private const int CorreoLongitudMaxima = 150;
-
-    // Validación básica de formato (algo@dominio.ext); la verificación real de que
-    // el correo existe llega cuando se use para recuperar la contraseña.
-    private static readonly Regex FormatoCorreo = new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.Compiled);
-
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
 
@@ -64,18 +57,26 @@ public class UsuariosController : ControllerBase
     [Authorize(Policy = "SoloAdmin")]
     public async Task<ActionResult<UsuarioDto>> Create([FromBody] CreateUsuarioDto request)
     {
-        if (string.IsNullOrWhiteSpace(request.NombreUsuario) ||
-            string.IsNullOrWhiteSpace(request.Clave) ||
-            string.IsNullOrWhiteSpace(request.Correo))
+        if (string.IsNullOrWhiteSpace(request.NombreUsuario) || string.IsNullOrWhiteSpace(request.Clave))
         {
-            return BadRequest(new { message = "Nombre de usuario, correo y contraseña son obligatorios." });
+            return BadRequest(new { message = "Nombre de usuario y contraseña son obligatorios." });
+        }
+
+        // SCRUM-235: la contraseña del alta también cumple la política (antes solo se
+        // exigía que no estuviera vacía).
+        var errorPolitica = PoliticaContrasena.Validar(request.Clave);
+        if (errorPolitica is not null)
+        {
+            return BadRequest(new { message = errorPolitica });
         }
 
         var nombreUsuario = request.NombreUsuario.Trim();
-        // Se guarda en minúsculas para que "Ana@Correo.com" y "ana@correo.com" cuenten como el mismo.
-        var correo = request.Correo.Trim().ToLowerInvariant();
 
-        if (correo.Length > CorreoLongitudMaxima || !FormatoCorreo.IsMatch(correo))
+        // SCRUM-237: el correo es opcional (la columna admite NULL); si viene, se
+        // valida con la misma regla que el cambio de correo de la propia cuenta.
+        var correo = string.IsNullOrWhiteSpace(request.Correo) ? null : ValidacionCorreo.Normalizar(request.Correo);
+
+        if (correo is not null && !ValidacionCorreo.EsValido(correo))
         {
             return BadRequest(new { message = "Ingresa un correo electrónico válido." });
         }
@@ -85,7 +86,7 @@ public class UsuariosController : ControllerBase
             return BadRequest(new { message = "Ya existe un usuario con ese nombre." });
         }
 
-        if (await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo))
+        if (correo is not null && await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo))
         {
             return BadRequest(new { message = "Ya existe un usuario con ese correo." });
         }
@@ -95,13 +96,14 @@ public class UsuariosController : ControllerBase
             return BadRequest(new { message = "El rol indicado no existe." });
         }
 
-        var salt = _passwordHasher.GenerarSalt();
+        // SCRUM-230: las contraseñas nuevas se guardan con bcrypt. La columna Salt
+        // se conserva (es NOT NULL) pero queda vacía: el salt va dentro del hash.
         var usuario = new Usuario
         {
             NombreUsuario = nombreUsuario,
             CorreoUsuario = correo,
-            Salt = salt,
-            ContrasenaHash = _passwordHasher.HashClave(request.Clave, salt),
+            Salt = string.Empty,
+            ContrasenaHash = _passwordHasher.Hashear(request.Clave),
             IdRol = request.IdRol,
             Estado = true,
             EsAdmin = request.EsAdmin,

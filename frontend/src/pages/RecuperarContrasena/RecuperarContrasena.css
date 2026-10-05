@@ -1,0 +1,70 @@
+/* SCRUM-231: pantallas públicas de recuperación de contraseña. Reutilizan el look
+   del login (se importa Login.css) y acá solo van los añadidos. */
+
+/* El login tiene dos columnas (foto + formulario); estas pantallas son solo
+   formulario, así que la tarjeta se angosta. */
+.login-card.card-angosta {
+  grid-template-columns: 1fr;
+  max-width: 460px;
+}
+
+.recuperar-texto {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.recuperar-exito,
+.recuperar-error {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.recuperar-exito {
+  background: #e8f5ee;
+  border: 1px solid #b6dfc7;
+  color: #1c5c3a;
+}
+
+.recuperar-error {
+  background: #fdeaea;
+  border: 1px solid #f3c2c2;
+  color: #8a2a2a;
+}
+
+.recuperar-exito p,
+.recuperar-error p {
+  margin: 0;
+}
+
+/* Campo de contraseña con botón para mostrar/ocultar. */
+.campo-con-boton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campo-con-boton input {
+  flex: 1;
+}
+
+.campo-ver {
+  border: 1px solid var(--line);
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.campo-ver:hover {
+  color: var(--ink);
+}

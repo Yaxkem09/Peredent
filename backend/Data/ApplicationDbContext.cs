@@ -47,6 +47,9 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<ConsentimientoImpresion> ConsentimientosImpresion => Set<ConsentimientoImpresion>();
 
+    // SCRUM-232: tokens de restablecimiento de contraseña.
+    public DbSet<ResetPassword> ResetPasswords => Set<ResetPassword>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -409,6 +412,30 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(i => i.Usuario)
                   .WithMany()
                   .HasForeignKey(i => i.IdUsuario);
+        });
+
+        // SCRUM-232: se replica la tabla dbo.ResetPassword de
+        // backend/src/db/PeredentScript_Sprint4.sql (VARCHAR(255), DATETIME y BIT,
+        // con su índice único del token). A propósito NO se usa HasDefaultValueSql:
+        // FechaCreacion y FechaExpiracion las escribe el backend con DateTime.UtcNow,
+        // sin depender del DEFAULT GETDATE() de la base.
+        modelBuilder.Entity<ResetPassword>(entity =>
+        {
+            entity.ToTable("ResetPassword");
+            entity.HasKey(t => t.IdTokenPassword);
+            entity.Property(t => t.IdTokenPassword).HasColumnName("ID_TokenPassword");
+            entity.Property(t => t.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(t => t.TokenRestablecer).HasColumnName("TokenRestablecer").HasColumnType("varchar(255)").IsRequired();
+            entity.Property(t => t.FechaExpiracion).HasColumnName("FechaExpiracion").HasColumnType("datetime");
+            entity.Property(t => t.TokenUsado).HasColumnName("TokenUsado").HasColumnType("bit");
+            entity.Property(t => t.FechaCreacion).HasColumnName("FechaCreacion").HasColumnType("datetime");
+
+            entity.HasIndex(t => t.TokenRestablecer).IsUnique().HasDatabaseName("UQ_ResetPassword_Token");
+
+            entity.HasOne<Usuario>()
+                  .WithMany()
+                  .HasForeignKey(t => t.IdUsuario)
+                  .HasConstraintName("FK_ResetPassword_Usuario");
         });
     }
 }
