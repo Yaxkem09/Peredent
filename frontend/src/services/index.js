@@ -12,3 +12,4 @@ export { endodonciaService } from './endodoncia.service';
 export { recetarioService } from './recetario.service';
 export { panoramicasService } from './panoramicas.service';
 export { protesisService } from './protesis.service';export { consentimientosService } from './consentimientos.service';
+export { abonosService } from './abonos.service';
