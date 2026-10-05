@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ROUTES } from '../../routes/routes';
 import logo from '../../assets/logo.png';
 import './Sidebar.css';
 
@@ -96,13 +97,14 @@ const Sidebar = ({ open, onNavigate }) => {
       </nav>
 
       <div className="sidebar-foot">
-        <div className="user-chip">
+        {/* SCRUM-237: desde acá se entra a "Configuración de usuario". */}
+        <NavLink to={ROUTES.CONFIGURACION} onClick={onNavigate} className="user-chip" title="Configuración de usuario">
           <div className="avatar">{iniciales}</div>
           <div>
             <div className="user-chip-name">{user?.usuario || 'Invitado'}</div>
             <div className="user-chip-role">{user?.rol || 'Personal clínico'}</div>
           </div>
-        </div>
+        </NavLink>
         <button type="button" className="logout-btn" onClick={logout}>
           <svg
             width="15"

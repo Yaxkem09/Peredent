@@ -305,8 +305,9 @@ public class AbonosController : ControllerBase
             return false;
         }
 
-        var hash = _passwordHasher.HashClave(password, usuario.Salt);
-        return string.Equals(hash, usuario.ContrasenaHash, StringComparison.OrdinalIgnoreCase);
+        // SCRUM-230: la verificación dual (bcrypt o el SHA2_256 legado) la resuelve
+        // el propio IPasswordHasher, así que acá no se reimplementa el hashing.
+        return _passwordHasher.Verificar(password, usuario.ContrasenaHash, usuario.Salt);
     }
 
     // Un paciente tiene un solo plan activo (FechaCierre NULL), reforzado en la

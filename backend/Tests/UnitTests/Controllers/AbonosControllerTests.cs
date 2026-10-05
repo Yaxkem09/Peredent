@@ -73,14 +73,15 @@ public class AbonosControllerTests
     private static async Task<Usuario> CrearAdminAsync(ApplicationDbContext db, int idUsuario = IdUsuarioToken, bool esAdmin = true)
     {
         var hasher = new PasswordHasher();
-        var salt = hasher.GenerarSalt();
 
         var admin = new Usuario
         {
             IdUsuario = idUsuario,
             NombreUsuario = "admin",
-            Salt = salt,
-            ContrasenaHash = hasher.HashClave(PasswordAdmin, salt),
+            // SCRUM-230: los hashes nuevos son bcrypt y el Salt queda vacío (el salt
+            // va dentro del propio hash).
+            Salt = string.Empty,
+            ContrasenaHash = hasher.Hashear(PasswordAdmin),
             Estado = true,
             EsAdmin = esAdmin,
         };

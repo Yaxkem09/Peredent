@@ -216,3 +216,19 @@ nav {
     box-shadow: 8px 0 30px rgba(27, 40, 37, 0.15);
   }
 }
+
+/* SCRUM-237: el bloque de usuario ahora es el acceso a Configuración. */
+a.user-chip {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+a.user-chip:hover {
+  border-color: var(--teal);
+}
+
+a.user-chip:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}

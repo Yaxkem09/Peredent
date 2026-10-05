@@ -344,3 +344,17 @@
     height: 56px;
   }
 }
+
+/* SCRUM-231: enlace de "¿Olvidaste tu contraseña?" (y los de las pantallas de
+   recuperación, que reutilizan este CSS). */
+.login-olvide {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--teal);
+  text-align: center;
+}
+
+.login-olvide:hover {
+  text-decoration: underline;
+}

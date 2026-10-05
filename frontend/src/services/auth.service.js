@@ -41,4 +41,23 @@ export const authService = {
       esAdmin: localStorage.getItem(ES_ADMIN_KEY) === 'true',
     };
   },
+
+  // SCRUM-231/232/233: pide el enlace de restablecimiento. El backend responde
+  // siempre lo mismo, exista o no la cuenta, así que acá no hay nada que decidir.
+  solicitarRestablecimiento: async (identificador) => {
+    const { data } = await api.post('/auth/olvide-contrasena', { identificador });
+    return data;
+  },
+
+  // SCRUM-234: valida el token del enlace antes de mostrar el formulario.
+  validarTokenRestablecimiento: async (token) => {
+    const { data } = await api.post('/auth/restablecer-contrasena/validar', { token });
+    return data;
+  },
+
+  // SCRUM-234/235/236: guarda la contraseña nueva (el enlace queda sin uso).
+  restablecerContrasena: async ({ token, nuevaContrasena, confirmacion }) => {
+    const { data } = await api.post('/auth/restablecer-contrasena', { token, nuevaContrasena, confirmacion });
+    return data;
+  },
 };
