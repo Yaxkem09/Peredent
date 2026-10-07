@@ -25,6 +25,12 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  // Cambio del propio nombre de usuario desde Configuración.
+  const actualizarUsuario = useCallback(({ token, usuario }) => {
+    authService.actualizarSesion({ token, usuario });
+    setUser((actual) => (actual ? { ...actual, usuario } : actual));
+  }, []);
+
   const logout = useCallback(() => {
     authService.logout();
     setUser(null);
@@ -50,8 +56,9 @@ export const AuthProvider = ({ children }) => {
       isLoading,
       login,
       logout,
+      actualizarUsuario,
     }),
-    [user, isLoading],
+    [user, isLoading, actualizarUsuario],
   );
 
   return (

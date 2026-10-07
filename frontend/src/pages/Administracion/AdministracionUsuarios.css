@@ -77,55 +77,144 @@
 .users-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+}
+
+.users-form-intro {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.users-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
 }
 
 .users-form .field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
 }
 
 .users-form .field label {
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.users-form-requerido {
+  color: var(--coral);
 }
 
 .users-form .field input,
 .users-form .field select {
-  padding: 9px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
+  width: 100%;
+  box-sizing: border-box;
+  height: 46px;
+  padding: 0 13px;
+  border-radius: 10px;
+  border: 1.5px solid #c9d5d1;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   background: var(--surface);
   color: var(--ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .users-form .field input:focus,
 .users-form .field select:focus {
   outline: none;
-  border-color: var(--teal);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.users-form-checkbox {
+.users-form-ayuda {
+  font-size: 12.5px;
+  color: #44534e;
+}
+
+.users-form-clave {
+  display: flex;
+  gap: 8px;
+}
+
+.users-form-clave input {
+  flex: 1;
+  min-width: 0;
+}
+
+.users-form-ver {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border: 1.5px solid #c9d5d1;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
 }
 
-.users-form-checkbox input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--teal);
+.users-form-ver:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Permiso de administrador como una tarjeta clicable. */
+.users-form-admin {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid #c9d5d1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.users-form-admin:hover {
+  border-color: var(--accent);
+}
+
+.users-form-admin.activo {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.users-form-admin input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.users-form-checkbox label {
-  font-size: 13px;
+.users-form-admin-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.users-form-admin-titulo {
+  font-size: 14.5px;
+  font-weight: 600;
   color: var(--ink);
-  cursor: pointer;
+}
+
+.users-form-admin-ayuda {
+  font-size: 13px;
+  color: #44534e;
+}
+
+@media (max-width: 600px) {
+  .users-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 640px) {

@@ -5,7 +5,6 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import PermissionRoute from './routes/PermissionRoute';
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login/Login';
-import OlvideContrasena from './pages/RecuperarContrasena/OlvideContrasena';
 import RestablecerContrasena from './pages/RecuperarContrasena/RestablecerContrasena';
 import Dashboard from './pages/Dashboard/Dashboard';
 import PacientesList from './pages/Pacientes/PacientesList';
@@ -26,7 +25,8 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
             {/* SCRUM-231: rutas públicas de recuperación (sin sesión). */}
-            <Route path="/olvide-contrasena" element={<OlvideContrasena />} />
+            {/* Misma pantalla del login, abierta con el panel de recuperación. */}
+            <Route path="/olvide-contrasena" element={<Login modoInicial="recuperar" />} />
             <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
 
             <Route element={<ProtectedRoute />}>

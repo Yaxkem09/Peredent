@@ -7,7 +7,14 @@ export const cuentaService = {
     return data;
   },
 
-  // El correo es el único dato editable; se confirma con la contraseña actual.
+  // Cambio del nombre de usuario; se confirma con la contraseña actual. La
+  // respuesta trae un token nuevo (el nombre va dentro del token).
+  actualizarUsuario: async ({ nombreUsuario, contrasenaActual }) => {
+    const { data } = await api.put('/cuenta/usuario', { nombreUsuario, contrasenaActual });
+    return data;
+  },
+
+  // Cambio del correo; se confirma con la contraseña actual.
   actualizarCorreo: async ({ correo, contrasenaActual }) => {
     const { data } = await api.put('/cuenta/correo', { correo, contrasenaActual });
     return data;

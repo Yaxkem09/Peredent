@@ -1,25 +1,52 @@
+/* Ocupa todo el ancho del expediente. */
 .saldo {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  max-width: 1000px;
   width: 100%;
 }
 
+/* ---------- Resumen general ---------- */
 .saldo-resumen {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .saldo-resumen-item {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 14px;
   background: var(--surface);
   border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.05);
+  min-width: 0;
+}
+
+.saldo-resumen-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
-  padding: 14px 16px;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.saldo-resumen-icono.verde {
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.saldo-resumen-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .saldo-resumen-label {
@@ -31,29 +58,385 @@
 
 .saldo-resumen-valor {
   font-family: 'Fraunces', serif;
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El saldo pendiente es lo que debe el paciente: se destaca en rojo. */
+.saldo-resumen-item.destacado {
+  background: var(--rojo);
+  border-color: var(--rojo);
+  box-shadow: 0 4px 14px rgba(200, 67, 58, 0.25);
+}
+
+.saldo-resumen-item.destacado .saldo-resumen-icono {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.saldo-resumen-item.destacado .saldo-resumen-label {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.saldo-resumen-item.destacado .saldo-resumen-valor {
+  color: #ffffff;
+}
+
+/* Sin deuda: el saldo destacado pasa a verde. */
+.saldo-resumen-item.destacado.al-dia {
+  background: var(--verde);
+  border-color: var(--verde);
+}
+
+.saldo-resumen-progreso {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 18px;
+}
+
+/* ---------- Barra de progreso ---------- */
+.saldo-progreso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.saldo-progreso-barra {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+
+.saldo-progreso-relleno {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--verde));
+  transition: width 0.3s ease;
+}
+
+.saldo-progreso-texto {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  min-width: 78px;
+  text-align: right;
+}
+
+/* ---------- Bloque por plan ---------- */
+/* Cada estado tiene su color: --plan-color para bordes y franja, --plan-soft
+   para el fondo del encabezado. */
+.saldo-plan {
+  --plan-color: var(--gris);
+  --plan-soft: var(--gris-soft);
+  position: relative;
+  background: var(--surface);
+  border: 2px solid var(--plan-color);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(10, 38, 75, 0.08);
+}
+
+.saldo-plan.estado-activo {
+  --plan-color: var(--accent);
+  --plan-soft: var(--accent-soft);
+  box-shadow: 0 6px 22px rgba(21, 147, 156, 0.18);
+}
+
+.saldo-plan.estado-pendiente {
+  --plan-color: var(--amber);
+  --plan-soft: var(--amber-soft);
+}
+
+.saldo-plan.estado-pagado {
+  --plan-color: var(--verde);
+  --plan-soft: var(--verde-soft);
+}
+
+.saldo-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  width: 100%;
+  padding: 18px 22px 18px 26px;
+  border: none;
+  border-left: 8px solid var(--plan-color);
+  background: var(--plan-soft);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.saldo-plan-head:hover {
+  filter: brightness(0.97);
+}
+
+/* El plan activo lleva el encabezado en color sólido para distinguirlo de lejos. */
+.saldo-plan.estado-activo .saldo-plan-head {
+  background: linear-gradient(120deg, var(--teal) 0%, var(--accent) 100%);
+  border-left-color: var(--teal);
+  color: #ffffff;
+}
+
+.saldo-plan.estado-activo .saldo-plan-titulo,
+.saldo-plan.estado-activo .saldo-plan-saldo,
+.saldo-plan.estado-activo .saldo-plan-head-meta {
+  color: #ffffff;
+}
+
+.saldo-plan.estado-activo .saldo-plan-saldo.debe {
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: var(--rojo);
+  color: #ffffff !important;
+}
+
+.saldo-plan-saldo.debe .saldo-plan-saldo-label {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.saldo-plan-saldo-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.saldo-plan.estado-activo .saldo-fecha-chip {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+}
+
+.saldo-plan.estado-activo .saldo-fecha-chip-label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.saldo-plan-head-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saldo-plan-titulo {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
   font-weight: 600;
   color: var(--ink);
 }
 
-/* El saldo pendiente es el dato que la asistente viene a ver: se destaca. */
-.saldo-resumen-item.destacado {
-  border-color: var(--teal);
+/* Fechas del plan: chips legibles, con ícono, en vez de texto gris pequeño. */
+.saldo-plan-fechas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.saldo-resumen-item.destacado .saldo-resumen-valor {
-  color: var(--teal);
+.saldo-fecha-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--plan-color);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--plan-color);
+  font-size: 13.5px;
 }
 
+.saldo-fecha-chip strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.saldo-plan.estado-activo .saldo-fecha-chip strong {
+  color: #ffffff;
+}
+
+.saldo-fecha-chip-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.saldo-plan-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--ink-soft);
+}
+
+.saldo-plan-saldo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.saldo-plan-saldo.debe {
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: var(--rojo);
+  color: #ffffff !important;
+}
+
+.saldo-plan-saldo.debe .saldo-plan-saldo-label {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.saldo-plan-saldo-label {
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.saldo-plan-badge {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.saldo-plan-badge.activo {
+  background: #ffffff;
+  color: var(--accent);
+}
+
+.saldo-plan-badge.pagado {
+  background: var(--verde);
+  color: #ffffff;
+}
+
+.saldo-plan-badge.pendiente {
+  background: var(--amber);
+  color: #ffffff;
+}
+
+.saldo-chevron {
+  transition: transform 0.2s ease;
+}
+
+.saldo-chevron.abierto {
+  transform: rotate(180deg);
+}
+
+.saldo-plan-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px 22px;
+  border-top: 2px solid var(--plan-color);
+}
+
+.saldo-totales {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.saldo-total-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface-alt);
+}
+
+.saldo-total-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+.saldo-total-valor {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.saldo-total-valor.verde {
+  color: var(--verde);
+}
+
+.saldo-total-item.destacado.debe {
+  background: var(--rojo-soft);
+  box-shadow: inset 0 0 0 2px var(--rojo);
+}
+
+.saldo-total-item.destacado.debe .saldo-total-label,
+.saldo-total-item.destacado.debe .saldo-total-valor {
+  color: var(--rojo);
+  font-weight: 700;
+}
+
+.saldo-total-item.destacado.al-dia {
+  background: var(--verde-soft);
+  box-shadow: inset 0 0 0 2px var(--verde);
+}
+
+.saldo-total-item.destacado.al-dia .saldo-total-valor {
+  color: var(--verde);
+}
+
+/* Formulario a la izquierda, historial a la derecha. */
+.saldo-plan-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.saldo-plan-grid.sin-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ---------- Formulario de abono ---------- */
 .saldo-form {
   display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
-  background: var(--surface);
+  background: var(--surface-alt);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 16px 18px;
+}
+
+.saldo-form-titulo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.saldo-form-nota {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--amber-soft);
+  font-size: 12px;
+  color: var(--amber);
 }
 
 .saldo-form-campo {
@@ -63,26 +446,79 @@
 }
 
 .saldo-form-campo label {
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .saldo-form-campo input {
-  width: 160px;
-  padding: 9px 11px;
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 14px;
   color: var(--ink);
-  background: var(--surface-alt);
+  background: var(--surface);
+  box-sizing: border-box;
 }
 
-.saldo-titulo {
+.saldo-form-campo input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Sin las flechitas nativas: el monto se escribe. */
+.saldo-input-moneda input::-webkit-outer-spin-button,
+.saldo-input-moneda input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
   margin: 0;
-  font-family: 'Fraunces', serif;
+}
+
+.saldo-input-moneda input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.saldo-input-moneda {
+  position: relative;
+}
+
+.saldo-input-moneda span {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+
+.saldo-input-moneda input {
+  padding-left: 30px;
   font-size: 16px;
   font-weight: 600;
-  color: var(--ink);
+}
+
+.saldo-chip {
+  align-self: flex-start;
+  padding: 5px 11px;
+  border: 1px dashed var(--accent);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.saldo-chip:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.saldo-form-submit {
+  width: 100%;
+  justify-content: center;
 }
 
 .saldo-aviso {
@@ -91,140 +527,12 @@
   color: var(--amber);
 }
 
-.saldo-vacio {
-  margin: 0;
-  padding: 18px;
-  background: var(--surface-alt);
-  border: 1px dashed var(--line);
-  border-radius: 12px;
-  font-size: 13px;
-  color: var(--ink-soft);
-}
-
-.saldo-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.06);
-}
-
-.saldo-table th {
-  text-align: left;
-  padding: 11px 12px;
-  background: var(--teal);
-  color: #ffffff;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-}
-
-.saldo-table th:nth-child(2),
-.saldo-table th:nth-child(3) {
-  text-align: right;
-}
-
-.saldo-table td {
-  padding: 10px 12px;
-  border-top: 1px solid var(--line);
-}
-
-.saldo-table tbody tr:nth-child(even) {
-  background: var(--surface-alt);
-}
-
-.saldo-monto,
-.saldo-saldo {
-  text-align: right;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-/* Un bloque por plan de tratamiento: el activo primero, los cerrados después. */
-.saldo-plan {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 18px 20px;
-}
-
-.saldo-plan-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.saldo-plan-titulo {
-  margin: 0;
-  font-family: 'Fraunces', serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.saldo-plan-fecha {
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--ink-soft);
-}
-
-.saldo-plan-badge {
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-soft);
-}
-
-.saldo-totales {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 22px;
-  font-size: 13px;
-  color: var(--ink);
-}
-
-.saldo-total-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.saldo-total-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink-soft);
-}
-
-.saldo-total-item.destacado {
-  color: var(--teal);
-  font-weight: 600;
-}
-
-.saldo-nota {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--ink-soft);
-}
-
-/* Lista de abonos de un plan, con su interruptor de anulados. */
+/* ---------- Historial de abonos ---------- */
 .saldo-lista {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .saldo-lista-head {
@@ -236,10 +544,21 @@
 }
 
 .saldo-lista-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
+}
+
+.saldo-lista-contador {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-size: 11.5px;
 }
 
 .saldo-ver-anulados {
@@ -256,11 +575,92 @@
   color: var(--ink);
 }
 
+.saldo-vacio {
+  margin: 0;
+  padding: 22px 18px;
+  background: var(--surface-alt);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* La tabla hace scroll horizontal en pantallas angostas sin romper la página. */
+.saldo-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.saldo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.saldo-table th {
+  text-align: left;
+  padding: 11px 14px;
+  background: var(--plan-color, var(--teal));
+  color: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.saldo-table td {
+  padding: 11px 14px;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.saldo-table tbody tr:nth-child(even) {
+  background: var(--surface-alt);
+}
+
+.saldo-table tbody tr:hover {
+  background: var(--accent-soft);
+}
+
+.saldo-table .saldo-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.saldo-fecha {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.saldo-monto {
+  font-weight: 600;
+  color: var(--verde);
+}
+
+.saldo-saldo {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.saldo-saldo.debe {
+  font-weight: 600;
+  color: var(--rojo);
+}
+
 /* Abono anulado: sigue en el historial pero tachado y atenuado. */
 .saldo-fila-anulada td {
   text-decoration: line-through;
   color: var(--ink-soft);
   opacity: 0.75;
+}
+
+.saldo-fila-anulada .saldo-monto,
+.saldo-fila-anulada .saldo-fecha {
+  color: var(--ink-soft);
 }
 
 .saldo-etiqueta-anulado,
@@ -276,7 +676,7 @@
 }
 
 .saldo-th-acciones {
-  text-align: right;
+  text-align: right !important;
 }
 
 .saldo-acciones {
@@ -284,25 +684,31 @@
   white-space: nowrap;
 }
 
-.saldo-anular {
+.saldo-editar {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
+  padding: 5px 11px;
+  border: 1px solid var(--accent);
   border-radius: 8px;
-  background: var(--surface-alt);
-  color: var(--ink-soft);
+  background: var(--surface);
+  color: var(--accent);
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.saldo-anular:hover {
-  border-color: var(--amber);
-  color: var(--amber);
+.saldo-editar:hover {
+  background: var(--accent);
+  color: #ffffff;
 }
 
-/* Modal de confirmación de la anulación. */
+.saldo-form-ayuda {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ---------- Modal de confirmación de la anulación ---------- */
 .saldo-modal-form {
   display: flex;
   flex-direction: column;
@@ -311,6 +717,138 @@
 
 .saldo-modal-texto {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.saldo-modal-form .saldo-form-campo label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.saldo-modal-form .saldo-form-campo input {
+  font-size: 15px;
+  padding: 11px 12px;
+}
+
+.saldo-modal-form .saldo-aviso {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--rojo);
+}
+
+.saldo-modal-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--teal-soft);
+}
+
+.saldo-modal-resumen > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.saldo-modal-resumen-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--teal);
+}
+
+.saldo-modal-resumen-valor {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .saldo-resumen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .saldo-totales {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .saldo-plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .saldo-resumen,
+  .saldo-totales {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .saldo-resumen-item {
+    padding: 12px 14px;
+  }
+
+  .saldo-resumen-icono {
+    display: none;
+  }
+
+  .saldo-resumen-valor {
+    font-size: 18px;
+  }
+
+  .saldo-plan-head,
+  .saldo-plan-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+/* Botón eliminar abono (solo odontólogo). */
+.saldo-acciones > button + button {
+  margin-left: 6px;
+}
+
+.saldo-eliminar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--rojo);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--rojo);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saldo-eliminar:hover {
+  background: var(--rojo);
+  color: #ffffff;
+}
+
+.saldo-modal-resumen.peligro {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--rojo-soft);
+}
+
+.saldo-modal-resumen.peligro .saldo-modal-resumen-label {
+  color: var(--rojo);
+}
+
+/* En los pop-ups el campo de monto lleva la "Q" adentro: se deja espacio para
+   que no quede encima del número. */
+.saldo-modal-form .saldo-input-moneda input {
+  padding-left: 34px;
+}
+
+.saldo-input-moneda span {
+  font-size: 15px;
   color: var(--ink);
 }

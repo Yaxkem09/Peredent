@@ -19,13 +19,18 @@ namespace Peredent.Api.Controllers;
 [Authorize]
 public class CuentaController : ControllerBase
 {
+    // Largo máximo de NombreUsuario en la base (50 caracteres).
+    private const int UsuarioLongitudMaxima = 50;
+
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IJwtTokenService _jwtTokenService;
 
-    public CuentaController(ApplicationDbContext db, IPasswordHasher passwordHasher)
+    public CuentaController(ApplicationDbContext db, IPasswordHasher passwordHasher, IJwtTokenService jwtTokenService)
     {
         _db = db;
         _passwordHasher = passwordHasher;
+        _jwtTokenService = jwtTokenService;
     }
 
     // SCRUM-237: datos de la cuenta para la pantalla de configuración.
@@ -41,8 +46,7 @@ public class CuentaController : ControllerBase
         return Ok(ToDto(usuario));
     }
 
-    // SCRUM-237: cambio del correo (el único dato editable: la tabla no tiene
-    // nombre ni teléfono). El correo vacío se guarda como NULL.
+    // SCRUM-237: cambio del correo. El correo vacío se guarda como NULL.
     [HttpPut("correo")]
     public async Task<ActionResult<CuentaDto>> ActualizarCorreo([FromBody] ActualizarCorreoDto request)
     {
@@ -75,6 +79,54 @@ public class CuentaController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(ToDto(usuario));
+    }
+
+    // Cambio del nombre de usuario de la propia cuenta, confirmado con la
+    // contraseña actual. Devuelve un token nuevo porque el nombre viaja como claim.
+    [HttpPut("usuario")]
+    public async Task<ActionResult<CuentaDto>> ActualizarUsuario([FromBody] ActualizarUsuarioDto request)
+    {
+        var usuario = await BuscarUsuarioActualAsync();
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (!_passwordHasher.Verificar(request.ContrasenaActual ?? string.Empty, usuario.ContrasenaHash, usuario.Salt))
+        {
+            return BadRequest(new { message = "La contraseña actual no es correcta." });
+        }
+
+        var nombreUsuario = (request.NombreUsuario ?? string.Empty).Trim();
+
+        if (nombreUsuario.Length == 0)
+        {
+            return BadRequest(new { message = "El nombre de usuario es obligatorio." });
+        }
+
+        if (nombreUsuario.Length > UsuarioLongitudMaxima)
+        {
+            return BadRequest(new { message = $"El nombre de usuario no puede tener más de {UsuarioLongitudMaxima} caracteres." });
+        }
+
+        // Se puede iniciar sesión con usuario o correo: un usuario con "@" podría
+        // confundirse con un correo, así que no se permite.
+        if (nombreUsuario.Contains('@'))
+        {
+            return BadRequest(new { message = "El nombre de usuario no puede tener el carácter @." });
+        }
+
+        if (await _db.Usuarios.AnyAsync(u => u.NombreUsuario == nombreUsuario && u.IdUsuario != usuario.IdUsuario))
+        {
+            return BadRequest(new { message = "Ya existe un usuario con ese nombre." });
+        }
+
+        usuario.NombreUsuario = nombreUsuario;
+        await _db.SaveChangesAsync();
+
+        var dto = ToDto(usuario);
+        dto.Token = _jwtTokenService.GenerarToken(usuario);
+        return Ok(dto);
     }
 
     // SCRUM-238/239: cambio de contraseña. Valida la actual (identidad), que la

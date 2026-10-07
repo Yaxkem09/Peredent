@@ -17,6 +17,13 @@ export const authService = {
     return data;
   },
 
+  // Tras cambiar el nombre de usuario: se guarda el token nuevo y el nombre,
+  // sin cerrar la sesión.
+  actualizarSesion: ({ token, usuario }) => {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    if (usuario) localStorage.setItem(USUARIO_KEY, usuario);
+  },
+
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ID_USUARIO_KEY);

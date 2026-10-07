@@ -129,7 +129,7 @@ const GRUPOS_TABS = [
     id: 'documentos',
     label: 'Documentos',
     tabs: [
-      { id: 'fotos', label: 'Fotos panorámicas' },
+      { id: 'fotos', label: 'Radiografías/Panorámicas' },
       { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
       { id: 'consentimientos', label: 'Consentimientos', hideFor: ['Asistente'] },
     ],

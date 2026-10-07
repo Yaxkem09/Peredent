@@ -31,42 +31,23 @@
 
 .brand {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 28px;
-  padding: 14px 10px 12px;
-  text-align: center;
+  justify-content: center;
+  margin-bottom: 26px;
+  padding: 16px 18px;
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.45);
 }
 
 .brand-mark {
-  width: 108px;
-  aspect-ratio: 1194 / 1010;
-  overflow: hidden;
+  width: 150px;
+  max-width: 100%;
 }
 
 .brand-mark img {
   width: 100%;
   height: auto;
   display: block;
-}
-
-.brand-specialties {
-  margin: 8px 0 0;
-  font-size: 9.5px;
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: 0.01em;
-  line-height: 1.4;
-}
-
-.brand-doctors {
-  margin: 5px 0 0;
-  font-size: 9.5px;
-  color: var(--teal);
-  line-height: 1.4;
 }
 
 nav {

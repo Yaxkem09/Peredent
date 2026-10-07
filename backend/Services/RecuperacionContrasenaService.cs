@@ -126,13 +126,16 @@ public class RecuperacionContrasenaService : IRecuperacionContrasenaService
         return RecuperacionResultado.Ok("Tu contraseña se cambió correctamente. Ya puedes iniciar sesión con la nueva.");
     }
 
-    // El identificador puede ser el nombre de usuario o el correo.
+    // La recuperación se pide solo con el correo de la cuenta (no con el usuario).
     private Task<Usuario?> BuscarUsuarioAsync(string identificador)
     {
-        var valor = (identificador ?? string.Empty).Trim();
-        var correo = valor.ToLowerInvariant();
+        var correo = (identificador ?? string.Empty).Trim().ToLowerInvariant();
+        if (correo.Length == 0)
+        {
+            return Task.FromResult<Usuario?>(null);
+        }
 
-        return _db.Usuarios.FirstOrDefaultAsync(u => u.NombreUsuario == valor || u.CorreoUsuario == correo);
+        return _db.Usuarios.FirstOrDefaultAsync(u => u.CorreoUsuario == correo);
     }
 
     private Task<ResetPassword?> BuscarTokenAsync(string token)

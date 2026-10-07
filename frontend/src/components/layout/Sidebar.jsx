@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../routes/routes';
-import logo from '../../assets/logo.png';
+// Solo el ícono y la palabra PEREDENT (sin especialidades ni doctores), para que
+// se lea bien en el espacio angosto del menú.
+import logo from '../../assets/logo-marca.png';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -77,8 +79,6 @@ const Sidebar = ({ open, onNavigate }) => {
         <div className="brand-mark">
           <img src={logo} alt="Peredent" />
         </div>
-        <p className="brand-specialties">Odontología General · Ortodoncia · Cirugía Maxilofacial</p>
-        <p className="brand-doctors">Dr. Pereira Barrios / Dr. Pereira Torres</p>
       </div>
 
       <p className="nav-titulo">Menú</p>

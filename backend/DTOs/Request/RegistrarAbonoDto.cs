@@ -5,4 +5,8 @@ namespace Peredent.Api.DTOs.Request;
 public class RegistrarAbonoDto
 {
     public decimal Monto { get; set; }
+
+    // Plan sobre el que se abona. Opcional: si no viene se usa el plan activo.
+    // Permite abonar también a un plan ya cerrado que quedó con saldo pendiente.
+    public int? IdPresupuestoPlan { get; set; }
 }
