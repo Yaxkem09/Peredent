@@ -118,6 +118,36 @@ textarea.plan-input-tratamiento {
   text-align: right;
 }
 
+.plan-observaciones-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.plan-observaciones-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.plan-observaciones-field textarea {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 70px;
+  resize: vertical;
+}
+
+.plan-observaciones-field textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
 .plan-resumen {
   display: flex;
   justify-content: space-between;
@@ -228,5 +258,173 @@ textarea.plan-input-tratamiento {
 
   .plan-resumen-derecha {
     text-align: left;
+  }
+}
+
+/* ---- Cierre del plan: tarjetas de observaciones y resumen de cobro ---- */
+.plan-cierre {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+}
+
+.plan-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-card-icono {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+}
+
+.plan-card-head label,
+.plan-card-titulo {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.plan-card-opcional {
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: #eef2f7;
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.plan-card.plan-observaciones-field textarea {
+  flex: 1;
+  min-height: 120px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f7f9fb;
+  font-size: 14px;
+}
+
+.plan-card.plan-observaciones-field textarea:focus {
+  background: var(--surface);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.plan-card.plan-resumen {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.plan-resumen-linea {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+  border-bottom: 1px dashed var(--line);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.plan-resumen-linea > span:last-child {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.plan-resumen-linea.plan-descuento-field {
+  flex-direction: row;
+}
+
+.plan-resumen-linea.plan-descuento-field label {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.plan-descuento-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--coral);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.plan-resumen-linea.plan-descuento-field input {
+  width: 130px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--coral);
+}
+
+.plan-resumen-linea.plan-descuento-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.plan-total-caja {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+  text-align: right;
+}
+
+.plan-total-caja .plan-total-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plan-total-caja .plan-total-valor {
+  margin-top: 4px;
+  color: #ffffff;
+  font-size: 30px;
+}
+
+/* Barra de acciones del plan como tarjeta */
+.plan-acciones {
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+}
+
+.plan-estado {
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .plan-cierre {
+    grid-template-columns: 1fr;
   }
 }

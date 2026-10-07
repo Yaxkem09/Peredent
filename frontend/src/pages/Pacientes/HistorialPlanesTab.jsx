@@ -106,6 +106,13 @@ const HistorialPlanesTab = ({ idPaciente }) => {
           <div className="historial-resumen">
             <span>Descuento aplicado: {formatCurrency(seleccionado.descuento)}</span>
           </div>
+
+          {seleccionado.observacionesGenerales && (
+            <div className="historial-observaciones">
+              <div className="historial-observaciones-label">Observaciones generales</div>
+              <p>{seleccionado.observacionesGenerales}</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -131,6 +138,9 @@ const HistorialPlanesTab = ({ idPaciente }) => {
     <div className="historial-lista">
       {planes.map((plan) => {
         const pendientes = plan.piezas.filter((p) => p.estado === 'Pendiente').length;
+        const total = plan.piezas.length;
+        const completadas = total - pendientes;
+        const porcentaje = total > 0 ? Math.round((completadas * 100) / total) : 100;
         return (
           <div
             className="historial-card"
@@ -142,15 +152,39 @@ const HistorialPlanesTab = ({ idPaciente }) => {
               if (e.key === 'Enter' || e.key === ' ') setSeleccionado(plan);
             }}
           >
-            <div>
+            <span className="historial-card-icono" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="4.5" width="14" height="16.5" rx="2" />
+                <path d="M9 3h6v3H9zM8.5 11h7M8.5 14.5h7M8.5 18h4" />
+              </svg>
+            </span>
+            <div className="historial-card-cuerpo">
               <div className="historial-card-fecha">Plan del {formatDate(plan.fechaInicio)}</div>
               <div className="historial-card-meta">
-                {formatCurrency(plan.total)} · {plan.piezas.length} pieza(s) · cerrado el {formatDate(plan.fechaCierre)}
+                <span className="historial-card-total">{formatCurrency(plan.total)}</span>
+                <span className="historial-card-dato">
+                  {total} pieza{total === 1 ? '' : 's'}
+                </span>
+                <span className="historial-card-dato">Cerrado el {formatDate(plan.fechaCierre)}</span>
+              </div>
+              <div className="historial-progreso" aria-hidden="true">
+                <div
+                  className={`historial-progreso-barra${pendientes > 0 ? ' pendiente' : ''}`}
+                  style={{ width: `${porcentaje}%` }}
+                />
               </div>
             </div>
-            <span className={`tag ${pendientes > 0 ? 'tag-pending' : 'tag-ok'}`}>
-              {pendientes > 0 ? `${pendientes} pendiente(s)` : 'Todo completado'}
-            </span>
+            <div className="historial-card-estado">
+              <span className={`historial-estado${pendientes > 0 ? ' pendiente' : ' completo'}`}>
+                {pendientes > 0 ? `${pendientes} pendiente${pendientes === 1 ? '' : 's'}` : 'Todo completado'}
+              </span>
+              <span className="historial-card-avance">
+                {completadas} de {total} completada{total === 1 ? '' : 's'}
+              </span>
+            </div>
+            <svg className="historial-card-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
           </div>
         );
       })}

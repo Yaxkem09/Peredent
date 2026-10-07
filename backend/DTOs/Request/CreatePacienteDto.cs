@@ -14,6 +14,9 @@ public class CreatePacienteDto
 
     public string? Correo { get; set; }
 
+    // Opcional: si llega vacío se guarda como "CF" (consumidor final).
+    public string? Nit { get; set; }
+
     public string? Direccion { get; set; }
 
     public string? EncargadoNombre { get; set; }

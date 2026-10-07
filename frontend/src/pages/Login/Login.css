@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   --bg: #f5f7f6;
@@ -64,28 +64,72 @@
   overflow: hidden;
 }
 
-.login-tooth {
+/* Capa por muela para el parallax con el mouse (--px/--py van de -0.5 a
+   0.5 y los escribe Login.jsx); --prof hace que las grandes se muevan más. */
+.login-tooth-capa {
   position: absolute;
-  height: auto;
-  color: rgba(255, 255, 255, 0.10);
-  filter: drop-shadow(0 0 14px rgba(21, 147, 156, 0.35));
-  transform: rotate(var(--giro, 0deg));
-  animation: login-flotar ease-in-out infinite;
+  display: block;
+  transform: translate(calc(var(--px, 0) * var(--prof, 3) * -12px), calc(var(--py, 0) * var(--prof, 3) * -12px));
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.login-tooth {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: #ffffff;
+  opacity: 0.13;
+  filter: drop-shadow(0 0 16px rgba(21, 147, 156, 0.55));
+  transform: rotate(var(--giro, 0deg));
+  animation: login-flotar ease-in-out infinite;
+  animation-duration: var(--dur, 10s);
+}
+
+/* Instrumentos un poco más tenues que las muelas para no competir con ellas. */
+.login-tooth.instrumento {
+  opacity: 0.11;
+}
+
+/* Deriva en varias direcciones + giro + un leve cambio de tamaño, para que
+   el movimiento se note sin distraer del formulario. */
 @keyframes login-flotar {
   0%,
   100% {
-    transform: translateY(0) rotate(var(--giro, 0deg));
+    transform: translate(0, 0) rotate(var(--giro, 0deg)) scale(1);
+  }
+  25% {
+    transform: translate(18px, -28px) rotate(calc(var(--giro, 0deg) + 12deg)) scale(1.06);
   }
   50% {
-    transform: translateY(-26px) rotate(calc(var(--giro, 0deg) + 10deg));
+    transform: translate(-8px, -52px) rotate(calc(var(--giro, 0deg) - 8deg)) scale(1);
+  }
+  75% {
+    transform: translate(-22px, -20px) rotate(calc(var(--giro, 0deg) + 6deg)) scale(0.96);
+  }
+}
+
+/* Con "reducir movimiento" (p. ej. Windows con los efectos de animación
+   apagados) no se quita la animación del todo: queda una deriva mucho más
+   lenta y corta, y sin parallax, que es lo que suele molestar. */
+@keyframes login-flotar-suave {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(var(--giro, 0deg));
+  }
+  50% {
+    transform: translate(6px, -14px) rotate(calc(var(--giro, 0deg) + 4deg));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .login-tooth {
-    animation: none;
+    animation-name: login-flotar-suave;
+    animation-duration: calc(var(--dur, 10s) * 2);
+  }
+
+  .login-tooth-capa {
+    transform: none;
+    transition: none;
   }
 }
 
@@ -101,29 +145,6 @@
   box-shadow:
     0 30px 70px -20px rgba(10, 38, 75, 0.28),
     0 8px 24px rgba(10, 38, 75, 0.08);
-}
-
-/* Columna izquierda: foto (placeholder hasta tener las fotos de los odontólogos) */
-.login-photo {
-  min-height: 500px;
-  background: var(--surface-alt);
-  border-radius: 16px 0 0 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: var(--ink-faint);
-}
-
-.login-photo-icon {
-  color: var(--ink-faint);
-}
-
-.login-photo-text {
-  font-family: 'Inter', sans-serif;
-  font-size: 12.5px;
-  color: var(--ink-faint);
 }
 
 /* Columna derecha: formulario */
@@ -151,11 +172,21 @@
   max-width: 100%;
 }
 
+/* Saludo del login: título y subtítulo legibles, en vez de un texto gris claro. */
+.login-titulo {
+  margin: 18px 0 0;
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--teal);
+}
+
 .login-welcome {
-  margin: 12px 0 0;
+  margin: 6px 0 0;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  color: var(--ink-faint);
+  font-size: 14.5px;
+  color: var(--ink-soft);
 }
 
 .login-logo img {
@@ -192,18 +223,20 @@
 
 .login-field label {
   font-family: 'Inter', sans-serif;
-  font-size: 13.2px;
-  color: var(--ink-soft);
-  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 7px;
 }
 
 .login-field input {
+  width: 100%;
   font-family: 'Inter', sans-serif;
-  font-size: 14.3px;
+  font-size: 15px;
   color: var(--ink);
-  padding: 11px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #cdd8d4;
   background: #f8faf9;
   box-sizing: border-box;
   transition:
@@ -213,7 +246,58 @@
 }
 
 .login-field input::placeholder {
-  color: var(--ink-faint);
+  color: #7c8c87;
+}
+
+/* Campo con ícono a la izquierda (y botón de ver contraseña a la derecha). */
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-wrap input {
+  padding-left: 42px;
+}
+
+.login-input-wrap:has(.login-ver-clave) input {
+  padding-right: 46px;
+}
+
+.login-input-icono {
+  position: absolute;
+  left: 14px;
+  color: #7c8c87;
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.login-input-wrap:focus-within .login-input-icono {
+  color: var(--accent);
+}
+
+.login-input-wrap.error .login-input-icono {
+  color: var(--coral);
+}
+
+.login-ver-clave {
+  position: absolute;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #5b6e68;
+  cursor: pointer;
+}
+
+.login-ver-clave:hover {
+  background: var(--surface-alt);
+  color: var(--teal);
 }
 
 .login-field input:focus {
@@ -242,14 +326,14 @@
 .login-submit {
   width: 100%;
   margin-top: 8px;
-  padding: 12px;
+  padding: 13px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #0a264b 0%, #13507e 100%);
   color: #ffffff;
   font-family: 'Inter', sans-serif;
-  font-size: 14.3px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   box-shadow: 0 6px 16px -6px rgba(10, 38, 75, 0.5);
   transition:
@@ -277,10 +361,6 @@
     grid-template-columns: 1fr;
   }
 
-  .login-photo {
-    display: none;
-  }
-
   .login-form-col {
     border-radius: 16px;
   }
@@ -298,5 +378,185 @@
   .login-logo {
     width: 56px;
     height: 56px;
+  }
+}
+
+/* SCRUM-231: enlace de "¿Olvidaste tu contraseña?" (y los de las pantallas de
+   recuperación, que reutilizan este CSS). */
+.login-olvide {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--accent);
+  text-align: center;
+}
+
+.login-olvide:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------
+   Tarjeta deslizante: logo de la clínica + login / recuperación.
+   ------------------------------------------------------------------ */
+.login-card.login-deslizante {
+  grid-template-columns: 1fr 1fr;
+  max-width: 920px;
+  min-height: 560px;
+  background: var(--surface);
+}
+
+.login-panel {
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 44px 42px;
+  box-sizing: border-box;
+  transition:
+    opacity 0.45s ease,
+    transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.panel-recuperar {
+  grid-column: 1;
+  opacity: 0;
+  transform: translateX(-40px);
+}
+
+.panel-login {
+  grid-column: 2;
+}
+
+.modo-recuperar .panel-recuperar {
+  opacity: 1;
+  transform: none;
+}
+
+.modo-recuperar .panel-login {
+  opacity: 0;
+  transform: translateX(40px);
+}
+
+/* El logo tapa la mitad izquierda (modo login) y se desliza a la derecha (modo
+   recuperar). */
+.login-marca {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  box-sizing: border-box;
+  /* Fondo blanco liso: el PNG del logo tiene fondo blanco y así no se nota el borde. */
+  background: #ffffff;
+  border-right: 1px solid var(--line);
+  transition: transform 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.modo-recuperar .login-marca {
+  transform: translateX(100%);
+  border-right: none;
+  border-left: 1px solid var(--line);
+}
+
+/* El logo ocupa toda la mitad, sin deformarse. */
+.login-marca-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.login-encabezado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-encabezado .login-titulo {
+  margin-top: 0;
+}
+
+.login-encabezado-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: #e1f2f3;
+  color: var(--accent);
+}
+
+.login-deslizante .recuperar-texto,
+.login-deslizante .recuperar-exito {
+  margin-bottom: 18px;
+}
+
+/* Enlaces que en realidad son botones (cambian de panel sin cambiar de página). */
+.login-link-boton {
+  align-self: center;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+}
+
+/* El logo pequeño solo aparece en el celular, donde no hay panel de logo. */
+.login-logo-movil {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-panel,
+  .login-marca {
+    transition-duration: 0.01s;
+  }
+}
+
+@media (max-width: 720px) {
+  .login-card.login-deslizante {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .login-marca {
+    display: none;
+  }
+
+  .login-panel {
+    grid-column: 1;
+    padding: 30px 24px;
+  }
+
+  .panel-recuperar,
+  .modo-recuperar .panel-login {
+    display: none;
+  }
+
+  .modo-recuperar .panel-recuperar {
+    display: flex;
+  }
+
+  .login-logo-movil {
+    display: block;
+    width: 180px;
+    margin: 0 auto 18px;
+  }
+
+  .login-logo-movil img {
+    width: 100%;
+    height: auto;
+    display: block;
   }
 }

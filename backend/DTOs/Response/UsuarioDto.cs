@@ -6,6 +6,8 @@ public class UsuarioDto
 
     public string NombreUsuario { get; set; } = string.Empty;
 
+    public string? Correo { get; set; }
+
     public int IdRol { get; set; }
 
     public string Rol { get; set; } = string.Empty;

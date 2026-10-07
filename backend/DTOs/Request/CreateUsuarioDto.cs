@@ -4,6 +4,8 @@ public class CreateUsuarioDto
 {
     public string NombreUsuario { get; set; } = string.Empty;
 
+    public string Correo { get; set; } = string.Empty;
+
     public string Clave { get; set; } = string.Empty;
 
     public int IdRol { get; set; }

@@ -43,6 +43,17 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Panoramica> Panoramicas => Set<Panoramica>();
 
+    public DbSet<ConsentimientoExodoncia> ConsentimientosExodoncia => Set<ConsentimientoExodoncia>();
+
+    public DbSet<ConsentimientoImpresion> ConsentimientosImpresion => Set<ConsentimientoImpresion>();
+
+    // SCRUM-232: tokens de restablecimiento de contraseña.
+    public DbSet<ResetPassword> ResetPasswords => Set<ResetPassword>();
+
+    // SCRUM-64: abonos del paciente (tabla dbo.AbonoPaciente de
+    // backend/src/db/PeredentScript_Sprint4.sql).
+    public DbSet<AbonoPaciente> AbonosPaciente => Set<AbonoPaciente>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -59,6 +70,7 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(u => u.IdUsuario);
             entity.Property(u => u.IdUsuario).HasColumnName("ID_Usuario");
             entity.Property(u => u.NombreUsuario).HasColumnName("NombreUsuario").HasMaxLength(50).IsRequired();
+            entity.Property(u => u.CorreoUsuario).HasColumnName("CorreoUsuario").HasColumnType("varchar(150)");
             entity.Property(u => u.Salt).HasColumnName("Salt").HasMaxLength(36).IsRequired();
             entity.Property(u => u.ContrasenaHash).HasColumnName("Contrasena_Hash").HasMaxLength(64).IsRequired();
             entity.Property(u => u.IdRol).HasColumnName("ID_Rol");
@@ -83,6 +95,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(p => p.FechaNacimiento).HasColumnName("Fecha_Nacimiento");
             entity.Property(p => p.Telefono).HasColumnName("Telefono").HasMaxLength(20).IsRequired();
             entity.Property(p => p.Correo).HasColumnName("Correo").HasMaxLength(100);
+            entity.Property(p => p.Nit).HasColumnName("NIT").HasColumnType("varchar(15)").IsRequired();
             entity.Property(p => p.Direccion).HasColumnName("Direccion").HasMaxLength(200);
             entity.Property(p => p.NombreEncargado).HasColumnName("Nombre_Encargado").HasMaxLength(100);
             entity.Property(p => p.TelefonoEncargado).HasColumnName("Telefono_Encargado").HasMaxLength(20);
@@ -146,6 +159,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(p => p.FechaInicioPlan).HasColumnName("FechaInicioPlan");
             entity.Property(p => p.CantidadDescuento).HasColumnName("CantidadDescuento").HasColumnType("decimal(10,2)");
             entity.Property(p => p.FechaCierre).HasColumnName("FechaCierre");
+            entity.Property(p => p.ObservacionesGenerales).HasColumnName("ObservacionesGenerales").HasColumnType("varchar(1000)");
 
             // Un paciente puede tener muchos planes cerrados (historial), pero solo
             // uno activo (FechaCierre NULL) a la vez — reforzado también en la BD
@@ -360,6 +374,94 @@ public class ApplicationDbContext : DbContext
             // eso el índice compuesto (cubre también las búsquedas por sola ID_Paciente).
             entity.HasIndex(p => new { p.IdPaciente, p.FechaEliminacion })
                   .HasDatabaseName("IX_Panoramicas_Paciente_Activas");
+        });
+
+        // SCRUM-254: tablas de backend/src/db/PeredentScript_Sprint4_Consentimientos.sql.
+        modelBuilder.Entity<ConsentimientoExodoncia>(entity =>
+        {
+            entity.ToTable("ConsentimientoExodoncia");
+            entity.HasKey(c => c.IdConsentimiento);
+            entity.Property(c => c.IdConsentimiento).HasColumnName("ID_Consentimiento");
+            entity.Property(c => c.IdPaciente).HasColumnName("ID_Paciente");
+            entity.Property(c => c.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(c => c.NombrePaciente).HasColumnName("NombrePaciente").HasColumnType("varchar(200)").IsRequired();
+            entity.Property(c => c.DocumentoPaciente).HasColumnName("DocumentoPaciente").HasColumnType("varchar(30)").IsRequired();
+            entity.Property(c => c.NombreRepresentante).HasColumnName("NombreRepresentante").HasColumnType("varchar(200)");
+            entity.Property(c => c.NombreDoctor).HasColumnName("NombreDoctor").HasColumnType("varchar(200)").IsRequired();
+            entity.Property(c => c.ColegiadoDoctor).HasColumnName("ColegiadoDoctor").HasColumnType("varchar(50)");
+            entity.Property(c => c.Procedimiento).HasColumnName("Procedimiento").HasColumnType("varchar(300)").IsRequired();
+            entity.Property(c => c.RiesgosEspecificos).HasColumnName("RiesgosEspecificos").HasColumnType("varchar(1000)");
+            entity.Property(c => c.Observaciones).HasColumnName("Observaciones").HasColumnType("varchar(1000)");
+            entity.Property(c => c.Lugar).HasColumnName("Lugar").HasColumnType("varchar(100)");
+            entity.Property(c => c.FechaConsentimiento).HasColumnName("FechaConsentimiento").HasColumnType("date");
+            entity.Property(c => c.Estado).HasColumnName("Estado").HasColumnType("varchar(20)").IsRequired();
+            entity.Property(c => c.FechaCreacion).HasColumnName("FechaCreacion").HasColumnType("datetime");
+            entity.Property(c => c.FechaModificacion).HasColumnName("FechaModificacion").HasColumnType("datetime");
+
+            entity.HasMany(c => c.Impresiones)
+                  .WithOne()
+                  .HasForeignKey(i => i.IdConsentimiento)
+                  .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ConsentimientoImpresion>(entity =>
+        {
+            entity.ToTable("ConsentimientoImpresion");
+            entity.HasKey(i => i.IdConsentimientoImpresion);
+            entity.Property(i => i.IdConsentimientoImpresion).HasColumnName("ID_ConsentimientoImpresion");
+            entity.Property(i => i.IdConsentimiento).HasColumnName("ID_Consentimiento");
+            entity.Property(i => i.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(i => i.FechaImpresion).HasColumnName("FechaImpresion").HasColumnType("datetime");
+
+            entity.HasOne(i => i.Usuario)
+                  .WithMany()
+                  .HasForeignKey(i => i.IdUsuario);
+        });
+
+        // SCRUM-232: se replica la tabla dbo.ResetPassword de
+        // backend/src/db/PeredentScript_Sprint4.sql (VARCHAR(255), DATETIME y BIT,
+        // con su índice único del token). A propósito NO se usa HasDefaultValueSql:
+        // FechaCreacion y FechaExpiracion las escribe el backend con DateTime.UtcNow,
+        // sin depender del DEFAULT GETDATE() de la base.
+        modelBuilder.Entity<ResetPassword>(entity =>
+        {
+            entity.ToTable("ResetPassword");
+            entity.HasKey(t => t.IdTokenPassword);
+            entity.Property(t => t.IdTokenPassword).HasColumnName("ID_TokenPassword");
+            entity.Property(t => t.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(t => t.TokenRestablecer).HasColumnName("TokenRestablecer").HasColumnType("varchar(255)").IsRequired();
+            entity.Property(t => t.FechaExpiracion).HasColumnName("FechaExpiracion").HasColumnType("datetime");
+            entity.Property(t => t.TokenUsado).HasColumnName("TokenUsado").HasColumnType("bit");
+            entity.Property(t => t.FechaCreacion).HasColumnName("FechaCreacion").HasColumnType("datetime");
+
+            entity.HasIndex(t => t.TokenRestablecer).IsUnique().HasDatabaseName("UQ_ResetPassword_Token");
+
+            entity.HasOne<Usuario>()
+                  .WithMany()
+                  .HasForeignKey(t => t.IdUsuario)
+                  .HasConstraintName("FK_ResetPassword_Usuario");
+        });
+
+        // SCRUM-64: se replica tal cual la tabla dbo.AbonoPaciente de
+        // backend/src/db/PeredentScript_Sprint4.sql y su ampliación de anulación
+        // (PeredentScript_Sprint4_AnulacionAbonos.sql): BIT, DATETIME y
+        // VARCHAR(300), no los tipos que EF usaría por convención.
+        // A propósito NO se usa HasDefaultValueSql ni ValueGeneratedOnAdd en
+        // FechaAbono ni en Anulado: la fecha la asigna el backend en hora de
+        // Guatemala y el INSERT manda Anulado explícito en false.
+        modelBuilder.Entity<AbonoPaciente>(entity =>
+        {
+            entity.ToTable("AbonoPaciente");
+            entity.HasKey(a => a.IdAbonoPaciente);
+            entity.Property(a => a.IdAbonoPaciente).HasColumnName("ID_AbonoPaciente");
+            entity.Property(a => a.IdPresupuestoPlan).HasColumnName("ID_PresupuestoPlan");
+            entity.Property(a => a.IdUsuario).HasColumnName("ID_Usuario");
+            entity.Property(a => a.MontoAbono).HasColumnName("MontoAbono").HasColumnType("decimal(10,2)");
+            entity.Property(a => a.FechaAbono).HasColumnName("FechaAbono").HasColumnType("datetime");
+            entity.Property(a => a.Anulado).HasColumnName("Anulado").HasColumnType("bit");
+            entity.Property(a => a.FechaAnulacion).HasColumnName("FechaAnulacion").HasColumnType("datetime");
+            entity.Property(a => a.IdUsuarioAnulacion).HasColumnName("ID_UsuarioAnulacion");
+            entity.Property(a => a.MotivoAnulacion).HasColumnName("MotivoAnulacion").HasColumnType("varchar(300)");
         });
     }
 }

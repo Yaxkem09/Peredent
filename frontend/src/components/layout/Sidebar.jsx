@@ -1,6 +1,9 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import logo from '../../assets/logo.png';
+import { ROUTES } from '../../routes/routes';
+// Solo el ícono y la palabra PEREDENT (sin especialidades ni doctores), para que
+// se lea bien en el espacio angosto del menú.
+import logo from '../../assets/logo-marca.png';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -76,10 +79,9 @@ const Sidebar = ({ open, onNavigate }) => {
         <div className="brand-mark">
           <img src={logo} alt="Peredent" />
         </div>
-        <p className="brand-specialties">Odontología General · Ortodoncia · Cirugía Maxilofacial</p>
-        <p className="brand-doctors">Dr. Pereira Barrios / Dr. Pereira Torres</p>
       </div>
 
+      <p className="nav-titulo">Menú</p>
       <nav>
         {visibleItems.map((item) => (
           <NavLink
@@ -95,13 +97,14 @@ const Sidebar = ({ open, onNavigate }) => {
       </nav>
 
       <div className="sidebar-foot">
-        <div className="user-chip">
+        {/* SCRUM-237: desde acá se entra a "Configuración de usuario". */}
+        <NavLink to={ROUTES.CONFIGURACION} onClick={onNavigate} className="user-chip" title="Configuración de usuario">
           <div className="avatar">{iniciales}</div>
           <div>
             <div className="user-chip-name">{user?.usuario || 'Invitado'}</div>
             <div className="user-chip-role">{user?.rol || 'Personal clínico'}</div>
           </div>
-        </div>
+        </NavLink>
         <button type="button" className="logout-btn" onClick={logout}>
           <svg
             width="15"

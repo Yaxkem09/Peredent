@@ -146,3 +146,166 @@
     text-align: left;
   }
 }
+
+.historial-observaciones {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.historial-observaciones-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.historial-observaciones p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+
+/* ---- Tarjetas del historial: ícono, datos en píldoras, barra de avance y
+   estado claro a la derecha. ---- */
+.historial-lista {
+  gap: 12px;
+}
+
+.historial-card {
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.historial-card:hover {
+  border-color: #b9c6d8;
+  box-shadow: 0 2px 4px rgba(10, 38, 75, 0.05), 0 16px 30px -18px rgba(10, 38, 75, 0.55);
+  transform: translateY(-2px);
+}
+
+.historial-card-icono {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%);
+  color: #ffffff;
+}
+
+.historial-card-cuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.historial-card-fecha {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.historial-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.historial-card-total,
+.historial-card-dato {
+  padding: 4px 11px;
+  border-radius: 20px;
+  background: #eef2f7;
+  font-weight: 500;
+}
+
+.historial-card-total {
+  background: #e3e9f3;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.historial-progreso {
+  max-width: 420px;
+  height: 6px;
+  margin-top: 12px;
+  border-radius: 6px;
+  background: #e6ebf0;
+  overflow: hidden;
+}
+
+.historial-progreso-barra {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--verde);
+}
+
+.historial-progreso-barra.pendiente {
+  background: var(--naranja);
+}
+
+.historial-card-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.historial-estado {
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.historial-estado.completo {
+  background: var(--verde-soft);
+  color: #23744a;
+}
+
+.historial-estado.pendiente {
+  background: var(--naranja-soft);
+  color: #a85d08;
+}
+
+.historial-card-avance {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.historial-card-chevron {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.historial-card:hover .historial-card-chevron {
+  color: var(--teal);
+  transform: translateX(2px);
+}
+
+@media (max-width: 640px) {
+  .historial-card {
+    flex-wrap: wrap;
+  }
+
+  .historial-card-estado {
+    align-items: flex-start;
+  }
+
+  .historial-card-chevron {
+    display: none;
+  }
+}

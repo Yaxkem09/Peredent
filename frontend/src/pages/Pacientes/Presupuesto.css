@@ -159,6 +159,8 @@
 .presupuesto-acciones {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .presupuesto-leyenda {
@@ -168,4 +170,11 @@
   font-size: 12px;
   font-style: italic;
   color: var(--ink-soft);
+}
+
+/* Documento del presupuesto: proporción de hoja, centrado. */
+.presupuesto {
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
 }

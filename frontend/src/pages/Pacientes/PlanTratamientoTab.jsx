@@ -38,6 +38,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
   const { notify } = useNotification();
   const [filas, setFilas] = useState(() => PIEZAS_DENTALES.map(filaInicial));
   const [descuento, setDescuento] = useState(0);
+  const [observaciones, setObservaciones] = useState('');
   const [guardado, setGuardado] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(true);
@@ -58,6 +59,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
         if (!activo) return;
         setFilas(combinarConGuardado(data.piezas));
         setDescuento(data.descuento || 0);
+        setObservaciones(data.observacionesGenerales || '');
         setExistePlanActivo(Boolean(data.fechaInicio));
         setGuardado(true);
       })
@@ -122,6 +124,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
     try {
       const payload = {
         descuento: Number(descuento) || 0,
+        observacionesGenerales: observaciones.trim() === '' ? null : observaciones.trim(),
         piezas: filas.map((f) => ({
           pieza: f.etiqueta,
           tratamiento: f.tratamiento,
@@ -131,6 +134,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       const actualizado = await planTratamientoService.guardar(idPaciente, payload);
       setFilas(combinarConGuardado(actualizado.piezas));
       setDescuento(actualizado.descuento || 0);
+      setObservaciones(actualizado.observacionesGenerales || '');
       setExistePlanActivo(Boolean(actualizado.fechaInicio));
       setGuardado(true);
       notify('Plan de tratamiento guardado exitosamente.');
@@ -149,6 +153,7 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       await planTratamientoService.finalizar(idPaciente);
       setFilas(PIEZAS_DENTALES.map(filaInicial));
       setDescuento(0);
+      setObservaciones('');
       setExistePlanActivo(false);
       setGuardado(true);
       notify('Plan de tratamiento finalizado. Ya puedes iniciar uno nuevo.');
@@ -229,29 +234,72 @@ const PlanTratamientoTab = ({ idPaciente }) => {
         {renderTabla(columnaDerecha, subtotalDerecha)}
       </div>
 
-      <div className="plan-resumen">
-        <div className="plan-resumen-izquierda">
-          <div className="plan-descuento-field">
-            <label htmlFor="plan-descuento">Descuento (Q)</label>
-            <input
-              id="plan-descuento"
-              type="number"
-              min="0"
-              step="100"
-              placeholder="0.00"
-              value={descuento === 0 ? '' : descuento}
-              onChange={(e) => {
-                setDescuento(e.target.value === '' ? 0 : Number(e.target.value));
-                marcarCambio();
-              }}
-            />
+      {/* Cierre del plan: observaciones a la izquierda y, a la derecha, el
+          resumen de cobro (sub-total, descuento y total). */}
+      <div className="plan-cierre">
+        <section className="plan-card plan-observaciones-field">
+          <div className="plan-card-head">
+            <span className="plan-card-icono" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 4.5h14a1 1 0 0 1 1 1v10.5a1 1 0 0 1-1 1H10l-4.5 3.5V17H5a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z" />
+                <path d="M8 9h8M8 12.5h5" />
+              </svg>
+            </span>
+            <label htmlFor="plan-observaciones">Observaciones generales</label>
+            <span className="plan-card-opcional">Opcional</span>
           </div>
-        </div>
+          <textarea
+            id="plan-observaciones"
+            rows={4}
+            placeholder="Notas relevantes sobre el tratamiento que no encajan en otros campos"
+            value={observaciones}
+            onChange={(e) => {
+              setObservaciones(e.target.value);
+              marcarCambio();
+            }}
+          />
+        </section>
 
-        <div className="plan-resumen-derecha">
-          <div className="plan-total-label">Total del tratamiento</div>
-          <div className="plan-total-valor">{formatCurrency(total)}</div>
-        </div>
+        <section className="plan-card plan-resumen">
+          <div className="plan-card-head">
+            <span className="plan-card-icono" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" />
+                <path d="M9 8h6M9 12h6M9 16h3.5" />
+              </svg>
+            </span>
+            <span className="plan-card-titulo">Resumen del plan</span>
+          </div>
+
+          <div className="plan-resumen-linea">
+            <span>Sub-total</span>
+            <span>{formatCurrency(subtotalIzquierda + subtotalDerecha)}</span>
+          </div>
+
+          <div className="plan-resumen-linea plan-descuento-field">
+            <label htmlFor="plan-descuento">Descuento</label>
+            <div className="plan-descuento-input">
+              <span aria-hidden="true">− Q</span>
+              <input
+                id="plan-descuento"
+                type="number"
+                min="0"
+                step="100"
+                placeholder="0.00"
+                value={descuento === 0 ? '' : descuento}
+                onChange={(e) => {
+                  setDescuento(e.target.value === '' ? 0 : Number(e.target.value));
+                  marcarCambio();
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="plan-total-caja">
+            <div className="plan-total-label">Total del tratamiento</div>
+            <div className="plan-total-valor">{formatCurrency(total)}</div>
+          </div>
+        </section>
       </div>
 
       <div className="plan-acciones">

@@ -62,11 +62,40 @@ public class UsuariosController : ControllerBase
             return BadRequest(new { message = "Nombre de usuario y contraseña son obligatorios." });
         }
 
+        // SCRUM-235: la contraseña del alta también cumple la política (antes solo se
+        // exigía que no estuviera vacía).
+        var errorPolitica = PoliticaContrasena.Validar(request.Clave);
+        if (errorPolitica is not null)
+        {
+            return BadRequest(new { message = errorPolitica });
+        }
+
         var nombreUsuario = request.NombreUsuario.Trim();
+
+        // Se puede iniciar sesión con usuario o correo: un usuario con "@" podría
+        // confundirse con un correo (misma regla que en CuentaController).
+        if (nombreUsuario.Contains('@'))
+        {
+            return BadRequest(new { message = "El nombre de usuario no puede tener el carácter @." });
+        }
+
+        // SCRUM-237: el correo es opcional (la columna admite NULL); si viene, se
+        // valida con la misma regla que el cambio de correo de la propia cuenta.
+        var correo = string.IsNullOrWhiteSpace(request.Correo) ? null : ValidacionCorreo.Normalizar(request.Correo);
+
+        if (correo is not null && !ValidacionCorreo.EsValido(correo))
+        {
+            return BadRequest(new { message = "Ingresa un correo electrónico válido." });
+        }
 
         if (await _db.Usuarios.AnyAsync(u => u.NombreUsuario == nombreUsuario))
         {
             return BadRequest(new { message = "Ya existe un usuario con ese nombre." });
+        }
+
+        if (correo is not null && await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo))
+        {
+            return BadRequest(new { message = "Ya existe un usuario con ese correo." });
         }
 
         if (!await _db.Roles.AnyAsync(r => r.IdRol == request.IdRol))
@@ -74,12 +103,14 @@ public class UsuariosController : ControllerBase
             return BadRequest(new { message = "El rol indicado no existe." });
         }
 
-        var salt = _passwordHasher.GenerarSalt();
+        // SCRUM-230: las contraseñas nuevas se guardan con bcrypt. La columna Salt
+        // se conserva (es NOT NULL) pero queda vacía: el salt va dentro del hash.
         var usuario = new Usuario
         {
             NombreUsuario = nombreUsuario,
-            Salt = salt,
-            ContrasenaHash = _passwordHasher.HashClave(request.Clave, salt),
+            CorreoUsuario = correo,
+            Salt = string.Empty,
+            ContrasenaHash = _passwordHasher.Hashear(request.Clave),
             IdRol = request.IdRol,
             Estado = true,
             EsAdmin = request.EsAdmin,
@@ -189,6 +220,7 @@ public class UsuariosController : ControllerBase
     {
         Id = usuario.IdUsuario,
         NombreUsuario = usuario.NombreUsuario,
+        Correo = usuario.CorreoUsuario,
         IdRol = usuario.IdRol,
         Rol = usuario.Rol?.NombreRol ?? string.Empty,
         Estado = usuario.Estado,

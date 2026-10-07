@@ -24,38 +24,6 @@
   flex-shrink: 0;
 }
 
-.tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 22px;
-}
-
-.tab {
-  padding: 9px 14px;
-  font-size: 13px;
-  color: var(--ink-soft);
-  cursor: pointer;
-  border: none;
-  background: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  user-select: none;
-  white-space: nowrap;
-  font-family: 'Inter', sans-serif;
-}
-
-.tab:hover {
-  color: var(--ink);
-}
-
-.tab.active {
-  color: var(--teal);
-  border-bottom-color: var(--teal);
-  font-weight: 500;
-}
-
 .detail-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -308,4 +276,654 @@
   color: var(--text);
   font-size: 0.9rem;
   resize: vertical;
+}
+
+/* ---- Navegación del expediente: pestañas agrupadas por tema ----
+   Cada grupo tiene su color (etiqueta + íconos) para reconocerlo de un
+   vistazo; la pestaña activa siempre se pinta en azul marino. */
+.exp-nav {
+  --grupo: var(--teal);
+  --grupo-soft: var(--teal-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 0;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px -14px rgba(10, 38, 75, 0.5);
+}
+
+.exp-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 18px;
+  border-left: 1px solid var(--line);
+}
+
+.exp-grupo:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.exp-grupo.paciente {
+  --grupo: #0a264b;
+  --grupo-soft: #e7ebf1;
+}
+
+.exp-grupo.tratamientos {
+  --grupo: #0f7f88;
+  --grupo-soft: #e1f2f3;
+}
+
+.exp-grupo.documentos {
+  --grupo: #9a6412;
+  --grupo-soft: #fbf0dd;
+}
+
+.exp-grupo.finanzas {
+  --grupo: #2f8f57;
+  --grupo-soft: #e2f3e8;
+}
+
+.exp-grupo-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--grupo);
+}
+
+.exp-grupo-label::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--grupo);
+}
+
+.exp-grupo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.exp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.exp-tab svg {
+  flex-shrink: 0;
+  color: var(--grupo);
+}
+
+.exp-tab:hover:not(.active) {
+  background: var(--grupo-soft);
+  border-color: var(--grupo);
+  transform: translateY(-1px);
+}
+
+.exp-tab.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 6px 14px -6px rgba(10, 38, 75, 0.6);
+}
+
+.exp-tab.active svg {
+  color: #7fe0e6;
+}
+
+@media (max-width: 860px) {
+  .exp-grupo {
+    padding: 0;
+    border-left: none;
+    width: 100%;
+  }
+}
+
+/* ---- Menú del expediente más compacto: cada grupo es una tarjeta con su
+   color y en pantallas anchas quedan en 2 filas (Paciente + Tratamientos,
+   Documentos + Finanzas) en lugar de 4. ---- */
+.exp-nav {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+.exp-grupo,
+.exp-grupo:first-child {
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--grupo) 22%, transparent);
+  border-left: 4px solid var(--grupo);
+  border-radius: 12px;
+  background: var(--grupo-soft);
+}
+
+.exp-grupo-tabs {
+  gap: 6px;
+}
+
+.exp-tab {
+  height: 34px;
+  padding: 0 12px 0 10px;
+  font-size: 13px;
+  gap: 7px;
+  border-color: color-mix(in srgb, var(--grupo) 18%, transparent);
+}
+
+.exp-tab:hover:not(.active) {
+  background: var(--surface);
+}
+
+@media (min-width: 1100px) {
+  .exp-nav {
+    grid-template-columns: auto 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .exp-grupo,
+  .exp-grupo:first-child {
+    width: auto;
+    padding: 10px 12px 12px;
+  }
+}
+
+/* ---- Colores de los grupos del menú del expediente ----
+   Paciente azul marino · Tratamientos turquesa · Documentos morado ·
+   Finanzas amarillo. */
+.exp-grupo.paciente {
+  --grupo: #0a264b;
+  --grupo-soft: #e3e9f3;
+}
+
+.exp-grupo.documentos {
+  --grupo: #6a4c9c;
+  --grupo-soft: #efe9f8;
+}
+
+.exp-grupo.finanzas {
+  --grupo: #a07800;
+  --grupo-soft: #fdf3cc;
+}
+
+/* ---- Ficha del paciente (Datos y contacto) ---- */
+.ficha {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ficha-cabecera {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 22px 24px;
+  background: linear-gradient(100deg, #e3e9f3 0%, var(--surface) 60%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.ficha-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 700;
+  box-shadow: 0 6px 14px -6px rgba(10, 38, 75, 0.6);
+}
+
+.ficha-identidad {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ficha-nombre {
+  font-family: 'Fraunces', serif;
+  font-size: 23px;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.ficha-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.ficha-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid #c9d3e1;
+  color: var(--teal);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ficha-badge-menor {
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.btn.ficha-editar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  box-shadow: 0 8px 16px -10px rgba(10, 38, 75, 0.8);
+}
+
+.ficha-bloques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.ficha-bloque {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px 22px 8px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.ficha-bloque-titulo {
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+
+.ficha-dato {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ficha-dato:last-child {
+  border-bottom: none;
+}
+
+.ficha-dato-icono {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #e3e9f3;
+  color: var(--teal);
+}
+
+.ficha-dato-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ficha-dato-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.ficha-dato-valor {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.ficha-dato-vacio {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+.ficha-bloque-encargado .ficha-bloque-titulo {
+  color: var(--amber);
+}
+
+.ficha-bloque-encargado .ficha-dato-icono {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+/* ---- Historia médica ---- */
+.hm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hm-resumen {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.hm-resumen-icono {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.hm-resumen-icono.alerta {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.hm-resumen-texto {
+  flex: 1;
+  min-width: 220px;
+}
+
+.hm-resumen-titulo {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  color: var(--ink);
+}
+
+.hm-resumen-sub {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.hm-bloque {
+  padding: 18px 22px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.hm-bloque-titulo {
+  margin: 0 0 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.hm-bloque-titulo-alerta {
+  color: var(--coral);
+}
+
+.hm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.hm-card {
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: #fff6f3;
+  border: 1px solid color-mix(in srgb, var(--coral) 28%, transparent);
+}
+
+.hm-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hm-card-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #e3e9f3;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hm-card .hm-card-num {
+  background: var(--coral);
+  color: #ffffff;
+}
+
+.hm-card-nombre {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hm-card-obs {
+  margin: 10px 0 0;
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.hm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--verde-soft);
+  color: #23744a;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.hm .hm-observaciones-card {
+  margin-top: 0;
+  padding: 18px 22px;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.hm .hm-observaciones-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: var(--teal);
+}
+
+/* Edición: cada condición es una tarjeta seleccionable. */
+.hm-edit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.hm-edit-card.marcada {
+  background: #fff6f3;
+  border-color: color-mix(in srgb, var(--coral) 45%, transparent);
+}
+
+.hm-edit-card.marcada .hm-card-num {
+  background: var(--coral);
+  color: #ffffff;
+}
+
+.hm-edit-card .hm-label-edit {
+  gap: 10px;
+}
+
+.hm-edit-card input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--coral);
+  flex-shrink: 0;
+}
+
+.hm .hm-obs-input,
+.hm .hm-obs-textarea {
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.hm .hm-obs-input:focus,
+.hm .hm-obs-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+/* ---- Encabezado del expediente: "Volver a pacientes" + Paciente <nombre> ---- */
+.exp-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 18px;
+}
+
+.exp-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px 0 13px;
+  border: 1px solid var(--teal);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--teal);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 14px -10px rgba(10, 38, 75, 0.6);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.exp-volver:hover {
+  background: var(--teal);
+  color: #ffffff;
+}
+
+.exp-volver:hover svg {
+  transform: translateX(-2px);
+}
+
+.exp-volver svg {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.exp-volver:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.exp-head-titulo {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding-left: 20px;
+  border-left: 1px solid #b9c6d8;
+  line-height: 1.2;
+}
+
+.exp-head-etiqueta {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.exp-head-nombre {
+  font-size: 26px;
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .exp-head-titulo {
+    padding-left: 0;
+    border-left: none;
+    width: 100%;
+  }
 }

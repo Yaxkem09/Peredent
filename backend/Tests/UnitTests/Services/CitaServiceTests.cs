@@ -263,9 +263,10 @@ public class CitaServiceTests
     }
 
     [Theory]
-    [InlineData(45)]
-    [InlineData(15)]
+    [InlineData(10)]
+    [InlineData(20)]
     [InlineData(0)]
+    [InlineData(-15)]
     public async Task CrearAsync_DuracionNoPermitida_DevuelveDuracionInvalida(int duracionMinutos)
     {
         using var db = CrearContexto();
@@ -279,6 +280,25 @@ public class CitaServiceTests
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(CitaError.DuracionInvalida, resultado.Error);
+    }
+
+    [Theory]
+    [InlineData(15)]
+    [InlineData(45)]
+    [InlineData(90)]
+    public async Task CrearAsync_DuracionEnBloquesDe15_SeCrea(int duracionMinutos)
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var service = new CitaService(db);
+
+        var resultado = await service.CrearAsync(
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos));
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal(duracionMinutos, resultado.Cita!.DuracionMinutos);
     }
 
     [Fact]

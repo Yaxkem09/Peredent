@@ -83,11 +83,24 @@ builder.Services.AddSingleton<IPresupuestoPdfService, PresupuestoPdfService>();
 // Singleton: sin estado, arma el PDF de la receta a partir del DTO recibido.
 builder.Services.AddSingleton<IRecetaPdfService, RecetaPdfService>();
 
+// Singleton: sin estado, arma el PDF del consentimiento de exodoncia (SCRUM-254).
+builder.Services.AddSingleton<IConsentimientoPdfService, ConsentimientoPdfService>();
+
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection("R2"));
 
 // Scoped: crea un AmazonS3Client por request; ver R2StorageService para el
 // detalle de por qué el AmazonS3Config necesita esas propiedades para R2.
 builder.Services.AddScoped<IR2StorageService, R2StorageService>();
+
+// SCRUM-232: correo saliente por SMTP (MailKit), configurado con SMTP_HOST/PORT/
+// USER/PASSWORD/FROM/SECURITY. Singleton: solo lee configuración y abre la
+// conexión SMTP dentro de cada envío. Sin SMTP configurado no falla: deja el
+// enlace en la consola en Development y una advertencia en el resto.
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
+// SCRUM-234: recuperación de contraseña (token de un solo uso + política).
+// Scoped: usa ApplicationDbContext, que también es scoped por request.
+builder.Services.AddScoped<IRecuperacionContrasenaService, RecuperacionContrasenaService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

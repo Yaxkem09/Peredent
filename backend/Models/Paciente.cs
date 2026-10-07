@@ -16,6 +16,9 @@ public class Paciente
 
     public string? Correo { get; set; }
 
+    // "CF" (consumidor final) cuando el paciente no proporciona NIT.
+    public string Nit { get; set; } = "CF";
+
     public string? Direccion { get; set; }
 
     public string? NombreEncargado { get; set; }

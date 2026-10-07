@@ -12,6 +12,8 @@ public class PlanTratamientoDto
 
     public decimal Descuento { get; set; }
 
+    public string? ObservacionesGenerales { get; set; }
+
     public decimal Subtotal { get; set; }
 
     public decimal Total { get; set; }

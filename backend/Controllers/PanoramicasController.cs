@@ -113,7 +113,9 @@ public class PanoramicasController : ControllerBase
         return Ok(dtos);
     }
 
+    // Solo el odontólogo puede eliminar una radiografía; la asistente sube y consulta.
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Odontologo")]
     public async Task<IActionResult> Eliminar(int id)
     {
         var panoramica = await _db.Panoramicas
@@ -149,10 +151,13 @@ public class PanoramicasController : ControllerBase
         return null;
     }
 
+    // FechaSubida se guarda en UTC. Se marca Kind=Utc para que el JSON salga con
+    // sufijo "Z" y el frontend la convierta a hora de Guatemala; sin eso se mostraba
+    // la hora UTC como si fuera local (6 horas adelantada).
     private static PanoramicaDto ToDto(Panoramica panoramica, string urlFirmada) => new()
     {
         Id = panoramica.IdPanoramica,
-        FechaSubida = panoramica.FechaSubida,
+        FechaSubida = DateTime.SpecifyKind(panoramica.FechaSubida, DateTimeKind.Utc),
         UrlFirmada = urlFirmada,
     };
 }

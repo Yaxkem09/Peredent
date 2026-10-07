@@ -10,6 +10,8 @@ public class PresupuestoPlan
 
     public decimal? CantidadDescuento { get; set; }
 
+    public string? ObservacionesGenerales { get; set; }
+
     // NULL = plan activo (todavía se puede editar); con fecha = plan cerrado, es historial.
     public DateTime? FechaCierre { get; set; }
 

@@ -35,6 +35,11 @@
   color: var(--ink);
 }
 
+.users-table-vacio {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
 .users-table-acciones {
   display: flex;
   gap: 8px;
@@ -72,55 +77,144 @@
 .users-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+}
+
+.users-form-intro {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.users-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
 }
 
 .users-form .field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
 }
 
 .users-form .field label {
-  font-size: 12px;
-  color: var(--ink-soft);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.users-form-requerido {
+  color: var(--coral);
 }
 
 .users-form .field input,
 .users-form .field select {
-  padding: 9px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
+  width: 100%;
+  box-sizing: border-box;
+  height: 46px;
+  padding: 0 13px;
+  border-radius: 10px;
+  border: 1.5px solid #c9d5d1;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   background: var(--surface);
   color: var(--ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .users-form .field input:focus,
 .users-form .field select:focus {
   outline: none;
-  border-color: var(--teal);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.users-form-checkbox {
+.users-form-ayuda {
+  font-size: 12.5px;
+  color: #44534e;
+}
+
+.users-form-clave {
+  display: flex;
+  gap: 8px;
+}
+
+.users-form-clave input {
+  flex: 1;
+  min-width: 0;
+}
+
+.users-form-ver {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border: 1.5px solid #c9d5d1;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
 }
 
-.users-form-checkbox input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--teal);
+.users-form-ver:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Permiso de administrador como una tarjeta clicable. */
+.users-form-admin {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid #c9d5d1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.users-form-admin:hover {
+  border-color: var(--accent);
+}
+
+.users-form-admin.activo {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.users-form-admin input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.users-form-checkbox label {
-  font-size: 13px;
+.users-form-admin-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.users-form-admin-titulo {
+  font-size: 14.5px;
+  font-weight: 600;
   color: var(--ink);
-  cursor: pointer;
+}
+
+.users-form-admin-ayuda {
+  font-size: 13px;
+  color: #44534e;
+}
+
+@media (max-width: 600px) {
+  .users-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
@@ -128,4 +222,423 @@
   .users-table td {
     white-space: normal;
   }
+}
+
+/* ---- Rediseño: tarjetas de resumen, barra de búsqueda y tabla ---- */
+.btn.admin-nuevo {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px -4px rgba(10, 38, 75, 0.45);
+}
+
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.admin-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px -14px rgba(10, 38, 75, 0.5);
+}
+
+.admin-stat-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.admin-stat.total .admin-stat-icono {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.admin-stat.activos .admin-stat-icono {
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.admin-stat.inactivos .admin-stat-icono {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.admin-stat.admins .admin-stat-icono {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.admin-stat-num {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.admin-stat-label {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-alt);
+}
+
+.admin-buscar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-faint);
+}
+
+.admin-buscar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(21, 147, 156, 0.14);
+}
+
+.admin-buscar input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.admin-filtros {
+  display: flex;
+  gap: 2px;
+  height: 40px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.admin-filtros button {
+  border: none;
+  background: transparent;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.admin-filtros button:hover:not(.active) {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.admin-filtros button.active {
+  background: var(--teal);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.users-table-wrap {
+  border-radius: 14px;
+  box-shadow: 0 6px 18px -14px rgba(10, 38, 75, 0.5);
+}
+
+.users-table {
+  font-size: 13.5px;
+}
+
+.users-table th {
+  background: var(--surface);
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.users-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.users-table tbody tr:hover {
+  background: #f7faf9;
+}
+
+.users-table tbody tr.fila-inactiva td {
+  color: var(--ink-faint);
+}
+
+.users-table tbody tr.fila-inactiva .users-avatar {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.users-table-usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.users-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 12.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #ffffff;
+  background: var(--gris);
+}
+
+.users-avatar.rol-odontologo {
+  background: linear-gradient(135deg, #0a264b, #13507e);
+}
+
+.users-avatar.rol-asistente {
+  background: linear-gradient(135deg, #15939c, #0f6f76);
+}
+
+.users-table-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.users-tu {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge {
+  gap: 6px;
+}
+
+.badge-rol.rol-odontologo {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.badge-rol.rol-asistente {
+  background: var(--accent-soft);
+  color: #0f6f76;
+}
+
+.badge-rol.rol-otro {
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+}
+
+.badge.badge-activo {
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.badge-punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.users-table td.users-table-sin-resultados {
+  text-align: center;
+  color: var(--ink-faint);
+  padding: 28px 16px;
+}
+
+.admin-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-accion:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-accion.peligro {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
+.admin-accion.peligro:hover:not(:disabled) {
+  background: var(--coral);
+  color: #ffffff;
+}
+
+.admin-accion.exito {
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.admin-accion.exito:hover:not(:disabled) {
+  background: var(--verde);
+  color: #ffffff;
+}
+
+.admin-accion.admin {
+  background: var(--accent-soft);
+  color: #0f6f76;
+}
+
+.admin-accion.admin:hover:not(:disabled) {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.admin-accion.neutra {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.admin-accion.neutra:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+/* ---- Administración con más color: resumen en tarjetas sólidas, barra de
+   búsqueda azul y tabla con encabezado azul marino. ---- */
+.admin-stat {
+  border: none;
+  color: #ffffff;
+  padding: 18px 20px;
+  box-shadow: 0 12px 24px -16px rgba(10, 38, 75, 0.75);
+}
+
+.admin-stat.total { background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%); }
+.admin-stat.activos { background: linear-gradient(135deg, #2f8f57 0%, #4fb77a 100%); }
+.admin-stat.inactivos { background: linear-gradient(135deg, #c85a3c 0%, #e08262 100%); }
+.admin-stat.admins { background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%); }
+
+.admin-stat.total .admin-stat-icono,
+.admin-stat.activos .admin-stat-icono,
+.admin-stat.inactivos .admin-stat-icono,
+.admin-stat.admins .admin-stat-icono {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+.admin-stat-num {
+  color: #ffffff;
+  font-size: 28px;
+}
+
+.admin-stat-label {
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 600;
+}
+
+.users-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.05), 0 10px 24px -18px rgba(10, 38, 75, 0.5);
+}
+
+.admin-toolbar {
+  padding: 16px 18px;
+  border-bottom: none;
+  background: linear-gradient(120deg, #0a264b 0%, #1f5590 100%);
+}
+
+.admin-buscar {
+  max-width: 460px;
+  height: 44px;
+  border-color: transparent;
+  color: var(--teal);
+}
+
+.admin-buscar:focus-within {
+  border-color: #7fe0e6;
+  box-shadow: 0 0 0 4px rgba(127, 224, 230, 0.3);
+}
+
+.admin-filtros {
+  height: 44px;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.admin-filtros button {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.admin-filtros button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.admin-filtros button.active {
+  background: #ffffff;
+  color: var(--teal);
+}
+
+.users-table th {
+  background: #eef2f7;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.users-table tbody tr:nth-child(even) td {
+  background: #f7f9fb;
+}
+
+.users-table tbody tr:hover td {
+  background: #eef4fa;
+}
+
+.users-avatar {
+  box-shadow: 0 4px 10px -6px rgba(10, 38, 75, 0.7);
 }

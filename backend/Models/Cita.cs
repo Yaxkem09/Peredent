@@ -27,8 +27,10 @@ public static class CitaConstantes
 {
     public const int DuracionMinutos = 30;
 
-    // Duraciones que el consultorio ofrece hoy: cita normal (30 min) o cita doble (1 hora).
-    public static readonly int[] DuracionesPermitidas = { 30, 60 };
+    // La agenda trabaja en bloques de 15 minutos: tanto al crear una cita con
+    // hora de inicio/fin como al estirarla o moverla arrastrando en el
+    // calendario, la duración siempre es un múltiplo de este incremento.
+    public const int IncrementoMinutos = 15;
 
     public const int HoraAperturaClinica = 7;
 

@@ -147,7 +147,7 @@ public class CitasControllerTests
         var controller = new CitasController(new CitaService(db));
 
         var resultado = await controller.Create(
-            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 45));
+            NuevaCitaDto(paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 20));
 
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
     }

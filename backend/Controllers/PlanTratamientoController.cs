@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Data;
 using Peredent.Api.DTOs.Request;
 using Peredent.Api.DTOs.Response;
+using Peredent.Api.Helpers;
 using Peredent.Api.Models;
 using Peredent.Api.Services;
 
@@ -15,20 +16,17 @@ public class PlanTratamientoController : ControllerBase
 {
     private const string EstadoPendiente = "Pendiente";
     private const string EstadoCompletado = "Completado";
+    private const int ObservacionesLongitudMaxima = 1000;
 
     // SCRUM-80: leyenda de conformidad del presupuesto. Fuente única del texto,
     // se envía en el DTO para que la vista y el PDF muestren lo mismo.
     private const string LeyendaConformidad =
         "Este presupuesto está sujeto a cambios imprevistos que puedan surgir durante el tratamiento.";
 
-    // Guatemala es UTC-6 todo el año (no observa horario de verano), así que un
-    // offset fijo evita depender de que el servidor tenga cargada la zona horaria.
-    // Se marca como Unspecified (no Utc): es una fecha de calendario, no un
-    // instante. Si conservara Kind=Utc, al serializarse a JSON saldría con
-    // sufijo "Z" y el frontend la mostraría un día antes al convertirla a hora
-    // local. Así queda igual que las fechas que devuelve EF desde la BD.
-    private static DateTime FechaHoyGuatemala() =>
-        DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-6).Date, DateTimeKind.Unspecified);
+    // Fecha de calendario en Guatemala (UTC-6, sin horario de verano). La cuenta
+    // vive en Helpers/FechaGuatemala.cs para compartirla con el registro de
+    // abonos (SCRUM-64) sin duplicar el offset.
+    private static DateTime FechaHoyGuatemala() => FechaGuatemala.Hoy();
 
     private readonly ApplicationDbContext _db;
     private readonly IPlanTratamientoService _planTratamientoService;
@@ -174,6 +172,14 @@ public class PlanTratamientoController : ControllerBase
             return NotFound(new { message = "Paciente no encontrado." });
         }
 
+        var observaciones = string.IsNullOrWhiteSpace(request.ObservacionesGenerales)
+            ? null
+            : request.ObservacionesGenerales.Trim();
+        if (observaciones?.Length > ObservacionesLongitudMaxima)
+        {
+            return BadRequest(new { message = $"Las observaciones generales no pueden tener más de {ObservacionesLongitudMaxima} caracteres." });
+        }
+
         foreach (var pieza in request.Piezas)
         {
             if (string.IsNullOrWhiteSpace(pieza.Tratamiento))
@@ -202,6 +208,7 @@ public class PlanTratamientoController : ControllerBase
         }
 
         presupuesto.CantidadDescuento = request.Descuento;
+        presupuesto.ObservacionesGenerales = observaciones;
 
         // Solo se conservan los renglones donde el odontólogo realmente escribió un tratamiento;
         // una pieza que llega vacía significa que el usuario la limpió en el frontend.
@@ -370,7 +377,7 @@ public class PlanTratamientoController : ControllerBase
             Detalle = detalle,
             Subtotal = subtotal,
             Descuento = descuento,
-            Total = Math.Max(subtotal - descuento, 0),
+            Total = TotalesPlan.CalcularTotal(subtotal, descuento),
             LeyendaConformidad = LeyendaConformidad,
         };
     }
@@ -398,8 +405,9 @@ public class PlanTratamientoController : ControllerBase
             FechaInicio = presupuesto?.FechaInicioPlan,
             FechaCierre = presupuesto?.FechaCierre,
             Descuento = descuento,
+            ObservacionesGenerales = presupuesto?.ObservacionesGenerales,
             Subtotal = subtotal,
-            Total = Math.Max(subtotal - descuento, 0),
+            Total = TotalesPlan.CalcularTotal(subtotal, descuento),
             Piezas = piezas,
         };
     }
