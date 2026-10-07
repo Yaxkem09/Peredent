@@ -216,6 +216,47 @@ public class AbonosControllerTests
         Assert.Empty(await db.AbonosPaciente.ToListAsync());
     }
 
+    // Un plan ya cerrado puede quedar con saldo pendiente: indicando su id se
+    // puede seguir abonando sobre él, con el mismo límite de saldo.
+    [Fact]
+    public async Task Registrar_EnPlanCerradoIndicado_GuardaElAbonoSobreEsePlan()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        var cerrado = await CrearPlanAsync(db, paciente.IdPaciente, new DateTime(2026, 3, 1), 1000m);
+        await CrearPlanAsync(db, paciente.IdPaciente, null, 3300m);
+        var controller = CrearController(db);
+
+        var resultado = await controller.Registrar(
+            paciente.IdPaciente,
+            new RegistrarAbonoDto { Monto = 400m, IdPresupuestoPlan = cerrado.IdPresupuestoPlan });
+
+        var dto = ExtraerAbono(resultado);
+        Assert.Equal(600m, dto.SaldoPendiente);
+        Assert.Equal(cerrado.IdPresupuestoPlan, (await db.AbonosPaciente.SingleAsync()).IdPresupuestoPlan);
+
+        var excede = await controller.Registrar(
+            paciente.IdPaciente,
+            new RegistrarAbonoDto { Monto = 600.01m, IdPresupuestoPlan = cerrado.IdPresupuestoPlan });
+        Assert.IsType<BadRequestObjectResult>(excede.Result);
+    }
+
+    [Fact]
+    public async Task Registrar_PlanDeOtroPaciente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        var otro = await CrearPacienteAsync(db);
+        var planAjeno = await CrearPlanAsync(db, otro.IdPaciente, null, 1000m);
+
+        var resultado = await CrearController(db).Registrar(
+            paciente.IdPaciente,
+            new RegistrarAbonoDto { Monto = 100m, IdPresupuestoPlan = planAjeno.IdPresupuestoPlan });
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+        Assert.Empty(await db.AbonosPaciente.ToListAsync());
+    }
+
     [Fact]
     public async Task Registrar_TokenSinIdUsuario_Devuelve401()
     {
@@ -558,7 +599,7 @@ public class AbonosControllerTests
     }
 
     // Con solo planes cerrados se ve el historial, pero no hay plan activo sobre el
-    // que abonar: el estado de cuenta lo marca y el POST lo rechaza.
+    // que abonar: el estado de cuenta lo marca y el POST sin plan indicado lo rechaza.
     [Fact]
     public async Task GetEstadoCuentaPaciente_SinPlanActivo_MuestraLosCerradosSinPoderAbonar()
     {
@@ -605,6 +646,117 @@ public class AbonosControllerTests
     // ------------------------------------------------------------------
     // SCRUM-63 (anulación): un abono no se borra, se anula y queda tachado.
     // ------------------------------------------------------------------
+
+    // Edición del monto: el admin corrige un abono mal registrado y el saldo se recalcula.
+    [Fact]
+    public async Task Editar_ComoAdmin_CambiaElMontoYRecalculaElSaldo()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        await CrearAdminAsync(db);
+        await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
+        var controller = CrearController(db);
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+
+        var resultado = await controller.Editar(
+            paciente.IdPaciente,
+            abono.IdAbonoPaciente,
+            new EditarAbonoDto { Monto = 750m, Password = PasswordAdmin });
+
+        var estado = ExtraerEstadoCuenta(resultado);
+        Assert.Equal(750m, estado.Abonado);
+        Assert.Equal(2550m, estado.Saldo);
+        Assert.Equal(750m, (await db.AbonosPaciente.SingleAsync()).MontoAbono);
+    }
+
+    [Theory]
+    [InlineData(3300.01, false)]
+    [InlineData(3300, true)]
+    public async Task Editar_MontoContraLoQueQuedaPorPagar_ValidaElLimite(decimal monto, bool seEsperaOk)
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        await CrearAdminAsync(db);
+        await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
+        var controller = CrearController(db);
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+
+        var resultado = await controller.Editar(
+            paciente.IdPaciente,
+            abono.IdAbonoPaciente,
+            new EditarAbonoDto { Monto = monto, Password = PasswordAdmin });
+
+        if (seEsperaOk)
+        {
+            Assert.IsType<OkObjectResult>(resultado.Result);
+        }
+        else
+        {
+            Assert.IsType<BadRequestObjectResult>(resultado.Result);
+            Assert.Equal(500m, (await db.AbonosPaciente.SingleAsync()).MontoAbono);
+        }
+    }
+
+    [Theory]
+    [InlineData("incorrecta", 100)]
+    [InlineData(PasswordAdmin, 0)]
+    public async Task Editar_PasswordIncorrectaOMontoNoPositivo_Devuelve400YNoCambia(string password, decimal monto)
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        await CrearAdminAsync(db);
+        await CrearPlanAsync(db, paciente.IdPaciente, null, 1000m);
+        var controller = CrearController(db);
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+
+        var resultado = await controller.Editar(
+            paciente.IdPaciente,
+            abono.IdAbonoPaciente,
+            new EditarAbonoDto { Monto = monto, Password = password });
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Equal(500m, (await db.AbonosPaciente.SingleAsync()).MontoAbono);
+    }
+
+    [Fact]
+    public async Task Editar_AbonoDeOtroPaciente_Devuelve404()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        await CrearAdminAsync(db);
+        var otro = await CrearPacienteAsync(db);
+        var planAjeno = await CrearPlanAsync(db, otro.IdPaciente, null, 1000m);
+        AgregarAbono(db, planAjeno.IdPresupuestoPlan, 200m, new DateTime(2026, 1, 10));
+        await db.SaveChangesAsync();
+        var abonoAjeno = await db.AbonosPaciente.SingleAsync();
+
+        var resultado = await CrearController(db).Editar(
+            paciente.IdPaciente,
+            abonoAjeno.IdAbonoPaciente,
+            new EditarAbonoDto { Monto = 100m, Password = PasswordAdmin });
+
+        Assert.IsType<NotFoundObjectResult>(resultado.Result);
+        Assert.Equal(200m, (await db.AbonosPaciente.SingleAsync()).MontoAbono);
+    }
+
+    [Fact]
+    public async Task Editar_AbonoAnulado_Devuelve400()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        await CrearAdminAsync(db);
+        var plan = await CrearPlanAsync(db, paciente.IdPaciente, null, 1000m);
+        AgregarAbono(db, plan.IdPresupuestoPlan, 200m, new DateTime(2026, 1, 10), anulado: true);
+        await db.SaveChangesAsync();
+        var abono = await db.AbonosPaciente.SingleAsync();
+
+        var resultado = await CrearController(db).Editar(
+            paciente.IdPaciente,
+            abono.IdAbonoPaciente,
+            new EditarAbonoDto { Monto = 100m, Password = PasswordAdmin });
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+    }
 
     [Fact]
     public async Task Anular_ComoAdmin_MarcaElAbonoYLiberaElSaldo()
@@ -709,8 +861,10 @@ public class AbonosControllerTests
         Assert.False((await db.AbonosPaciente.SingleAsync()).Anulado);
     }
 
+    // Los planes cerrados admiten abonos, así que un abono mal registrado sobre
+    // ellos también se puede anular.
     [Fact]
-    public async Task Anular_AbonoDePlanCerrado_Devuelve400()
+    public async Task Anular_AbonoDePlanCerrado_LoAnula()
     {
         using var db = CrearContexto();
         var paciente = await CrearPacienteAsync(db);
@@ -722,9 +876,10 @@ public class AbonosControllerTests
 
         var resultado = await CrearController(db).Anular(paciente.IdPaciente, abono.IdAbonoPaciente, new AnularAbonoDto { Password = PasswordAdmin });
 
-        var malo = Assert.IsType<BadRequestObjectResult>(resultado.Result);
-        Assert.Contains("plan ya cerrado", malo.Value!.ToString());
-        Assert.False((await db.AbonosPaciente.SingleAsync()).Anulado);
+        var estado = ExtraerEstadoCuenta(resultado);
+        Assert.False(estado.Activo);
+        Assert.Equal(1000m, estado.Saldo);
+        Assert.True((await db.AbonosPaciente.SingleAsync()).Anulado);
     }
 
     [Fact]
@@ -912,15 +1067,18 @@ public class AbonosControllerTests
         Assert.Equal(800m, estado.Resumen.SaldoPendiente);
     }
 
-    // La anulación está protegida con la policy SoloAdmin (el claim esAdmin del JWT).
-    [Fact]
-    public void Anular_ExigeLaPolicySoloAdmin()
+    // Eliminar (anular) y editar un abono solo lo puede hacer el rol Odontologo.
+    [Theory]
+    [InlineData(nameof(AbonosController.Anular))]
+    [InlineData(nameof(AbonosController.Editar))]
+    public void EditarYEliminar_ExigenElRolOdontologo(string accion)
     {
-        var metodo = typeof(AbonosController).GetMethod(nameof(AbonosController.Anular));
+        var metodo = typeof(AbonosController).GetMethod(accion);
 
         var autorizacion = metodo!.GetCustomAttribute<AuthorizeAttribute>();
 
         Assert.NotNull(autorizacion);
-        Assert.Equal("SoloAdmin", autorizacion!.Policy);
+        Assert.Equal("Odontologo", autorizacion!.Roles);
+        Assert.Null(autorizacion.Policy);
     }
 }

@@ -16,14 +16,27 @@ export const abonosService = {
     return data;
   },
 
-  // SCRUM-64: el cliente solo manda el monto; la fecha y el usuario los pone el
-  // backend.
-  registrar: async (pacienteId, monto) => {
-    const { data } = await api.post(`/pacientes/${pacienteId}/abonos`, { monto });
+  // SCRUM-64: el cliente manda el monto y el plan sobre el que abona (activo o
+  // un plan cerrado con saldo pendiente); la fecha y el usuario los pone el backend.
+  registrar: async (pacienteId, monto, idPresupuestoPlan) => {
+    const { data } = await api.post(`/pacientes/${pacienteId}/abonos`, {
+      monto,
+      idPresupuestoPlan: idPresupuestoPlan ?? null,
+    });
     return data;
   },
 
-  // Anulación de un abono: solo admin. La contraseña es la del propio admin
+  // Edición del monto de un abono: solo admin, confirmada con la contraseña del
+  // admin logueado. Devuelve el estado de cuenta recalculado del plan.
+  editar: async (pacienteId, abonoId, monto, password) => {
+    const { data } = await api.post(`/pacientes/${pacienteId}/abonos/${abonoId}/editar`, {
+      monto,
+      password,
+    });
+    return data;
+  },
+
+  // Anulación de un abono: solo admin. (La pantalla ya no la ofrece: se edita.) La contraseña es la del propio admin
   // logueado (confirmación de una acción que no se puede deshacer) y el motivo es
   // opcional.
   anular: async (pacienteId, abonoId, password, motivo) => {

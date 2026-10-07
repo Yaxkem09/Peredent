@@ -72,6 +72,13 @@ public class UsuariosController : ControllerBase
 
         var nombreUsuario = request.NombreUsuario.Trim();
 
+        // Se puede iniciar sesión con usuario o correo: un usuario con "@" podría
+        // confundirse con un correo (misma regla que en CuentaController).
+        if (nombreUsuario.Contains('@'))
+        {
+            return BadRequest(new { message = "El nombre de usuario no puede tener el carácter @." });
+        }
+
         // SCRUM-237: el correo es opcional (la columna admite NULL); si viene, se
         // valida con la misma regla que el cambio de correo de la propia cuenta.
         var correo = string.IsNullOrWhiteSpace(request.Correo) ? null : ValidacionCorreo.Normalizar(request.Correo);

@@ -99,7 +99,7 @@ const RestablecerContrasena = () => {
             <div className="login-logo">
               <img src={logo} alt="Peredent - Odontología General · Ortodoncia · Cirugía Maxilofacial" />
             </div>
-            <p className="login-welcome">Nueva contraseña</p>
+            <h1 className="login-titulo">Nueva contraseña</h1>
           </div>
 
           {validando && <p className="recuperar-texto">Validando el enlace…</p>}
@@ -153,7 +153,7 @@ const RestablecerContrasena = () => {
                 />
               </div>
 
-              <PoliticaContrasena />
+              <PoliticaContrasena clave={nueva} />
 
               {error && <div className="login-error-banner show">{error}</div>}
 

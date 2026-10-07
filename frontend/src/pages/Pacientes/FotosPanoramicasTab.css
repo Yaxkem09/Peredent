@@ -4,65 +4,326 @@
   gap: 18px;
 }
 
+.panoramicas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.panoramicas-titulo {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.panoramicas-subtitulo {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
 .panoramicas-subida {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 18px 20px;
 }
 
-.panoramicas-subida-campo input[type='file'] {
-  font-size: 13px;
+/* Zona para elegir o arrastrar varias fotos. El input queda oculto: el label
+   entero es el área clicable. */
+.panoramicas-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 16px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface-alt);
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.panoramicas-dropzone:hover,
+.panoramicas-dropzone.arrastrando {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.panoramicas-dropzone.deshabilitada {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.panoramicas-dropzone input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.panoramicas-dropzone-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(10, 38, 75, 0.1);
+}
+
+.panoramicas-dropzone-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Con imágenes elegidas, la zona se achica a una franja para dar lugar a la lista. */
+.panoramicas-dropzone.compacta {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.panoramicas-dropzone-titulo {
+  font-size: 15px;
+  font-weight: 600;
   color: var(--ink);
 }
 
-.panoramicas-preview {
-  margin-top: 4px;
-  width: 220px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--line);
+.panoramicas-dropzone-ayuda {
+  font-size: 12.5px;
+  color: var(--ink-soft);
 }
 
-.panoramicas-preview img {
+/* Fotos elegidas, antes de subirlas. */
+.panoramicas-seleccion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panoramicas-seleccion-head {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.panoramicas-seleccion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.panoramicas-seleccion-item {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.panoramicas-seleccion-item img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 90px;
+  object-fit: cover;
+  background: var(--surface-alt);
+}
+
+.panoramicas-seleccion-item.con-error {
+  border-color: var(--coral);
+}
+
+.panoramicas-seleccion-item.con-error img {
+  opacity: 0.45;
+}
+
+.panoramicas-seleccion-quitar {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(10, 38, 75, 0.7);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.panoramicas-seleccion-quitar:hover:not(:disabled) {
+  background: var(--coral);
+}
+
+.panoramicas-seleccion-quitar:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.panoramicas-seleccion-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 8px;
+}
+
+.panoramicas-seleccion-nombre {
+  font-size: 11.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panoramicas-seleccion-detalle {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.con-error .panoramicas-seleccion-detalle {
+  color: var(--coral);
+}
+
+.panoramicas-progreso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.panoramicas-progreso-barra {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+
+.panoramicas-progreso-barra span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s ease;
 }
 
 .panoramicas-subida-acciones {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.panoramicas-refrescar {
-  margin-left: auto;
+/* Galería de fotos guardadas. */
+.panoramicas-galeria {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.panoramicas-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panoramicas-grupo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--line);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.panoramicas-grupo-contador {
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--teal-soft);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .panoramicas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
 }
 
 .panoramicas-item {
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(10, 38, 75, 0.06);
   overflow: hidden;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.panoramicas-item img {
+.panoramicas-item:hover {
+  box-shadow: 0 6px 18px rgba(10, 38, 75, 0.12);
+  transform: translateY(-1px);
+}
+
+.panoramicas-item-ver {
+  position: relative;
   display: block;
   width: 100%;
-  height: 180px;
-  object-fit: cover;
-  background: var(--surface-alt);
+  padding: 0;
+  border: none;
+  background: #0d1622;
+  cursor: zoom-in;
+}
+
+.panoramicas-item-ver img {
+  display: block;
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+}
+
+.panoramicas-item-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(10, 38, 75, 0.5);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.panoramicas-item-ver:hover .panoramicas-item-overlay,
+.panoramicas-item-ver:focus-visible .panoramicas-item-overlay {
+  opacity: 1;
 }
 
 .panoramicas-item-pie {
@@ -70,21 +331,42 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
 }
 
-.panoramicas-item-fecha {
-  font-size: 12px;
-  color: var(--ink-soft);
+.panoramicas-item-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.panoramicas-item-fecha,
+.panoramicas-item-hora {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.panoramicas-item-fecha svg,
+.panoramicas-item-hora svg {
+  color: var(--accent);
+}
+
+.panoramicas-item-hora {
+  font-weight: 500;
 }
 
 .panoramicas-item-eliminar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   border: 1px solid var(--coral-soft);
   background: var(--coral-soft);
   color: var(--coral);
@@ -102,4 +384,160 @@
 .panoramicas-item-eliminar:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* Modal de confirmación de borrado. */
+.panoramicas-confirmar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panoramicas-confirmar img {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.panoramicas-confirmar p {
+  margin: 0;
+}
+
+/* ---------- Visor a pantalla completa ---------- */
+.visor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  background: rgba(6, 14, 26, 0.94);
+  animation: visor-fade-in 0.15s ease;
+}
+
+.visor-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  color: #ffffff;
+}
+
+.visor-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+.visor-contador {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 12px;
+}
+
+.visor-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+.visor-boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.visor-boton:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.visor-escenario {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 70px 24px;
+}
+
+.visor-imagen {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  cursor: zoom-in;
+}
+
+/* Tamaño real: la imagen se desplaza dentro del escenario. */
+.visor-escenario.con-zoom {
+  display: block;
+  overflow: auto;
+}
+
+.visor-escenario.con-zoom .visor-imagen {
+  max-width: none;
+  max-height: none;
+  cursor: zoom-out;
+}
+
+.visor-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.visor-nav:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.visor-nav.izquierda {
+  left: 14px;
+}
+
+.visor-nav.derecha {
+  right: 14px;
+}
+
+@keyframes visor-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .visor-escenario {
+    padding: 0 8px 16px;
+  }
+
+  .visor-nav {
+    top: auto;
+    bottom: 18px;
+    transform: none;
+  }
 }

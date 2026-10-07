@@ -148,8 +148,10 @@ public class RecuperacionContrasenaControllerTests
         Assert.InRange(registro.FechaCreacion, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow.AddMinutes(1));
     }
 
+    // La recuperación es solo por correo: con el nombre de usuario responde el
+    // mensaje genérico, pero no envía nada.
     [Fact]
-    public async Task Solicitar_ConNombreDeUsuario_TambienEnviaElEnlace()
+    public async Task Solicitar_ConNombreDeUsuario_NoEnviaElEnlace()
     {
         using var db = CrearContexto();
         await CrearUsuarioAsync(db);
@@ -158,8 +160,8 @@ public class RecuperacionContrasenaControllerTests
         var resultado = await CrearController(db, email).Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
 
         Assert.IsType<OkObjectResult>(resultado);
-        Assert.Single(email.Enviados);
-        Assert.Single(await db.ResetPasswords.ToListAsync());
+        Assert.Empty(email.Enviados);
+        Assert.Empty(await db.ResetPasswords.ToListAsync());
     }
 
     [Theory]
@@ -186,7 +188,7 @@ public class RecuperacionContrasenaControllerTests
         await CrearUsuarioAsync(db, estado: false);
         var email = new EmailSenderFalso();
 
-        var resultado = await CrearController(db, email).Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
+        var resultado = await CrearController(db, email).Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis@peredent.local" });
 
         var ok = Assert.IsType<OkObjectResult>(resultado);
         Assert.Equal(RecuperacionContrasenaService.MensajeGenerico, MensajeDe(ok.Value));
@@ -200,7 +202,7 @@ public class RecuperacionContrasenaControllerTests
         await CrearUsuarioAsync(db, correo: null);
         var email = new EmailSenderFalso();
 
-        var resultado = await CrearController(db, email).Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
+        var resultado = await CrearController(db, email).Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis@peredent.local" });
 
         var ok = Assert.IsType<OkObjectResult>(resultado);
         Assert.Equal(RecuperacionContrasenaService.MensajeGenerico, MensajeDe(ok.Value));
@@ -252,7 +254,7 @@ public class RecuperacionContrasenaControllerTests
         var email = new EmailSenderFalso();
         var controller = CrearController(db, email);
 
-        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
+        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis@peredent.local" });
 
         var viejo = await db.ResetPasswords.SingleAsync(t => t.TokenRestablecer == HashSha256("token-viejo"));
         Assert.True(viejo.TokenUsado);
@@ -306,7 +308,7 @@ public class RecuperacionContrasenaControllerTests
         var usuario = await CrearUsuarioAsync(db);
         var email = new EmailSenderFalso();
         var controller = CrearController(db, email);
-        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
+        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis@peredent.local" });
         var token = TokenDelEnlace(email);
 
         var resultado = await controller.Restablecer(new RestablecerContrasenaDto
@@ -346,7 +348,7 @@ public class RecuperacionContrasenaControllerTests
         var usuario = await CrearUsuarioAsync(db);
         var email = new EmailSenderFalso();
         var controller = CrearController(db, email);
-        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
+        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis@peredent.local" });
 
         var resultado = await controller.Restablecer(new RestablecerContrasenaDto
         {
@@ -372,7 +374,7 @@ public class RecuperacionContrasenaControllerTests
         var usuario = await CrearUsuarioAsync(db);
         var email = new EmailSenderFalso();
         var controller = CrearController(db, email);
-        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
+        await controller.Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis@peredent.local" });
 
         var resultado = await controller.Restablecer(new RestablecerContrasenaDto
         {
@@ -416,7 +418,7 @@ public class RecuperacionContrasenaControllerTests
         await CrearUsuarioAsync(db);
         var email = new EmailSenderFalso { Fallar = true };
 
-        var resultado = await CrearController(db, email).Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis" });
+        var resultado = await CrearController(db, email).Solicitar(new OlvideContrasenaDto { Identificador = "dra.solis@peredent.local" });
 
         var ok = Assert.IsType<OkObjectResult>(resultado);
         Assert.Equal(RecuperacionContrasenaService.MensajeGenerico, MensajeDe(ok.Value));

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { usuariosService } from '../../services/usuarios.service';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotification } from '../../hooks/useNotification';
-import { Alert, Button, EmptyState, Loader, Modal } from '../../components/common';
+import { Alert, Button, EmptyState, Loader, Modal, PoliticaContrasena } from '../../components/common';
+import { validarPoliticaContrasena } from '../../utils/politicaContrasena';
 import '../../styles/page-header.css';
 import './AdministracionUsuarios.css';
 
@@ -92,6 +93,7 @@ const AdministracionUsuarios = () => {
   const [formulario, setFormulario] = useState(FORM_INICIAL);
   const [creando, setCreando] = useState(false);
   const [errorCrear, setErrorCrear] = useState(null);
+  const [verClaveNueva, setVerClaveNueva] = useState(false);
 
   const [accionEnCurso, setAccionEnCurso] = useState(null);
   const [errorAccion, setErrorAccion] = useState(null);
@@ -148,8 +150,19 @@ const AdministracionUsuarios = () => {
       return;
     }
 
+    if (formulario.nombreUsuario.includes('@')) {
+      setErrorCrear('El nombre de usuario no puede tener el carácter @.');
+      return;
+    }
+
     if (!FORMATO_CORREO.test(correo)) {
-      setErrorCrear('Ingresa un correo electrónico válido (ej. nombre@correo.com).');
+      setErrorCrear('Ingresa un correo electrónico válido.');
+      return;
+    }
+
+    const errorPolitica = validarPoliticaContrasena(formulario.clave);
+    if (errorPolitica) {
+      setErrorCrear(errorPolitica);
       return;
     }
 
@@ -417,6 +430,7 @@ const AdministracionUsuarios = () => {
       <Modal
         open={modalAbierto}
         onClose={() => !creando && setModalAbierto(false)}
+        wide
         title="Nuevo usuario"
         footer={
           <>
@@ -430,67 +444,105 @@ const AdministracionUsuarios = () => {
         }
       >
         <div className="users-form">
+          <p className="users-form-intro">
+            Completa los datos de acceso de la persona. Podrá iniciar sesión con su usuario o con su correo.
+          </p>
+
           {errorCrear && <Alert type="error">{errorCrear}</Alert>}
 
-          <div className="field">
-            <label htmlFor="nombreUsuario">Usuario</label>
-            <input
-              id="nombreUsuario"
-              name="nombreUsuario"
-              type="text"
-              placeholder="Ej. jperez"
-              value={formulario.nombreUsuario}
-              onChange={handleChange}
-              disabled={creando}
-            />
+          <div className="users-form-grid">
+            <div className="field">
+              <label htmlFor="nombreUsuario">
+                Usuario <span className="users-form-requerido">*</span>
+              </label>
+              <input
+                id="nombreUsuario"
+                name="nombreUsuario"
+                type="text"
+                autoComplete="off"
+                maxLength={50}
+                value={formulario.nombreUsuario}
+                onChange={handleChange}
+                disabled={creando}
+              />
+              <span className="users-form-ayuda">Puede tener espacios, pero no el carácter @.</span>
+            </div>
+
+            <div className="field">
+              <label htmlFor="correo">
+                Correo electrónico <span className="users-form-requerido">*</span>
+              </label>
+              <input
+                id="correo"
+                name="correo"
+                type="email"
+                autoComplete="off"
+                value={formulario.correo}
+                onChange={handleChange}
+                disabled={creando}
+              />
+              <span className="users-form-ayuda">Se usa para iniciar sesión y es el único medio para recuperar la contraseña.</span>
+            </div>
+
+            <div className="field">
+              <label htmlFor="clave">
+                Contraseña inicial <span className="users-form-requerido">*</span>
+              </label>
+              <div className="users-form-clave">
+                <input
+                  id="clave"
+                  name="clave"
+                  type={verClaveNueva ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={formulario.clave}
+                  onChange={handleChange}
+                  disabled={creando}
+                />
+                <button
+                  type="button"
+                  className="users-form-ver"
+                  onClick={() => setVerClaveNueva((valor) => !valor)}
+                  aria-label={verClaveNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  title={verClaveNueva ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    {verClaveNueva ? (
+                      <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.7 9.7 0 0 1 12 5c5 0 9 4.5 10 7-.4 1-1.2 2.3-2.4 3.5M6.6 6.6C4.4 8 2.8 10.2 2 12c1 2.5 5 7 10 7 1.7 0 3.2-.5 4.5-1.2" />
+                    ) : (
+                      <>
+                        <path d="M2 12c1-2.5 5-7 10-7s9 4.5 10 7c-1 2.5-5 7-10 7S3 14.5 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </>
+                    )}
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="idRol">
+                Rol <span className="users-form-requerido">*</span>
+              </label>
+              <select
+                id="idRol"
+                name="idRol"
+                value={formulario.idRol}
+                onChange={handleChange}
+                disabled={creando || cargandoRoles}
+              >
+                <option value="">{cargandoRoles ? 'Cargando roles…' : 'Selecciona un rol'}</option>
+                {roles.map((rol) => (
+                  <option key={rol.id} value={rol.id}>
+                    {rol.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div className="field">
-            <label htmlFor="correo">Correo electrónico</label>
-            <input
-              id="correo"
-              name="correo"
-              type="email"
-              autoComplete="off"
-              placeholder="Ej. jperez@correo.com"
-              value={formulario.correo}
-              onChange={handleChange}
-              disabled={creando}
-            />
-          </div>
+          <PoliticaContrasena titulo="La contraseña inicial debe tener:" clave={formulario.clave} />
 
-          <div className="field">
-            <label htmlFor="clave">Contraseña</label>
-            <input
-              id="clave"
-              name="clave"
-              type="password"
-              placeholder="Contraseña inicial"
-              value={formulario.clave}
-              onChange={handleChange}
-              disabled={creando}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="idRol">Rol</label>
-            <select
-              id="idRol"
-              name="idRol"
-              value={formulario.idRol}
-              onChange={handleChange}
-              disabled={creando || cargandoRoles}
-            >
-              <option value="">{cargandoRoles ? 'Cargando roles…' : 'Selecciona un rol'}</option>
-              {roles.map((rol) => (
-                <option key={rol.id} value={rol.id}>
-                  {rol.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="users-form-checkbox">
+          <label className={`users-form-admin${formulario.esAdmin ? ' activo' : ''}`} htmlFor="esAdmin">
             <input
               id="esAdmin"
               name="esAdmin"
@@ -499,8 +551,11 @@ const AdministracionUsuarios = () => {
               onChange={handleChange}
               disabled={creando}
             />
-            <label htmlFor="esAdmin">Es administrador (puede gestionar usuarios)</label>
-          </div>
+            <span className="users-form-admin-textos">
+              <span className="users-form-admin-titulo">Es administrador</span>
+              <span className="users-form-admin-ayuda">Puede crear y gestionar usuarios y editar abonos.</span>
+            </span>
+          </label>
         </div>
       </Modal>
 

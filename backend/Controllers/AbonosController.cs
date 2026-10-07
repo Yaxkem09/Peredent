@@ -17,7 +17,8 @@ namespace Peredent.Api.Controllers;
 // (SCRUM-65), así que siempre refleja el plan tal como está guardado hoy.
 // Solo [Authorize]: la historia es de la asistente, pero el odontólogo entra con
 // el mismo rol autenticado, igual que en el resto de los controllers clínicos.
-// La anulación de un abono es la excepción: es solo para admin (policy SoloAdmin).
+// La edición y la eliminación (anulación) de un abono son la excepción: solo
+// las puede hacer el rol Odontologo, confirmando con su contraseña.
 [ApiController]
 [Authorize]
 public class AbonosController : ControllerBase
@@ -26,6 +27,9 @@ public class AbonosController : ControllerBase
     // plan no crezca sin control (ni la pantalla se llene de filas tachadas) y para
     // que la tabla no se sature de basura. Al superarlo se rechaza con 400.
     private const int MaximoAnuladosPorPlan = 50;
+
+    // Único rol que puede editar o eliminar abonos (claim de rol del JWT).
+    public const string RolOdontologo = "Odontologo";
 
     // Largo de MotivoAnulacion en la base (VARCHAR(300)).
     private const int MotivoLongitudMaxima = 300;
@@ -41,9 +45,9 @@ public class AbonosController : ControllerBase
         _logger = logger;
     }
 
-    // SCRUM-64: registra un abono sobre el plan de tratamiento ACTIVO del
-    // paciente. El monto lo manda el cliente; la fecha la pone el backend y el
-    // usuario sale del token.
+    // SCRUM-64: registra un abono sobre el plan de tratamiento indicado o, si no
+    // se indica, sobre el ACTIVO del paciente. El monto lo manda el cliente; la
+    // fecha la pone el backend y el usuario sale del token.
     [HttpPost("api/pacientes/{pacienteId:int}/abonos")]
     public async Task<ActionResult<AbonoDto>> Registrar(int pacienteId, [FromBody] RegistrarAbonoDto request)
     {
@@ -58,16 +62,32 @@ public class AbonosController : ControllerBase
             return BadRequest(new { message = "El monto del abono debe ser mayor a 0." });
         }
 
-        var planActivo = await ObtenerPlanActivoAsync(pacienteId);
-        if (planActivo is null)
+        // Si el cliente indica el plan se abona sobre ese (activo o ya cerrado: un
+        // plan terminado puede seguir con saldo pendiente); si no, sobre el activo.
+        PresupuestoPlan? plan;
+        if (request.IdPresupuestoPlan is int idPlan)
         {
-            return BadRequest(new { message = "Este paciente no tiene un plan de tratamiento activo. Registra el plan antes de registrar abonos." });
+            plan = await _db.PresupuestosPlan
+                .Include(p => p.Piezas)
+                .FirstOrDefaultAsync(p => p.IdPresupuestoPlan == idPlan && p.IdPaciente == pacienteId);
+            if (plan is null)
+            {
+                return NotFound(new { message = "Plan de tratamiento no encontrado." });
+            }
+        }
+        else
+        {
+            plan = await ObtenerPlanActivoAsync(pacienteId);
+            if (plan is null)
+            {
+                return BadRequest(new { message = "Este paciente no tiene un plan de tratamiento activo. Registra el plan antes de registrar abonos." });
+            }
         }
 
         // SCRUM-65: el saldo se recalcula en cada intento, así que un abono que
         // dejaría el plan en descubierto se rechaza antes de guardarlo.
-        var total = TotalDelPlan(planActivo);
-        var abonado = await SumarAbonosAsync(planActivo.IdPresupuestoPlan);
+        var total = TotalDelPlan(plan);
+        var abonado = await SumarAbonosAsync(plan.IdPresupuestoPlan);
         var saldo = TotalesPlan.CalcularSaldo(total, abonado);
 
         if (request.Monto > saldo)
@@ -86,7 +106,7 @@ public class AbonosController : ControllerBase
 
         var abono = new AbonoPaciente
         {
-            IdPresupuestoPlan = planActivo.IdPresupuestoPlan,
+            IdPresupuestoPlan = plan.IdPresupuestoPlan,
             IdUsuario = idUsuario.Value,
             MontoAbono = request.Monto,
             // El cliente no manda la fecha: la asigna el backend en hora de
@@ -138,8 +158,8 @@ public class AbonosController : ControllerBase
     // SCRUM-66: estado de cuenta completo del paciente. Devuelve TODOS sus planes
     // (el activo primero y después los cerrados, del más reciente al más antiguo),
     // cada uno con total, descuento, abonado, saldo y su historial de abonos, más
-    // un resumen general. Los planes cerrados son solo lectura: no se abona ni se
-    // anula sobre ellos.
+    // un resumen general. Los planes cerrados que quedaron con saldo pendiente
+    // siguen admitiendo abonos (indicando su IdPresupuestoPlan al registrar).
     [HttpGet("api/pacientes/{pacienteId:int}/estado-cuenta")]
     public async Task<ActionResult<EstadoCuentaPacienteDto>> GetEstadoCuentaPaciente(int pacienteId)
     {
@@ -196,12 +216,13 @@ public class AbonosController : ControllerBase
         });
     }
 
-    // Anulación de un abono: SOLO admin (policy SoloAdmin, claim esAdmin del token).
+    // Eliminación (anulación) de un abono: SOLO el rol Odontologo. En la pantalla
+    // se presenta como "Eliminar" (p. ej. si se registró en el plan equivocado).
     // El abono no se borra: se marca Anulado y queda tachado en el historial, para
     // que un error al registrar no borre el rastro. La acción no se puede deshacer
     // desde la app, así que se confirma con la contraseña del propio admin logueado.
     [HttpPost("api/pacientes/{pacienteId:int}/abonos/{abonoId:int}/anular")]
-    [Authorize(Policy = "SoloAdmin")]
+    [Authorize(Roles = RolOdontologo)]
     public async Task<ActionResult<EstadoCuentaPlanDto>> Anular(int pacienteId, int abonoId, [FromBody] AnularAbonoDto request)
     {
         var idUsuario = ObtenerIdUsuario();
@@ -233,11 +254,8 @@ public class AbonosController : ControllerBase
             return NotFound(new { message = "Abono no encontrado." });
         }
 
-        if (plan.FechaCierre is not null)
-        {
-            return BadRequest(new { message = "Este abono pertenece a un plan ya cerrado y no se puede anular." });
-        }
-
+        // Los planes cerrados también admiten abonos, así que también se puede
+        // anular un abono mal registrado sobre ellos.
         if (abono.Anulado)
         {
             return BadRequest(new { message = "Este abono ya está anulado." });
@@ -283,6 +301,87 @@ public class AbonosController : ControllerBase
 
         // Se devuelve el estado de cuenta del plan para que la vista refresque
         // resumen, lista y saldo con lo que calculó el backend.
+        var abonos = await ObtenerAbonosAsync(new[] { plan.IdPresupuestoPlan });
+        var nombres = await ObtenerNombresUsuariosAsync(abonos);
+
+        return Ok(ArmarEstadoCuentaPlan(pacienteId, plan, abonos, nombres));
+    }
+
+    // Edición del monto de un abono: SOLO el rol Odontologo, confirmada con la
+    // contraseña del propio usuario logueado. Corrige un abono mal registrado sin
+    // borrarlo; vale para planes activos y cerrados. El nuevo monto respeta el mismo
+    // límite que al registrar: lo abonado no puede pasar del total del plan.
+    [HttpPost("api/pacientes/{pacienteId:int}/abonos/{abonoId:int}/editar")]
+    [Authorize(Roles = RolOdontologo)]
+    public async Task<ActionResult<EstadoCuentaPlanDto>> Editar(int pacienteId, int abonoId, [FromBody] EditarAbonoDto request)
+    {
+        var idUsuario = ObtenerIdUsuario();
+        if (idUsuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (!await ConfirmarPasswordAsync(idUsuario.Value, request.Password))
+        {
+            return BadRequest(new { message = "No se pudo confirmar la contraseña." });
+        }
+
+        if (request.Monto <= 0)
+        {
+            return BadRequest(new { message = "El monto del abono debe ser mayor a 0." });
+        }
+
+        var abono = await _db.AbonosPaciente.FirstOrDefaultAsync(a => a.IdAbonoPaciente == abonoId);
+        if (abono is null)
+        {
+            return NotFound(new { message = "Abono no encontrado." });
+        }
+
+        var plan = await _db.PresupuestosPlan
+            .Include(p => p.Piezas)
+            .FirstOrDefaultAsync(p => p.IdPresupuestoPlan == abono.IdPresupuestoPlan);
+
+        // El abono tiene que ser de ESTE paciente; si es de otro, no se revela nada.
+        if (plan is null || plan.IdPaciente != pacienteId)
+        {
+            return NotFound(new { message = "Abono no encontrado." });
+        }
+
+        if (abono.Anulado)
+        {
+            return BadRequest(new { message = "Este abono está anulado y no se puede editar." });
+        }
+
+        // Saldo disponible para este abono = saldo actual + lo que ya vale el abono.
+        // Bajar el monto siempre se permite (aunque el plan se haya editado y el
+        // saldo haya quedado negativo).
+        var total = TotalDelPlan(plan);
+        var abonado = await SumarAbonosAsync(plan.IdPresupuestoPlan);
+        var disponible = TotalesPlan.CalcularSaldo(total, abonado) + abono.MontoAbono;
+        if (request.Monto > abono.MontoAbono && request.Monto > disponible)
+        {
+            return BadRequest(new
+            {
+                message = $"El monto no puede ser mayor a lo que queda por pagar del plan (Q {Math.Max(disponible, 0).ToString("0.00", CultureInfo.InvariantCulture)}).",
+            });
+        }
+
+        var montoAnterior = abono.MontoAbono;
+        abono.MontoAbono = request.Monto;
+        await _db.SaveChangesAsync();
+
+        // DEUDA TÉCNICA: la base no guarda el historial de ediciones (monto anterior,
+        // quién y cuándo); por ahora queda solo en el log. SIN la contraseña.
+        _logger.LogWarning(
+            "Abono editado: idUsuario={IdUsuario} idAbono={IdAbono} idPresupuestoPlan={IdPresupuestoPlan} idPaciente={IdPaciente} montoAnterior={MontoAnterior} montoNuevo={MontoNuevo} fecha={Fecha}",
+            idUsuario.Value,
+            abono.IdAbonoPaciente,
+            abono.IdPresupuestoPlan,
+            pacienteId,
+            montoAnterior,
+            abono.MontoAbono,
+            FechaGuatemala.Ahora());
+
         var abonos = await ObtenerAbonosAsync(new[] { plan.IdPresupuestoPlan });
         var nombres = await ObtenerNombresUsuariosAsync(abonos);
 

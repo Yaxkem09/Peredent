@@ -1,25 +1,72 @@
 .politica-clave {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-alt);
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #cfe3e4;
+  border-radius: 12px;
+  background: var(--accent-soft, #e1f2f3);
 }
 
 .politica-clave-titulo {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal, #0a264b);
 }
 
 .politica-clave-lista {
   margin: 0;
-  padding-left: 18px;
-  font-size: 12px;
-  color: var(--ink-soft);
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.politica-clave-lista li {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink, #1b2825);
+}
+
+.politica-clave-marca {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #9fb3b0;
+  background: #ffffff;
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+/* Requisito cumplido: marca verde y texto verde. */
+.politica-clave-lista li.cumple {
+  color: var(--verde, #2f8f57);
+  font-weight: 600;
+}
+
+.politica-clave-lista li.cumple .politica-clave-marca {
+  border-color: var(--verde, #2f8f57);
+  background: var(--verde, #2f8f57);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .politica-clave-lista {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

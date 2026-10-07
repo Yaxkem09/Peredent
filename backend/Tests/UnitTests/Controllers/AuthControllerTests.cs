@@ -80,6 +80,37 @@ public class AuthControllerTests
         Assert.Equal("token-de-prueba", dto.Token);
     }
 
+    // Se puede entrar con el correo en vez del nombre de usuario, sin importar
+    // mayúsculas ni espacios alrededor.
+    [Fact]
+    public async Task Login_ConCorreo_Devuelve200ConToken()
+    {
+        using var db = CrearContexto();
+        var usuario = await SembrarUsuarioAsync(db);
+        usuario.CorreoUsuario = "dra.solis@peredent.com";
+        await db.SaveChangesAsync();
+        var controller = CrearController(db);
+
+        var resultado = await controller.Login(new LoginDto { Usuario = "  Dra.Solis@Peredent.com ", Clave = ClaveValida });
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        var dto = Assert.IsType<AuthResponseDto>(ok.Value);
+        Assert.Equal("dra.solis", dto.Usuario);
+    }
+
+    [Fact]
+    public async Task Login_ConCorreoYClaveIncorrecta_Devuelve401()
+    {
+        using var db = CrearContexto();
+        var usuario = await SembrarUsuarioAsync(db);
+        usuario.CorreoUsuario = "dra.solis@peredent.com";
+        await db.SaveChangesAsync();
+
+        var resultado = await CrearController(db).Login(new LoginDto { Usuario = "dra.solis@peredent.com", Clave = "otra" });
+
+        Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
+    }
+
     [Fact]
     public async Task Login_ClaveIncorrecta_Devuelve401()
     {

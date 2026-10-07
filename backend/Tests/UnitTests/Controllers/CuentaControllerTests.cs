@@ -19,6 +19,13 @@ public class CuentaControllerTests
     private const string ClaveNueva = "ClaveNueva456";
     private const int IdUsuarioToken = 5;
 
+    // Fake mínimo: acá solo importa que se emita un token nuevo al cambiar el
+    // usuario, no su contenido (eso lo cubre JwtTokenServiceTests).
+    private class JwtTokenServiceFake : IJwtTokenService
+    {
+        public string GenerarToken(Usuario usuario) => $"token-{usuario.NombreUsuario}";
+    }
+
     private static ApplicationDbContext CrearContexto()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -29,7 +36,7 @@ public class CuentaControllerTests
 
     private static CuentaController CrearController(ApplicationDbContext db, int? idUsuario = IdUsuarioToken)
     {
-        var controller = new CuentaController(db, new PasswordHasher());
+        var controller = new CuentaController(db, new PasswordHasher(), new JwtTokenServiceFake());
         var claims = idUsuario is null
             ? Array.Empty<Claim>()
             : new[] { new Claim("idUsuario", idUsuario.Value.ToString()) };
@@ -95,6 +102,75 @@ public class CuentaControllerTests
         Assert.Equal("Odontologo", cuenta.Rol);
         Assert.Equal("dra.solis@peredent.local", cuenta.Correo);
         Assert.False(cuenta.EsAdmin);
+    }
+
+    // Cambio del nombre de usuario: se guarda recortado y devuelve un token nuevo.
+    [Fact]
+    public async Task ActualizarUsuario_Valido_GuardaElNombreYDevuelveTokenNuevo()
+    {
+        using var db = CrearContexto();
+        await CrearUsuarioAsync(db);
+
+        var cuenta = ExtraerCuenta(await CrearController(db).ActualizarUsuario(
+            new ActualizarUsuarioDto { NombreUsuario = "  dra.maria  ", ContrasenaActual = ClaveActual }));
+
+        Assert.Equal("dra.maria", cuenta.NombreUsuario);
+        Assert.Equal("token-dra.maria", cuenta.Token);
+        Assert.Equal("dra.maria", (await db.Usuarios.SingleAsync()).NombreUsuario);
+    }
+
+    [Fact]
+    public async Task ActualizarUsuario_ConEspacios_SeAcepta()
+    {
+        using var db = CrearContexto();
+        await CrearUsuarioAsync(db);
+
+        var cuenta = ExtraerCuenta(await CrearController(db).ActualizarUsuario(
+            new ActualizarUsuarioDto { NombreUsuario = "Dra Maria Solis", ContrasenaActual = ClaveActual }));
+
+        Assert.Equal("Dra Maria Solis", cuenta.NombreUsuario);
+    }
+
+    [Fact]
+    public async Task ActualizarUsuario_ContrasenaIncorrecta_Devuelve400YNoCambia()
+    {
+        using var db = CrearContexto();
+        await CrearUsuarioAsync(db);
+
+        var resultado = await CrearController(db).ActualizarUsuario(
+            new ActualizarUsuarioDto { NombreUsuario = "otro", ContrasenaActual = "Mala1234" });
+
+        Assert.Contains("contraseña actual", MensajeDe(resultado.Result));
+        Assert.Equal("dra.solis", (await db.Usuarios.SingleAsync()).NombreUsuario);
+    }
+
+    [Fact]
+    public async Task ActualizarUsuario_NombreDeOtroUsuario_Devuelve400()
+    {
+        using var db = CrearContexto();
+        await CrearUsuarioAsync(db);
+        await CrearUsuarioAsync(db, idUsuario: 6, nombreUsuario: "asistente", correo: null);
+
+        var resultado = await CrearController(db).ActualizarUsuario(
+            new ActualizarUsuarioDto { NombreUsuario = "asistente", ContrasenaActual = ClaveActual });
+
+        Assert.Contains("Ya existe", MensajeDe(resultado.Result));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("dra@solis")]
+    public async Task ActualizarUsuario_NombreInvalido_Devuelve400(string nombre)
+    {
+        using var db = CrearContexto();
+        await CrearUsuarioAsync(db);
+
+        var resultado = await CrearController(db).ActualizarUsuario(
+            new ActualizarUsuarioDto { NombreUsuario = nombre, ContrasenaActual = ClaveActual });
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Equal("dra.solis", (await db.Usuarios.SingleAsync()).NombreUsuario);
     }
 
     [Fact]

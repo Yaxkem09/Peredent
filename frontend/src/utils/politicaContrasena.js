@@ -12,6 +12,15 @@ const MAYUSCULA = /\p{Lu}/u;
 const MINUSCULA = /\p{Ll}/u;
 const NUMERO = /\p{Nd}/u;
 
+// Las mismas reglas, cada una con su verificación, para marcar en vivo cuáles
+// cumple la contraseña que se está escribiendo.
+export const REGLAS_POLITICA_VERIFICABLES = [
+  { texto: 'Entre 8 y 128 caracteres', cumple: (clave) => clave.length >= 8 && clave.length <= 128 },
+  { texto: 'Una letra mayúscula', cumple: (clave) => MAYUSCULA.test(clave) },
+  { texto: 'Una letra minúscula', cumple: (clave) => MINUSCULA.test(clave) },
+  { texto: 'Un número', cumple: (clave) => NUMERO.test(clave) },
+];
+
 // Devuelve el mensaje del primer requisito que no se cumple, o null si está bien.
 export const validarPoliticaContrasena = (clave) => {
   if (!clave) {
