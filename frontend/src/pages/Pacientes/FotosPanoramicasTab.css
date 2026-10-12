@@ -541,3 +541,125 @@
     transform: none;
   }
 }
+
+/* Documentos Word (.docx): tarjeta con ícono en lugar de miniatura; se
+   descargan en vez de abrirse en el visor. */
+
+.panoramicas-seleccion-doc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 90px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.panoramicas-item-doc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 200px;
+  padding: 0 16px;
+  border: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  cursor: zoom-in;
+}
+
+/* Descargar va junto a eliminar, con el mismo tamaño pero en tono teal. */
+.panoramicas-item-descargar {
+  margin-left: auto;
+  border-color: var(--teal-soft);
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.panoramicas-item-descargar:hover {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #ffffff;
+}
+
+.panoramicas-item-descargar + .panoramicas-item-eliminar {
+  margin-left: 8px;
+}
+
+/* Vista previa de .docx: docx-preview dibuja las páginas dentro del visor. */
+.visor-documento {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 24px 24px;
+}
+
+.visor-documento-hojas .docx-wrapper {
+  background: transparent;
+  padding: 0;
+}
+
+.visor-documento-hojas .docx-wrapper > section.docx {
+  margin: 0 auto 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.visor-documento-estado {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.visor-documento-error {
+  color: #ffffff;
+  font-size: 15px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .visor-documento {
+    padding: 0 8px 16px;
+  }
+}
+
+.panoramicas-item-doc-nombre {
+  max-width: 100%;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+
+.panoramicas-item-doc:hover .panoramicas-item-overlay,
+.panoramicas-item-doc:focus-visible .panoramicas-item-overlay {
+  opacity: 1;
+}
+
+.panoramicas-confirmar-doc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.panoramicas-confirmar-doc span {
+  color: var(--ink);
+}

@@ -1,8 +1,8 @@
 namespace Peredent.Api.Models;
 
+// Un solo registro por paciente: ID_Paciente es la llave primaria.
 public class Protesis
 {
-    public int IdProtesis { get; set; }
     public int IdPaciente { get; set; }
     public bool PPF { get; set; }
     public bool PPRSup { get; set; }

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { panoramicasService } from '../../services/panoramicas.service';
 import { Alert, Button, EmptyState, Loader, Modal } from '../../components/common';
 import { useAuth } from '../../hooks/useAuth';
+import VisorDocumento from './VisorDocumento';
 import './FotosPanoramicasTab.css';
 
 // SCRUM-42: subida y visualización de fotos panorámicas. El backend (Yax,
@@ -10,8 +11,15 @@ import './FotosPanoramicasTab.css';
 // es solo para UX, no reemplaza la del servidor.
 // Se pueden elegir varias fotos a la vez: el backend recibe una por petición, así
 // que se suben una tras otra y al final se informa cuáles fallaron.
+// Además de imágenes se aceptan documentos Word (.docx): no se ven en el visor,
+// se descargan. Se valida por extensión porque algunos navegadores no informan
+// el tipo de un .docx.
 const TAMANO_MAXIMO_BYTES = 15 * 1024 * 1024;
-const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png'];
+const EXTENSIONES_PERMITIDAS = ['jpg', 'jpeg', 'png', 'docx'];
+const ACCEPT = '.jpg,.jpeg,.png,.docx,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+const extensionDe = (nombre) => (nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '');
+const esDocumento = (archivo) => archivo.tipo === 'documento';
 
 const IconUpload = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -35,6 +43,22 @@ const IconImage = () => (
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <circle cx="8.5" cy="8.5" r="1.5" />
     <path d="m21 15-5-5L5 21" />
+  </svg>
+);
+
+const IconDocumento = ({ size = 30 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+    <path d="M8.5 12.5l1.2 4.5 1.3-3.5 1.3 3.5 1.2-4.5" />
+  </svg>
+);
+
+const IconDescargar = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 
@@ -106,11 +130,14 @@ const tituloDia = (clave) => {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
 
-// Agrupa las fotos (ya ordenadas de la más reciente a la más antigua) por día,
-// conservando el índice global para abrir el visor en la foto correcta.
+// Agrupa los archivos (ya ordenados del más reciente al más antiguo) por día.
+// `indice` es la posición entre las imágenes, para abrir el visor en la foto
+// correcta; los documentos no van al visor (indice null).
 const agruparPorDia = (fotos) => {
   const grupos = [];
-  fotos.forEach((foto, indice) => {
+  let indiceImagen = 0;
+  fotos.forEach((foto) => {
+    const indice = esDocumento(foto) ? null : indiceImagen++;
     const clave = claveDia(foto.fechaSubida);
     const ultimo = grupos[grupos.length - 1];
     if (ultimo && ultimo.clave === clave) ultimo.fotos.push({ foto, indice });
@@ -134,8 +161,8 @@ const IconReloj = () => (
 );
 
 const validarArchivo = (file) => {
-  if (!TIPOS_PERMITIDOS.includes(file.type)) {
-    return 'Solo se permiten archivos JPG o PNG.';
+  if (!EXTENSIONES_PERMITIDAS.includes(extensionDe(file.name))) {
+    return 'Solo se permiten imágenes JPG o PNG y documentos Word (.docx).';
   }
   if (file.size > TAMANO_MAXIMO_BYTES) {
     return 'Supera el tamaño máximo permitido (15 MB).';
@@ -259,6 +286,8 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
   // La asistente sube y consulta, pero solo el odontólogo elimina (el backend exige lo mismo).
   const puedeEliminar = user?.rol === 'Odontologo';
   const [fotos, setFotos] = useState([]);
+  // El visor solo recorre imágenes.
+  const imagenes = fotos.filter((f) => !esDocumento(f));
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
@@ -274,6 +303,8 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
   const [eliminando, setEliminando] = useState(false);
 
   const [indiceVisor, setIndiceVisor] = useState(null);
+  const [documentoVisor, setDocumentoVisor] = useState(null);
+  const cerrarDocumento = useCallback(() => setDocumentoVisor(null), []);
 
   const inputRef = useRef(null);
   // Para revocar las URLs de vista previa al desmontar la pestaña.
@@ -287,7 +318,7 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
       const data = await panoramicasService.getByPaciente(idPaciente);
       setFotos(data);
     } catch {
-      setError('No se pudieron cargar las fotos panorámicas de este paciente.');
+      setError('No se pudieron cargar los archivos de este paciente.');
     } finally {
       setCargando(false);
     }
@@ -304,7 +335,7 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
         if (activo) setFotos(data);
       })
       .catch(() => {
-        if (activo) setError('No se pudieron cargar las fotos panorámicas de este paciente.');
+        if (activo) setError('No se pudieron cargar los archivos de este paciente.');
       })
       .finally(() => {
         if (activo) setCargando(false);
@@ -336,6 +367,7 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
         id: ++siguienteIdSeleccion,
         file,
         url: URL.createObjectURL(file),
+        esDocumento: extensionDe(file.name) === 'docx',
         error: validarArchivo(file),
       })),
     ]);
@@ -380,12 +412,12 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
     setSubiendo(false);
     if (subidas > 0) {
       setMensajeExito(
-        subidas === 1 ? 'Se guardó 1 imagen correctamente.' : `Se guardaron ${subidas} imágenes correctamente.`,
+        subidas === 1 ? 'Se guardó 1 archivo correctamente.' : `Se guardaron ${subidas} archivos correctamente.`,
       );
       await cargarFotos();
     }
     if (fallidas.length > 0) {
-      setErrorSubida(`No se pudieron subir ${fallidas.length} foto(s): ${fallidas.join(', ')}.`);
+      setErrorSubida(`No se pudieron subir ${fallidas.length} archivo(s): ${fallidas.join(', ')}.`);
     }
   };
 
@@ -399,7 +431,7 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
       setFotoAEliminar(null);
     } catch {
       setFotoAEliminar(null);
-      setError('No se pudo eliminar la foto panorámica. Intenta de nuevo.');
+      setError('No se pudo eliminar el archivo. Intenta de nuevo.');
     } finally {
       setEliminando(false);
     }
@@ -420,8 +452,8 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
           <h2 className="panoramicas-titulo">Radiografías y panorámicas</h2>
           <p className="panoramicas-subtitulo">
             {fotos.length === 0
-              ? 'Sube aquí las radiografías y fotos panorámicas del paciente.'
-              : `${fotos.length} ${fotos.length === 1 ? 'imagen guardada' : 'imágenes guardadas'} · haz clic en una para verla en grande`}
+              ? 'Sube aquí las radiografías, fotos panorámicas y documentos Word del paciente.'
+              : `${fotos.length} ${fotos.length === 1 ? 'archivo guardado' : 'archivos guardados'} · haz clic en una imagen para verla en grande`}
           </p>
         </div>
         <button type="button" className="btn btn-outline-teal btn-md" onClick={cargarFotos} disabled={cargando}>
@@ -442,7 +474,7 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png"
+            accept={ACCEPT}
             multiple
             onChange={(e) => agregarArchivos(e.target.files)}
             disabled={subiendo}
@@ -452,22 +484,28 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
           </span>
           <span className="panoramicas-dropzone-textos">
             <span className="panoramicas-dropzone-titulo">
-              {seleccion.length > 0 ? 'Agregar más imágenes' : 'Haz clic o arrastra aquí las radiografías'}
+              {seleccion.length > 0 ? 'Agregar más archivos' : 'Haz clic o arrastra aquí las radiografías o documentos'}
             </span>
-            <span className="panoramicas-dropzone-ayuda">Puedes elegir varias a la vez · JPG o PNG · máximo 15 MB cada una</span>
+            <span className="panoramicas-dropzone-ayuda">Puedes elegir varios a la vez · JPG, PNG o Word (.docx) · máximo 15 MB cada uno</span>
           </span>
         </label>
 
         {seleccion.length > 0 && (
           <div className="panoramicas-seleccion">
             <div className="panoramicas-seleccion-head">
-              {seleccion.length === 1 ? '1 imagen seleccionada' : `${seleccion.length} imágenes seleccionadas`}
+              {seleccion.length === 1 ? '1 archivo seleccionado' : `${seleccion.length} archivos seleccionados`}
               {invalidas > 0 && ` · ${invalidas} con error (no se subirán)`}
             </div>
             <div className="panoramicas-seleccion-grid">
               {seleccion.map((item) => (
                 <div className={`panoramicas-seleccion-item${item.error ? ' con-error' : ''}`} key={item.id}>
-                  <img src={item.url} alt={item.file.name} />
+                  {item.esDocumento ? (
+                    <div className="panoramicas-seleccion-doc">
+                      <IconDocumento size={28} />
+                    </div>
+                  ) : (
+                    <img src={item.url} alt={item.file.name} />
+                  )}
                   <button
                     type="button"
                     className="panoramicas-seleccion-quitar"
@@ -511,8 +549,8 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
                 {subiendo
                   ? 'Subiendo…'
                   : validas.length === 1
-                    ? 'Guardar 1 imagen'
-                    : `Guardar ${validas.length} imágenes`}
+                    ? 'Guardar 1 archivo'
+                    : `Guardar ${validas.length} archivos`}
               </button>
             </div>
           </div>
@@ -529,8 +567,8 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
       ) : fotos.length === 0 ? (
         <EmptyState
           icon={<IconImage />}
-          title="Sin radiografías"
-          description="Aún no se han subido radiografías ni fotos panorámicas para este paciente."
+          title="Sin archivos"
+          description="Aún no se han subido radiografías, fotos panorámicas ni documentos para este paciente."
         />
       ) : (
         <div className="panoramicas-galeria">
@@ -544,17 +582,32 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
               <div className="panoramicas-grid">
                 {grupo.fotos.map(({ foto, indice }) => (
                   <div className="panoramicas-item" key={foto.id}>
-                    <button
-                      type="button"
-                      className="panoramicas-item-ver"
-                      onClick={() => setIndiceVisor(indice)}
-                      aria-label={`Ver en grande la imagen del ${formatDate(foto.fechaSubida)}`}
-                    >
-                      <img src={foto.urlFirmada} alt={`Radiografía del ${formatDate(foto.fechaSubida)}`} loading="lazy" />
-                      <span className="panoramicas-item-overlay">
-                        <IconZoom /> Ver en grande
-                      </span>
-                    </button>
+                    {esDocumento(foto) ? (
+                      <button
+                        type="button"
+                        className="panoramicas-item-doc"
+                        onClick={() => setDocumentoVisor(foto)}
+                        aria-label={`Ver el documento del ${formatDate(foto.fechaSubida)}`}
+                      >
+                        <IconDocumento size={44} />
+                        <span className="panoramicas-item-doc-nombre">Documento Word</span>
+                        <span className="panoramicas-item-overlay">
+                          <IconZoom /> Vista previa
+                        </span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="panoramicas-item-ver"
+                        onClick={() => setIndiceVisor(indice)}
+                        aria-label={`Ver en grande la imagen del ${formatDate(foto.fechaSubida)}`}
+                      >
+                        <img src={foto.urlFirmada} alt={`Radiografía del ${formatDate(foto.fechaSubida)}`} loading="lazy" />
+                        <span className="panoramicas-item-overlay">
+                          <IconZoom /> Ver en grande
+                        </span>
+                      </button>
+                    )}
                     <div className="panoramicas-item-pie">
                       <div className="panoramicas-item-datos">
                         <span className="panoramicas-item-fecha">
@@ -564,12 +617,23 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
                           <IconReloj /> {formatTime(foto.fechaSubida)}
                         </span>
                       </div>
+                      {esDocumento(foto) && (
+                        // El enlace firmado ya fuerza la descarga del archivo.
+                        <a
+                          className="panoramicas-item-eliminar panoramicas-item-descargar"
+                          href={foto.urlFirmada}
+                          aria-label="Descargar documento"
+                          title="Descargar"
+                        >
+                          <IconDescargar />
+                        </a>
+                      )}
                       {puedeEliminar && (
                         <button
                           type="button"
                           className="panoramicas-item-eliminar"
                           onClick={() => setFotoAEliminar(foto)}
-                          aria-label="Eliminar imagen"
+                          aria-label={esDocumento(foto) ? 'Eliminar documento' : 'Eliminar imagen'}
                           title="Eliminar"
                         >
                           <IconTrash />
@@ -586,10 +650,18 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
 
       {indiceVisor !== null && (
         <VisorPanoramica
-          fotos={fotos}
+          fotos={imagenes}
           indice={indiceVisor}
           onCambiar={setIndiceVisor}
           onCerrar={() => setIndiceVisor(null)}
+        />
+      )}
+
+      {documentoVisor && (
+        <VisorDocumento
+          documento={documentoVisor}
+          titulo={`Documento Word · ${formatDate(documentoVisor.fechaSubida)} · ${formatTime(documentoVisor.fechaSubida)}`}
+          onCerrar={cerrarDocumento}
         />
       )}
 
@@ -597,7 +669,7 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
         open={Boolean(fotoAEliminar)}
         onClose={() => !eliminando && setFotoAEliminar(null)}
         icon={<IconAlerta />}
-        title="¿Eliminar esta imagen?"
+        title={fotoAEliminar && esDocumento(fotoAEliminar) ? '¿Eliminar este documento?' : '¿Eliminar esta imagen?'}
         footer={
           <>
             <Button variant="secondary" onClick={() => setFotoAEliminar(null)} disabled={eliminando}>
@@ -611,9 +683,16 @@ const FotosPanoramicasTab = ({ idPaciente }) => {
       >
         {fotoAEliminar && (
           <div className="panoramicas-confirmar">
-            <img src={fotoAEliminar.urlFirmada} alt="Foto panorámica a eliminar" />
+            {esDocumento(fotoAEliminar) ? (
+              <div className="panoramicas-confirmar-doc">
+                <IconDocumento size={26} />
+                <span>Documento Word</span>
+              </div>
+            ) : (
+              <img src={fotoAEliminar.urlFirmada} alt="Foto panorámica a eliminar" />
+            )}
             <p>
-              Se eliminará la imagen subida el {formatDate(fotoAEliminar.fechaSubida)} a las{' '}
+              Se eliminará {esDocumento(fotoAEliminar) ? 'el documento subido' : 'la imagen subida'} el {formatDate(fotoAEliminar.fechaSubida)} a las{' '}
               {formatTime(fotoAEliminar.fechaSubida)}. Esta acción no se puede deshacer.
             </p>
           </div>
