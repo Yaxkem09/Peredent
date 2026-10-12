@@ -36,4 +36,11 @@ export const recetarioService = {
     const { data, status } = await api.get('/recetario/perfil');
     return status === 204 ? null : data;
   },
+
+  // SCRUM-294: registra o actualiza los datos profesionales sin emitir una
+  // receta (los usan las constancias). Devuelve los datos guardados.
+  guardarPerfilOdontologo: async (datos) => {
+    const { data } = await api.put('/recetario/perfil', datos);
+    return data;
+  },
 };

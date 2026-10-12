@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public class PanoramicasController : ControllerBase
 
     private static readonly TimeSpan DuracionUrlFirmada = TimeSpan.FromMinutes(30);
 
+    private const string ContentTypeDocx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     private readonly ApplicationDbContext _db;
     private readonly IR2StorageService _r2Storage;
 
@@ -47,10 +49,14 @@ public class PanoramicasController : ControllerBase
             return BadRequest(new { message = "El archivo supera el tamaño máximo permitido (15 MB)." });
         }
 
-        if (!archivo.ContentType.Equals("image/png", StringComparison.OrdinalIgnoreCase) &&
-            !archivo.ContentType.Equals("image/jpeg", StringComparison.OrdinalIgnoreCase))
+        // Además de imágenes se aceptan documentos Word (.docx). No se filtra
+        // por el Content-Type declarado: varios navegadores mandan un .docx
+        // como application/octet-stream. Se filtra por extensión y luego por
+        // el contenido real.
+        var extensionDeclarada = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+        if (extensionDeclarada is not (".jpg" or ".jpeg" or ".png" or ".docx"))
         {
-            return BadRequest(new { message = "Solo se permiten archivos JPG o PNG." });
+            return BadRequest(new { message = "Solo se permiten imágenes JPG o PNG y documentos Word (.docx)." });
         }
 
         using var contenido = new MemoryStream();
@@ -61,9 +67,9 @@ public class PanoramicasController : ControllerBase
         // la extensión como el Content-Type real que se sube a R2 se deciden
         // por los magic bytes, no por lo que dijo el cliente.
         var tipoDetectado = DetectarTipoPorMagicBytes(bytes);
-        if (tipoDetectado is null)
+        if (tipoDetectado is null || (tipoDetectado.Value.Extension == "docx") != (extensionDeclarada == ".docx"))
         {
-            return BadRequest(new { message = "El contenido del archivo no corresponde a una imagen JPG o PNG válida." });
+            return BadRequest(new { message = "El contenido del archivo no corresponde a una imagen JPG/PNG ni a un documento Word válido." });
         }
 
         var (extension, contentType) = tipoDetectado.Value;
@@ -82,7 +88,7 @@ public class PanoramicasController : ControllerBase
         _db.Panoramicas.Add(panoramica);
         await _db.SaveChangesAsync();
 
-        var urlFirmada = await _r2Storage.GenerarUrlFirmadaAsync(objectKey, DuracionUrlFirmada);
+        var urlFirmada = await GenerarUrlAsync(panoramica);
 
         return Created($"/api/panoramicas/{panoramica.IdPanoramica}", ToDto(panoramica, urlFirmada));
     }
@@ -106,11 +112,29 @@ public class PanoramicasController : ControllerBase
         var dtos = new List<PanoramicaDto>(panoramicas.Count);
         foreach (var panoramica in panoramicas)
         {
-            var urlFirmada = await _r2Storage.GenerarUrlFirmadaAsync(panoramica.KeyPanoramicaR2, DuracionUrlFirmada);
+            var urlFirmada = await GenerarUrlAsync(panoramica);
             dtos.Add(ToDto(panoramica, urlFirmada));
         }
 
         return Ok(dtos);
+    }
+
+    // Contenido de un documento Word para la vista previa en el navegador. Pasa
+    // por el backend (y no por la URL firmada) porque el frontend lo lee con
+    // fetch y R2 exigiría CORS; además la URL firmada fuerza la descarga.
+    [HttpGet("{id:int}/contenido")]
+    public async Task<IActionResult> GetContenido(int id)
+    {
+        var panoramica = await _db.Panoramicas
+            .FirstOrDefaultAsync(p => p.IdPanoramica == id && p.FechaEliminacion == null);
+
+        if (panoramica is null || !EsDocumento(panoramica))
+        {
+            return NotFound(new { message = "El documento indicado no existe." });
+        }
+
+        var bytes = await _r2Storage.DescargarArchivoAsync(panoramica.KeyPanoramicaR2);
+        return File(bytes, ContentTypeDocx);
     }
 
     // Solo el odontólogo puede eliminar una radiografía; la asistente sube y consulta.
@@ -148,8 +172,43 @@ public class PanoramicasController : ControllerBase
             return ("jpg", "image/jpeg");
         }
 
+        // Un .docx es un ZIP ("PK"); para no aceptar cualquier ZIP se
+        // exige la parte principal de un documento de Word.
+        if (contenido.Length >= 4 &&
+            contenido[0] == 0x50 && contenido[1] == 0x4B && contenido[2] == 0x03 && contenido[3] == 0x04 &&
+            EsDocumentoWord(contenido))
+        {
+            return ("docx", ContentTypeDocx);
+        }
+
         return null;
     }
+
+    private static bool EsDocumentoWord(byte[] contenido)
+    {
+        try
+        {
+            using var zip = new ZipArchive(new MemoryStream(contenido), ZipArchiveMode.Read);
+            return zip.GetEntry("word/document.xml") is not null;
+        }
+        catch (InvalidDataException)
+        {
+            return false;
+        }
+    }
+
+    private static bool EsDocumento(Panoramica panoramica) =>
+        panoramica.KeyPanoramicaR2.EndsWith(".docx", StringComparison.OrdinalIgnoreCase);
+
+    // Las imágenes se abren en el navegador; los documentos se descargan con
+    // un nombre que lleva la fecha de subida (hora de Guatemala).
+    private Task<string> GenerarUrlAsync(Panoramica panoramica) =>
+        _r2Storage.GenerarUrlFirmadaAsync(
+            panoramica.KeyPanoramicaR2,
+            DuracionUrlFirmada,
+            EsDocumento(panoramica)
+                ? $"Documento {panoramica.FechaSubida.AddHours(-6):yyyy-MM-dd HHmm}.docx"
+                : null);
 
     // FechaSubida se guarda en UTC. Se marca Kind=Utc para que el JSON salga con
     // sufijo "Z" y el frontend la convierta a hora de Guatemala; sin eso se mostraba
@@ -159,5 +218,6 @@ public class PanoramicasController : ControllerBase
         Id = panoramica.IdPanoramica,
         FechaSubida = DateTime.SpecifyKind(panoramica.FechaSubida, DateTimeKind.Utc),
         UrlFirmada = urlFirmada,
+        Tipo = EsDocumento(panoramica) ? PanoramicaDto.TipoDocumento : PanoramicaDto.TipoImagen,
     };
 }
