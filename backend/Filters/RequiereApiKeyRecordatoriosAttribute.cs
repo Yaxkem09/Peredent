@@ -1,9 +1,8 @@
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
+using Peredent.Api.Helpers;
 using Peredent.Api.Options;
 
 namespace Peredent.Api.Filters;
@@ -40,22 +39,10 @@ public class ApiKeyRecordatoriosFilter : IAuthorizationFilter
         }
     }
 
-    private bool EsValida(string apiKeyRecibida)
-    {
-        // Sin REMINDERS_API_KEY configurada se rechaza todo (nunca "key vacía = abierto").
-        if (string.IsNullOrWhiteSpace(_apiKeyConfigurada) || string.IsNullOrEmpty(apiKeyRecibida))
-        {
-            return false;
-        }
-
-        // FixedTimeEquals devuelve false de inmediato si las longitudes
-        // difieren, lo que filtraría la longitud de la key. Comparando los
-        // SHA-256 (siempre 32 bytes) la comparación es de tiempo constante.
-        var hashRecibido = SHA256.HashData(Encoding.UTF8.GetBytes(apiKeyRecibida));
-        var hashConfigurado = SHA256.HashData(Encoding.UTF8.GetBytes(_apiKeyConfigurada));
-
-        return CryptographicOperations.FixedTimeEquals(hashRecibido, hashConfigurado);
-    }
+    // Sin REMINDERS_API_KEY configurada se rechaza todo; comparación en tiempo
+    // constante que no filtra la longitud de la key (ver ComparacionSegura).
+    private bool EsValida(string apiKeyRecibida) =>
+        ComparacionSegura.SecretosIguales(apiKeyRecibida, _apiKeyConfigurada);
 }
 
 // 401 con cuerpo vacío. No se usa UnauthorizedResult porque, con

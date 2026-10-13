@@ -114,6 +114,10 @@ builder.Services.Configure<WhatsAppOptions>(options =>
     options.Enabled = whatsAppEnabled;
     options.PhoneNumberId = whatsAppPhoneNumberId ?? string.Empty;
     options.AccessToken = whatsAppToken ?? string.Empty;
+    // Sin validación al arrancar a propósito: si faltan, solo el webhook queda
+    // inutilizable (rechaza todo y lo registra), el envío de recordatorios sigue.
+    options.AppSecret = builder.Configuration["WHATSAPP_APP_SECRET"] ?? string.Empty;
+    options.WebhookVerifyToken = builder.Configuration["WHATSAPP_WEBHOOK_VERIFY_TOKEN"] ?? string.Empty;
 
     var apiVersion = builder.Configuration["WHATSAPP_API_VERSION"];
     if (!string.IsNullOrWhiteSpace(apiVersion))
@@ -150,6 +154,9 @@ builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>(client =>
 // Scoped: usa ApplicationDbContext. El candado contra ejecuciones simultáneas
 // es estático dentro del servicio, no depende de este lifetime.
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
+
+// Scoped: el siguiente paso le agrega acceso a ApplicationDbContext.
+builder.Services.AddScoped<IWhatsAppWebhookService, WhatsAppWebhookService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
