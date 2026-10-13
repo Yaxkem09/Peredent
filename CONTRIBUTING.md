@@ -18,4 +18,4 @@ Antes de crear una migración nueva, verificar que el snapshot esté sincronizad
 dotnet ef migrations has-pending-model-changes
 ```
 
-Debe responder *"No changes have been made to the model since the last migration"*. Si reporta cambios que tú no hiciste (tablas o columnas creadas por un script), no generes la migración encima: sincroniza primero el snapshot con una migración vacía, igual que `SincronizarSnapshotConScriptsSprint2a4`. Después de crear la migración, revisa que solo contenga tus cambios y regenera el script idempotente para la base de producción (ver cabecera de `PeredentScript_Sprint5.sql`).
+Debe responder *"No changes have been made to the model since the last migration"*. Si reporta cambios que tú no hiciste (tablas o columnas creadas por un script), no generes la migración encima: sincroniza primero el snapshot con una migración vacía, igual que `SincronizarSnapshotConScriptsSprint2a4`. Después de crear la migración, revisa que solo contenga tus cambios y regenera el script idempotente para la base de producción (ver cabecera de `PeredentScript_Sprint5_RecordatoriosWhatsApp.sql`).

@@ -808,3 +808,94 @@
     box-shadow: none;
   }
 }
+
+/* Documento de la receta: mantiene proporción de hoja aunque el área de
+   contenido ya no tenga tope de ancho. */
+.receta-print-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ---- Recetario: un solo color (azul marino). Barra de búsqueda en una
+   tarjeta azul y recetas como tarjetas blancas sin franja lateral de color. ---- */
+.recetario-page-icono {
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+}
+
+.recetario-toolbar-card {
+  border: none;
+  border-radius: 16px;
+  padding: 20px 22px;
+  background: linear-gradient(120deg, #0a264b 0%, #1f5590 100%);
+  box-shadow: 0 14px 28px -20px rgba(10, 38, 75, 0.9);
+}
+
+.recetario-toolbar-card .recetario-buscador {
+  flex: 1;
+  max-width: 520px;
+}
+
+.recetario-toolbar-card .recetario-buscador input {
+  border-color: transparent;
+}
+
+.recetario-toolbar-card .btn-primary {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.recetario-toolbar-card .btn-primary:hover:not(:disabled) {
+  background: #e3e9f3;
+  border-color: #e3e9f3;
+}
+
+.recetario-toolbar-card .recetario-resultado-pill {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.recetario-toolbar-card .recetario-mensaje-sutil {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.recetario-item {
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.recetario-item:hover {
+  border-color: #b9c6d8;
+  box-shadow: 0 2px 4px rgba(10, 38, 75, 0.05), 0 16px 30px -18px rgba(10, 38, 75, 0.55);
+}
+
+.recetario-item-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+}
+
+.recetario-item-paciente {
+  font-size: 15.5px;
+  color: var(--teal);
+}
+
+.recetario-item-fecha {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.recetario-tag {
+  font-size: 12px;
+  padding: 4px 11px;
+  background: #e3e9f3;
+  color: var(--teal);
+}

@@ -6,6 +6,7 @@ import {
   addDays,
   claseDeEstado,
   esCitaReprogramable,
+  etiquetaHoraEje,
   formatearRangoHora,
   horasDelDia,
   hoy,
@@ -22,7 +23,15 @@ const ALTURA_MIN_BLOQUE = 48;
 // Citas de 15 min: se pintan a su alto real (ver VistaDia).
 const DURACION_BLOQUE_COMPACTO = 30;
 
-const VistaSemana = ({ fechaActual, citas, bloqueos, onSeleccionarCita, onMoverCita }) => {
+const VistaSemana = ({
+  fechaActual,
+  diaSeleccionado,
+  onSeleccionarDia,
+  citas,
+  bloqueos,
+  onSeleccionarCita,
+  onMoverCita,
+}) => {
   const { notify } = useNotification();
   const lunes = mondayOf(fechaActual);
   const diasDeLaSemana = Array.from({ length: 7 }, (_, i) => addDays(lunes, i));
@@ -57,15 +66,27 @@ const VistaSemana = ({ fechaActual, citas, bloqueos, onSeleccionarCita, onMoverC
         {diasDeLaSemana.map((dia, i) => {
           const fechaIso = toIsoDate(dia);
           const bloqueado = bloqueos.some((b) => b.fecha === fechaIso);
+          const seleccionado = fechaIso === diaSeleccionado;
+          const clases = [
+            'week-head-cell',
+            fechaIso === hoyIso ? 'today' : '',
+            bloqueado ? 'bloqueado' : '',
+            seleccionado ? 'seleccionado' : '',
+          ].filter(Boolean).join(' ');
+          // Clic en el día: queda elegido para "+ Nueva cita".
           return (
-            <div
-              className={`week-head-cell ${fechaIso === hoyIso ? 'today' : ''} ${bloqueado ? 'bloqueado' : ''}`.trim()}
+            <button
+              type="button"
+              className={clases}
               key={fechaIso}
+              aria-pressed={seleccionado}
+              title="Elegir este día para la nueva cita"
+              onClick={() => onSeleccionarDia(fechaIso)}
             >
               <div className="wd-name">{DIAS_SEMANA_CORTO[i]}</div>
               <div className="wd-num">{dia.getDate()}</div>
               {bloqueado && <div className="wd-bloqueado">No labora</div>}
-            </div>
+            </button>
           );
         })}
       </div>
@@ -75,7 +96,7 @@ const VistaSemana = ({ fechaActual, citas, bloqueos, onSeleccionarCita, onMoverC
           <div className="hour-axis">
             {HORAS_EJE.map((h, i) => (
               <div className="hour-label" key={h} style={{ top: i * ALTURA_HORA_PX }}>
-                {h}:00
+                {etiquetaHoraEje(h)}
               </div>
             ))}
           </div>

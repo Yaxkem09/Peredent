@@ -101,7 +101,7 @@ public class RecetaPdfService : IRecetaPdfService
                 meds.Spacing(10);
                 foreach (var m in r.Medicamentos)
                 {
-                    meds.Item().BorderBottom(1).BorderColor(ColorLinea).PaddingBottom(8).Column(c =>
+                    meds.Item().ShowEntire().BorderBottom(1).BorderColor(ColorLinea).PaddingBottom(8).Column(c =>
                     {
                         var nombreCompleto = string.IsNullOrWhiteSpace(m.Presentacion)
                             ? m.Nombre
@@ -125,7 +125,10 @@ public class RecetaPdfService : IRecetaPdfService
                 });
             }
 
-            col.Item().PaddingTop(30).AlignCenter().Column(c =>
+            // Extend ocupa el espacio que queda en la página y AlignBottom deja
+            // la firma siempre al final de la hoja (de la última, si la receta
+            // ocupa varias), sin importar cuántos medicamentos tenga.
+            col.Item().Extend().AlignBottom().PaddingTop(30).AlignCenter().Column(c =>
             {
                 c.Item().Width(260).LineHorizontal(1).LineColor("#9CA3AF");
                 c.Item().AlignCenter().PaddingTop(4)

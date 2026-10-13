@@ -4,6 +4,7 @@ import {
   ALTURA_HORA_PX,
   claseDeEstado,
   esCitaReprogramable,
+  etiquetaHoraEje,
   formatearRangoHora,
   horasDelDia,
   ordenarPorHora,
@@ -62,7 +63,7 @@ const VistaDia = ({ fechaActual, citas, bloqueos, onSeleccionarCita, onMoverCita
           <div className="hour-axis">
             {HORAS_EJE.map((h, i) => (
               <div className="hour-label" key={h} style={{ top: i * ALTURA_HORA_PX }}>
-                {h}:00
+                {etiquetaHoraEje(h)}
               </div>
             ))}
           </div>

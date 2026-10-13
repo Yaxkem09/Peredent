@@ -30,3 +30,107 @@
   color: var(--ink-soft);
   font-size: 13px;
 }
+
+/* ---- Encabezado de página como banner a todo lo ancho (Dashboard,
+   Pacientes, Recetario, Administración, formularios...). La agenda tiene su
+   propio encabezado con controles, por eso se excluye. ---- */
+.page-head:not(.agenda-head) {
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+  padding: 26px 30px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #0a264b 0%, #15467d 62%, #15939c 140%);
+  box-shadow: 0 18px 32px -24px rgba(10, 38, 75, 0.95);
+}
+
+/* Círculos decorativos suaves a la derecha. */
+.page-head:not(.agenda-head)::before,
+.page-head:not(.agenda-head)::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.page-head:not(.agenda-head)::before {
+  top: -90px;
+  right: -40px;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(127, 224, 230, 0.28) 0%, transparent 70%);
+}
+
+.page-head:not(.agenda-head)::after {
+  bottom: -120px;
+  right: 22%;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+}
+
+.page-head:not(.agenda-head) > * {
+  position: relative;
+  z-index: 1;
+}
+
+.page-head:not(.agenda-head) .eyebrow {
+  color: #7fe0e6;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.page-head:not(.agenda-head) h2 {
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.page-head:not(.agenda-head) p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14.5px;
+}
+
+/* Botón principal en blanco sobre el banner azul. */
+.page-head:not(.agenda-head) .btn-primary {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.page-head:not(.agenda-head) .btn-primary:hover:not(:disabled) {
+  background: #e3e9f3;
+  border-color: #e3e9f3;
+  color: var(--teal);
+}
+
+/* Botón secundario translúcido sobre el banner. */
+.page-head .btn-head-sec {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.page-head .btn-head-sec:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.page-head .recetario-page-icono {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 640px) {
+  .page-head:not(.agenda-head) {
+    padding: 20px;
+  }
+
+  .page-head:not(.agenda-head) h2 {
+    font-size: 23px;
+  }
+}

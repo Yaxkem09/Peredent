@@ -44,6 +44,17 @@ const EYEBROW_POR_VISTA = {
 // calendario -- evita tener que reelegirlo cada vez que entra a la página.
 const ID_ODONTOLOGO_KEY = 'calendario_id_odontologo';
 
+// Mismos colores que el borde de los bloques de cita (ver modificadores de
+// estado en Calendario.css); "Confirmada" es el estilo base. Se muestran en
+// sólido porque los fondos suaves de pendiente y no asistió se confundían.
+const LEYENDA_ESTADOS = [
+  { label: 'Pendiente', clase: 'pending' },
+  { label: 'Confirmada', clase: 'confirmada' },
+  { label: 'Atendida', clase: 'atendida' },
+  { label: 'No asistió', clase: 'no-asistio', tachado: true },
+  { label: 'Cancelada', clase: 'cancelada', tachado: true },
+];
+
 const Calendario = () => {
   const { user } = useAuth();
   const { notify } = useNotification();
@@ -163,6 +174,26 @@ const Calendario = () => {
     }
     return { desde: fechaActual, hasta: fechaActual };
   }, [vista, fechaActual]);
+
+  // Día elegido haciendo clic en el encabezado de la vista semana (ISO). Es
+  // estado aparte de fechaActual a propósito: cambiar fechaActual recarga las
+  // citas (ver refrescarEnFechaDeCita), y elegir un día no debería hacerlo.
+  const [diaSemanaSeleccionado, setDiaSemanaSeleccionado] = useState(null);
+
+  // Fecha con la que abre "+ Nueva cita": en la vista semana, el día elegido
+  // (si pertenece a la semana visible); en las demás, fechaActual.
+  // Memoizado: NuevaCitaModal resetea su formulario cuando cambia.
+  const fechaParaNuevaCita = useMemo(() => {
+    if (
+      vista === 'semana'
+      && diaSemanaSeleccionado
+      && diaSemanaSeleccionado >= toIsoDate(rango.desde)
+      && diaSemanaSeleccionado <= toIsoDate(rango.hasta)
+    ) {
+      return parseIsoDate(diaSemanaSeleccionado);
+    }
+    return fechaActual;
+  }, [vista, diaSemanaSeleccionado, rango, fechaActual]);
 
   useEffect(() => {
     // Asistente sin odontólogo elegido todavía (lista aún cargando, o no hay
@@ -310,6 +341,7 @@ const Calendario = () => {
   return (
     <div className="page-block agenda-page">
       <div className="page-head agenda-head">
+        <div className="agenda-banner">
         <div className="agenda-titulo">
           {vista === 'dia' && (
             <div className={`fecha-tile ${esHoy ? 'hoy' : ''}`.trim()} aria-hidden="true">
@@ -326,6 +358,21 @@ const Calendario = () => {
               {esHoy && vista === 'dia' && <span className="hoy-chip">Hoy</span>}
             </h2>
           </div>
+        </div>
+
+        {/* Leyenda fija de colores por estado: visible en las tres vistas
+            para no tener que recordar qué significa cada color. */}
+        <div className="agenda-leyenda" aria-label="Colores por estado de la cita">
+          <span className="agenda-leyenda-titulo">Estados de cita</span>
+          <ul>
+            {LEYENDA_ESTADOS.map((e) => (
+              <li key={e.label}>
+                <span className={`agenda-leyenda-color ${e.clase}`} aria-hidden="true" />
+                <span className={`agenda-leyenda-texto${e.tachado ? ' tachado' : ''}`}>{e.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
         </div>
 
         {/* Barra de controles siempre en su propia fila, debajo del título: así
@@ -433,6 +480,8 @@ const Calendario = () => {
       ) : vista === 'semana' ? (
         <VistaSemana
           fechaActual={fechaActual}
+          diaSeleccionado={toIsoDate(fechaParaNuevaCita)}
+          onSeleccionarDia={setDiaSemanaSeleccionado}
           citas={citas}
           bloqueos={bloqueos}
           onSeleccionarCita={setCitaSeleccionada}
@@ -462,7 +511,7 @@ const Calendario = () => {
 
       <NuevaCitaModal
         open={mostrarNuevaCita}
-        fechaInicial={fechaActual}
+        fechaInicial={fechaParaNuevaCita}
         odontologoFijo={odontologoFijo}
         onClose={() => setMostrarNuevaCita(false)}
         onCreada={(citaCreada) => {
@@ -478,10 +527,6 @@ const Calendario = () => {
         onActualizada={(citaActualizada) => {
           setCitaSeleccionada(null);
           refrescarEnFechaDeCita(citaActualizada);
-        }}
-        onCancelada={(citaCancelada) => {
-          setCitaSeleccionada(null);
-          refrescarEnFechaDeCita(citaCancelada);
         }}
       />
 

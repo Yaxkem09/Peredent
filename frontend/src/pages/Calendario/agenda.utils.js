@@ -93,9 +93,31 @@ export const sumarMinutos = (hora, minutos) => {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 };
 
-// "09:00 a 09:30" -- rango completo de una cita, para mostrar cuánto va a durar.
+// "HH:mm[:ss]" (24 h, como la guarda el backend) -> "3:30 PM". Con
+// conMinutos=false y hora en punto queda solo "3 PM" (eje de horas).
+export const formatearHora12 = (hora, { conMinutos = true } = {}) => {
+  const [h, m] = hora.split(':').map(Number);
+  const sufijo = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  if (!conMinutos && m === 0) return `${h12} ${sufijo}`;
+  return `${h12}:${String(m).padStart(2, '0')} ${sufijo}`;
+};
+
+// Duración legible de una cita: 30 -> "30 min", 60 -> "1 h", 90 -> "1 h 30 min".
+export const formatearDuracion = (minutos) => {
+  if (!minutos || minutos <= 0) return '—';
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+};
+
+// Hora entera del eje lateral (7, 8, ... 19) -> "7 AM", "12 PM", "3 PM".
+export const etiquetaHoraEje = (h) => formatearHora12(`${h}:00`, { conMinutos: false });
+
+// "9:00 AM a 9:30 AM" -- rango completo de una cita, para mostrar cuánto va a durar.
 export const formatearRangoHora = (hora, duracionMinutos) =>
-  `${hora.slice(0, 5)} a ${sumarMinutos(hora, duracionMinutos)}`;
+  `${formatearHora12(hora)} a ${formatearHora12(sumarMinutos(hora, duracionMinutos))}`;
 
 // Posición (top) y alto de una cita dentro de la grilla de horas de las
 // vistas día/semana, en px, según su hora de inicio y duración.

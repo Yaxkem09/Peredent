@@ -33,7 +33,8 @@ public class UsuariosControllerTests
     {
         NombreUsuario = nombreUsuario,
         Correo = correo ?? $"{nombreUsuario}@peredent.com",
-        Clave = "claveSegura123",
+        // SCRUM-235: el alta valida la política, así que la clave de prueba la cumple.
+        Clave = "ClaveSegura123",
         IdRol = idRol,
     };
 
@@ -65,19 +66,51 @@ public class UsuariosControllerTests
         Assert.Equal("Odontologo", dto.Rol);
     }
 
+    // SCRUM-237: el correo es opcional; si viene, se valida el formato.
     [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
     [InlineData("sin-arroba.com")]
     [InlineData("falta@dominio")]
     [InlineData("con espacio@correo.com")]
-    public async Task Create_CorreoVacioOInvalido_Devuelve400YNoCrea(string correo)
+    public async Task Create_CorreoInvalido_Devuelve400YNoCrea(string correo)
     {
         using var db = CrearContexto();
         await SembrarRolAsync(db);
         var controller = CrearController(db);
 
         var resultado = await controller.Create(NuevoUsuarioDto("nuevo.usuario", idRol: 1, correo));
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Empty(db.Usuarios);
+    }
+
+    [Fact]
+    public async Task Create_SinCorreo_CreaElUsuarioConCorreoNulo()
+    {
+        using var db = CrearContexto();
+        await SembrarRolAsync(db);
+        var controller = CrearController(db);
+
+        var resultado = await controller.Create(NuevoUsuarioDto("nuevo.usuario", idRol: 1, correo: "   "));
+
+        var dto = Assert.IsType<UsuarioDto>(Assert.IsType<OkObjectResult>(resultado.Result).Value);
+        Assert.Null(dto.Correo);
+    }
+
+    // SCRUM-235: la contraseña del alta tiene que cumplir la política.
+    [Theory]
+    [InlineData("corta1")]
+    [InlineData("sinmayuscula1")]
+    [InlineData("SINMINUSCULA1")]
+    [InlineData("SinNumeros")]
+    public async Task Create_ClaveQueNoCumpleLaPolitica_Devuelve400YNoCrea(string clave)
+    {
+        using var db = CrearContexto();
+        await SembrarRolAsync(db);
+        var controller = CrearController(db);
+        var request = NuevoUsuarioDto("nuevo.usuario", idRol: 1);
+        request.Clave = clave;
+
+        var resultado = await controller.Create(request);
 
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
         Assert.Empty(db.Usuarios);

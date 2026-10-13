@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { recetarioService } from '../../services/recetario.service';
 import { useNotification } from '../../hooks/useNotification';
 import { formatDate, formatTime } from '../../utils/formatters';
+import { imprimirPdf } from '../../utils/imprimirPdf';
 import { IconBack, IconPrinter, IconDownload, IconTrash } from './RecetarioIcons';
 import logo from '../../assets/logo.png';
 import './Recetario.css';
@@ -23,6 +24,21 @@ const RecetaDocumento = ({ receta: r, onVolver, onEliminada }) => {
   const { notify } = useNotification();
   const [generandoPdf, setGenerandoPdf] = useState(false);
   const [eliminando, setEliminando] = useState(false);
+  const [imprimiendo, setImprimiendo] = useState(false);
+
+  // Imprime el mismo PDF que se descarga (firma y sello al final de la hoja),
+  // en lugar de la vista en pantalla.
+  const imprimir = async () => {
+    setImprimiendo(true);
+    try {
+      const respuesta = await recetarioService.descargarPdf(r.idPaciente, r.idReceta);
+      imprimirPdf(respuesta.data);
+    } catch {
+      notify('No se pudo generar la receta para imprimir. Intenta de nuevo.');
+    } finally {
+      setImprimiendo(false);
+    }
+  };
 
   const descargarPdf = async () => {
     setGenerandoPdf(true);
@@ -75,8 +91,13 @@ const RecetaDocumento = ({ receta: r, onVolver, onEliminada }) => {
           >
             <IconDownload /> {generandoPdf ? 'Generando…' : 'Descargar PDF'}
           </button>
-          <button type="button" className="btn btn-primary btn-md" onClick={() => window.print()}>
-            <IconPrinter /> Imprimir
+          <button
+            type="button"
+            className="btn btn-primary btn-md"
+            onClick={imprimir}
+            disabled={imprimiendo || generandoPdf}
+          >
+            <IconPrinter /> {imprimiendo ? 'Preparando…' : 'Imprimir'}
           </button>
         </div>
       </div>

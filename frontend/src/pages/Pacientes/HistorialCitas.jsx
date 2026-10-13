@@ -9,14 +9,22 @@ import './HistorialCitas.css';
 
 const FILTROS_INICIALES = { estado: '', desde: '', hasta: '' };
 
-// Estado (string) que devuelve CitaDto -> modificador de clase del badge.
-// Misma paleta que usa la agenda (Calendario) para cada estado de cita.
+// Estado (string) que devuelve CitaDto -> modificador de clase del badge y
+// de los filtros. Misma paleta que la agenda (Calendario) y su leyenda.
 const CLASE_POR_ESTADO = {
-  Pendiente: 'tag-pendiente',
-  Confirmada: 'tag-confirmada',
-  Atendida: 'tag-atendida',
-  Cancelada: 'tag-cancelada',
-  'No Asistio': 'tag-no-asistio',
+  Pendiente: 'pendiente',
+  Confirmada: 'confirmada',
+  Atendida: 'atendida',
+  Cancelada: 'cancelada',
+  'No Asistio': 'no-asistio',
+};
+
+const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+// "2026-10-05" -> partes para el mosaico de fecha de cada fila.
+const partesFecha = (iso) => {
+  const [anio, mes, dia] = (iso || '').split('-');
+  return { dia: Number(dia) || '—', mes: MESES_CORTO[Number(mes) - 1] || '', anio };
 };
 
 const HistorialCitas = ({ idPaciente }) => {
@@ -89,48 +97,81 @@ const HistorialCitas = ({ idPaciente }) => {
   return (
     <div className="hc">
       <div className="hc-filtros">
-        <div className="hc-filtro">
-          <label htmlFor="hc-desde">Desde</label>
-          <input
-            id="hc-desde"
-            type="date"
-            value={filtros.desde}
-            max={filtros.hasta || undefined}
-            onChange={(e) => cambiarFiltro('desde', e.target.value)}
-          />
+        <div className="hc-filtros-head">
+          <span className="hc-filtros-icono" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 5h16l-6.5 7.5V19l-3 1.5v-8z" />
+            </svg>
+          </span>
+          <span className="hc-filtros-titulo">Filtrar citas</span>
+          {!cargando && (
+            <span className="hc-contador">
+              {citas.length} cita{citas.length === 1 ? '' : 's'}
+            </span>
+          )}
+          <button
+            type="button"
+            className="hc-limpiar"
+            onClick={limpiarFiltros}
+            disabled={!hayFiltrosActivos}
+          >
+            Limpiar filtros
+          </button>
         </div>
 
-        <div className="hc-filtro">
-          <label htmlFor="hc-hasta">Hasta</label>
-          <input
-            id="hc-hasta"
-            type="date"
-            value={filtros.hasta}
-            min={filtros.desde || undefined}
-            onChange={(e) => cambiarFiltro('hasta', e.target.value)}
-          />
-        </div>
+        <div className="hc-filtros-cuerpo">
+          <div className="hc-filtro">
+            <label htmlFor="hc-desde">Desde</label>
+            <input
+              id="hc-desde"
+              type="date"
+              value={filtros.desde}
+              max={filtros.hasta || undefined}
+              onChange={(e) => cambiarFiltro('desde', e.target.value)}
+            />
+          </div>
 
-        <div className="hc-filtro">
-          <label htmlFor="hc-estado">Estado</label>
-          <select id="hc-estado" value={filtros.estado} onChange={(e) => cambiarFiltro('estado', e.target.value)}>
-            <option value="">Todos</option>
-            {estados.map((estado) => (
-              <option key={estado.id} value={estado.nombre}>
-                {estado.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div className="hc-filtro">
+            <label htmlFor="hc-hasta">Hasta</label>
+            <input
+              id="hc-hasta"
+              type="date"
+              value={filtros.hasta}
+              min={filtros.desde || undefined}
+              onChange={(e) => cambiarFiltro('hasta', e.target.value)}
+            />
+          </div>
 
-        <button
-          type="button"
-          className="btn btn-outline-teal btn-sm hc-limpiar"
-          onClick={limpiarFiltros}
-          disabled={!hayFiltrosActivos}
-        >
-          Limpiar filtros
-        </button>
+          {/* Estado como botones de color en lugar de un dropdown: se ve de un
+              vistazo qué estados existen y cuál está filtrado. */}
+          <div className="hc-filtro hc-filtro-estados">
+            <span className="hc-filtro-label">Estado</span>
+            <div className="hc-estados" role="group" aria-label="Filtrar por estado">
+              <button
+                type="button"
+                className={`hc-chip${filtros.estado === '' ? ' activo' : ''}`}
+                aria-pressed={filtros.estado === ''}
+                onClick={() => cambiarFiltro('estado', '')}
+              >
+                Todos
+              </button>
+              {estados.map((estado) => (
+                <button
+                  type="button"
+                  key={estado.id}
+                  className={`hc-chip ${CLASE_POR_ESTADO[estado.nombre] || ''}${
+                    filtros.estado === estado.nombre ? ' activo' : ''
+                  }`}
+                  aria-pressed={filtros.estado === estado.nombre}
+                  onClick={() => cambiarFiltro('estado', estado.nombre)}
+                >
+                  <span className="hc-chip-punto" aria-hidden="true" />
+                  {estado.nombre === 'No Asistio' ? 'No asistió' : estado.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {cargando ? (
@@ -165,11 +206,23 @@ const HistorialCitas = ({ idPaciente }) => {
           <tbody>
             {citas.map((cita) => (
               <tr key={cita.idCita}>
-                <td>{formatDate(cita.fecha)}</td>
-                <td className="hc-hora">{formatearRangoHora(cita.hora, cita.duracionMinutos)}</td>
+                <td>
+                  <div className="hc-fecha" title={formatDate(cita.fecha)}>
+                    <span className="hc-fecha-dia">{partesFecha(cita.fecha).dia}</span>
+                    <span className="hc-fecha-mes">
+                      {partesFecha(cita.fecha).mes} {partesFecha(cita.fecha).anio}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <span className="hc-hora">{formatearRangoHora(cita.hora, cita.duracionMinutos)}</span>
+                </td>
                 <td>{cita.nombreOdontologo}</td>
                 <td>
-                  <span className={`tag ${CLASE_POR_ESTADO[cita.estado] || ''}`}>{cita.estado}</span>
+                  <span className={`hc-estado ${CLASE_POR_ESTADO[cita.estado] || ''}`}>
+                    <span className="hc-chip-punto" aria-hidden="true" />
+                    {cita.estado === 'No Asistio' ? 'No asistió' : cita.estado}
+                  </span>
                 </td>
                 <td className="hc-notas">{cita.notasAdicionales || '—'}</td>
                 <td className="hc-acciones">

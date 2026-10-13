@@ -105,7 +105,7 @@ Usar una key distinta en local y en producción.
 ## Probar en local
 
 Requisitos: la base local con las migraciones aplicadas (`dotnet ef database update`
-desde `backend/`, o `backend/src/db/PeredentScript_Sprint5.sql`) y la app corriendo:
+desde `backend/`, o `backend/src/db/PeredentScript_Sprint5_RecordatoriosWhatsApp.sql`) y la app corriendo:
 
 ```bash
 cd backend
@@ -197,7 +197,7 @@ si el repositorio es público, sus logs también lo son.
 
 ## Pendientes para producción
 
-- [ ] Aplicar `backend/src/db/PeredentScript_Sprint5.sql` en la base de Somee
+- [ ] Aplicar `backend/src/db/PeredentScript_Sprint5_RecordatoriosWhatsApp.sql` en la base de Somee
       **antes** de desplegar el backend (sin las columnas nuevas, todo endpoint
       que lea Paciente o Citas falla con "Invalid column name").
 - [ ] Generar un **token permanente de System User** en Meta Business (el temporal dura 24 h).

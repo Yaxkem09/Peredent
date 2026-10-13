@@ -3,13 +3,15 @@ import { formatCurrency, formatDate } from '../../utils/formatters';
 import { planTratamientoService } from '../../services/plan-tratamiento.service';
 import { Alert, EmptyState, Loader } from '../../components/common';
 import { useNotification } from '../../hooks/useNotification';
+import { imprimirPdf } from '../../utils/imprimirPdf';
 import './Presupuesto.css';
 
 // SCRUM-77: vista del presupuesto que el paciente revisa y firma. El detalle de
 // piezas, tratamientos y valores sale del plan de tratamiento reciente (SCRUM-79)
 // y se vuelve a pedir cada vez que se abre la pestaña, así que refleja los
 // últimos cambios guardados en el plan (SCRUM-205). Incluye la leyenda de
-// conformidad (SCRUM-80) y el botón para exportar en PDF (SCRUM-78).
+// conformidad (SCRUM-80) y los botones para exportar en PDF (SCRUM-78) o
+// imprimir directamente ese mismo PDF.
 
 // El backend manda el nombre en Content-Disposition; si por CORS no llega, se
 // usa este como respaldo.
@@ -27,6 +29,7 @@ const PresupuestoTab = ({ idPaciente }) => {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [descargando, setDescargando] = useState(false);
+  const [imprimiendo, setImprimiendo] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -69,6 +72,18 @@ const PresupuestoTab = ({ idPaciente }) => {
     }
   };
 
+  const imprimir = async () => {
+    setImprimiendo(true);
+    try {
+      const respuesta = await planTratamientoService.descargarPresupuestoPdf(idPaciente);
+      imprimirPdf(respuesta.data);
+    } catch {
+      notify('No se pudo generar el presupuesto para imprimir. Intenta de nuevo.');
+    } finally {
+      setImprimiendo(false);
+    }
+  };
+
   if (cargando) return <Loader />;
   if (error) return <Alert type="error">{error}</Alert>;
   if (!presupuesto) return null;
@@ -94,11 +109,24 @@ const PresupuestoTab = ({ idPaciente }) => {
       <div className="presupuesto-acciones">
         <button
           type="button"
-          className="btn btn-primary btn-md"
+          className="btn btn-outline-teal btn-md"
           onClick={descargarPdf}
-          disabled={descargando}
+          disabled={descargando || imprimiendo}
         >
           {descargando ? 'Generando PDF…' : 'Descargar PDF'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary btn-md"
+          onClick={imprimir}
+          disabled={descargando || imprimiendo}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 9V2h12v7" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+          {imprimiendo ? 'Preparando…' : 'Imprimir'}
         </button>
       </div>
 

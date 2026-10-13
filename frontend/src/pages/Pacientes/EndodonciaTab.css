@@ -1,39 +1,462 @@
-.endo-subtitle { color: #6b7280; font-size: 0.85rem; margin: 0.25rem 0 1rem; }
-
-.endo-table-wrapper { overflow-x: auto; margin-bottom: 1rem; }
-.endo-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
-.endo-table th {
-  text-align: left;
-  padding: 0.4rem 0.5rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
-}
-.endo-table td { padding: 0.4rem 0.5rem; vertical-align: middle; }
-.endo-table tr:not(:last-child) td { border-bottom: 1px solid #f3f4f6; }
-
-.endo-select { width: 70px; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.85rem; }
-.endo-input-num { width: 60px; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.85rem; text-align: right; }
-.endo-input-text { width: 120px; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.85rem; }
-.endo-btn-remove { background: none; border: none; cursor: pointer; color: #9ca3af; font-size: 1.1rem; padding: 0 0.25rem; }
-.endo-btn-remove:hover { color: #ef4444; }
-
-.endo-section { margin-top: 1.25rem; }
-.endo-checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.9rem; }
-.endo-obs-label { display: block; font-size: 0.8rem; color: #6b7280; margin-bottom: 0.4rem; }
-.endo-textarea { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; resize: vertical; margin-top: 0.5rem; box-sizing: border-box; }
-.protesis-indicaciones {
+/* Endodoncia y restauración: dos tarjetas (Endodoncia, Prótesis) con el color
+   del grupo Tratamientos (turquesa). */
+.endo {
+  --endo: #0f7f88;
+  --endo-soft: #e1f2f3;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  background: var(--surface-alt);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  gap: 18px;
 }
 
-.protesis-checkboxes {
+.endo-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 24px 24px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 10px 24px -18px rgba(10, 38, 75, 0.45);
+}
+
+.endo-card-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.endo-card-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%);
+  color: #ffffff;
+}
+
+.endo-card-titulos {
+  flex: 1;
+  min-width: 0;
+}
+
+.endo-card-titulo {
+  margin: 0;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.endo-subtitle {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.endo-contador {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--endo-soft);
+  color: var(--endo);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* Tabla de medidas */
+.endo-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.endo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.endo-table th {
+  padding: 11px 12px;
+  background: var(--endo-soft);
+  color: var(--endo);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.endo-table td {
+  padding: 9px 12px;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.endo-table tbody tr:hover td {
+  background: #f7fafb;
+}
+
+.endo-vacio {
+  padding: 22px 12px !important;
+  text-align: center;
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+.endo-select,
+.endo-input-num,
+.endo-input-text {
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.endo-select {
+  width: 78px;
+  font-weight: 600;
+}
+
+.endo-input-num {
+  width: 72px;
+  text-align: right;
+}
+
+.endo-input-text {
+  width: 150px;
+}
+
+.endo-select:focus,
+.endo-input-num:focus,
+.endo-input-text:focus,
+.endo-textarea:focus {
+  outline: none;
+  border-color: var(--endo);
+  box-shadow: 0 0 0 3px var(--endo-soft);
+}
+
+.endo-check {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--endo);
+}
+
+.endo-btn-remove {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--coral-soft);
+  border-radius: 8px;
+  background: var(--coral-soft);
+  color: var(--coral);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.endo-btn-remove:hover {
+  background: var(--coral);
+  color: #ffffff;
+}
+
+.endo-agregar {
+  margin-bottom: 18px;
+}
+
+/* Paneles inferiores (Tx periodontal, observaciones) */
+.endo-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.endo-panel {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f7fafb;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.endo-panel.activo {
+  border-color: color-mix(in srgb, var(--endo) 45%, transparent);
+  background: var(--endo-soft);
+}
+
+.endo-panel-full {
+  margin-top: 16px;
+}
+
+.endo-panel-ayuda {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.endo-obs-label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.endo-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13.5px;
+  resize: vertical;
+}
+
+/* Interruptor de Tx Periodontal */
+.endo-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.endo-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.endo-switch-pista {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 22px;
+  background: #c8d2dc;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.endo-switch-pista::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.endo-switch input:checked + .endo-switch-pista {
+  background: var(--endo);
+}
+
+.endo-switch input:checked + .endo-switch-pista::after {
+  transform: translateX(18px);
+}
+
+.endo-switch input:focus-visible + .endo-switch-pista {
+  box-shadow: 0 0 0 3px var(--endo-soft);
+}
+
+.endo-switch-texto {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.endo-acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+/* Indicaciones de prótesis: opciones seleccionables tipo tarjeta */
+.protesis-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.protesis-opcion {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.protesis-opcion:hover {
+  border-color: color-mix(in srgb, var(--endo) 45%, transparent);
+}
+
+.protesis-opcion.activa {
+  border-color: var(--endo);
+  background: var(--endo-soft);
+}
+
+.protesis-opcion input {
+  grid-row: span 2;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--endo);
+}
+
+.protesis-opcion-etiqueta {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.protesis-opcion-desc {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ---- Recuadros internos con más color ---- */
+
+/* Pieza: insignia azul marino en lugar de un select gris. */
+.endo-select {
+  border-color: transparent;
+  background-color: #e3e9f3;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.endo-input-num,
+.endo-input-text {
+  background: #f7fafb;
+}
+
+.endo-table tbody tr td:first-child {
+  border-left: 3px solid transparent;
+}
+
+.endo-table tbody tr:hover td:first-child {
+  border-left-color: var(--endo);
+}
+
+/* Paneles: encabezado con ícono y fondo degradado suave de su color. */
+.endo-panel {
+  padding: 14px 16px 16px;
+  border-radius: 14px;
+}
+
+.endo-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.endo-panel-icono {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+.endo-panel-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.endo-panel-tx {
+  background: linear-gradient(160deg, #e1f2f3 0%, var(--surface) 70%);
+  border-color: color-mix(in srgb, var(--endo) 30%, transparent);
+}
+
+.endo-panel-tx .endo-panel-icono {
+  background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%);
+}
+
+.endo-panel-tx.activo {
+  background: linear-gradient(160deg, #cdeced 0%, #ecf8f8 100%);
+  border-color: var(--endo);
+}
+
+.endo-panel-obs {
+  background: linear-gradient(160deg, #e3e9f3 0%, var(--surface) 70%);
+  border-color: #c9d3e1;
+}
+
+.endo-panel-obs .endo-panel-icono {
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+}
+
+/* Opciones de prótesis: tarjeta con check de color; al marcarla se pinta
+   completa del color del grupo. */
+.protesis-opcion {
+  position: relative;
+  padding: 14px 16px 14px 14px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #f2fafa 0%, var(--surface) 80%);
+  border-color: color-mix(in srgb, var(--endo) 25%, transparent);
+  box-shadow: 0 6px 14px -12px rgba(10, 38, 75, 0.5);
+}
+
+.protesis-opcion input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.protesis-opcion-check {
+  grid-row: span 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  border: 2px solid color-mix(in srgb, var(--endo) 45%, transparent);
+  background: var(--surface);
+  color: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.protesis-opcion.activa {
+  background: linear-gradient(135deg, #0f7f88 0%, #2bb5ad 100%);
+  border-color: transparent;
+  box-shadow: 0 10px 18px -12px rgba(15, 127, 136, 0.9);
+}
+
+.protesis-opcion.activa .protesis-opcion-check {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--endo);
+}
+
+.protesis-opcion.activa .protesis-opcion-etiqueta,
+.protesis-opcion.activa .protesis-opcion-desc {
+  color: #ffffff;
+}
+
+.protesis-opcion input:focus-visible ~ .protesis-opcion-check {
+  box-shadow: 0 0 0 3px var(--endo-soft);
 }
