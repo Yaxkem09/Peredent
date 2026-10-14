@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { planTratamientoService } from '../../services/plan-tratamiento.service';
-import { Alert, EmptyState, Loader } from '../../components/common';
+import { Alert, EmptyState, Loader, Modal } from '../../components/common';
 import { useNotification } from '../../hooks/useNotification';
 import './TratamientoPendiente.css';
 
@@ -12,6 +12,9 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
   const [error, setError] = useState(null);
   const [errorCompletar, setErrorCompletar] = useState(null);
   const [completando, setCompletando] = useState(null);
+  // Guardo la pieza de la fila sobre la que se hizo clic (no un simple booleano)
+  // porque el pop-up necesita mostrar su número exacto; null = modal cerrado.
+  const [piezaAConfirmar, setPiezaAConfirmar] = useState(null);
   // Solo se listan las piezas del plan actual, así que basta ordenarlas por
   // número de pieza ("5b", "21l": número inicial y la etiqueta como desempate).
   const pendientesOrdenados = useMemo(
@@ -46,6 +49,12 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
       activo = false;
     };
   }, [idPaciente]);
+
+  const confirmarCompletar = () => {
+    const pieza = piezaAConfirmar;
+    setPiezaAConfirmar(null);
+    completar(pieza);
+  };
 
   const completar = async (pieza) => {
     setErrorCompletar(null);
@@ -140,7 +149,7 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
                 <button
                   type="button"
                   className="tx-completar"
-                  onClick={() => completar(p.pieza)}
+                  onClick={() => setPiezaAConfirmar(p.pieza)}
                   disabled={completando === p.pieza}
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -153,6 +162,28 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
           ))}
         </tbody>
       </table>
+
+      <Modal
+        open={piezaAConfirmar !== null}
+        onClose={() => setPiezaAConfirmar(null)}
+        title={`¿Confirma que se terminó el tratamiento en la pieza ${piezaAConfirmar}?`}
+        icon={
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+          </svg>
+        }
+        footer={
+          <>
+            <button type="button" className="btn btn-secondary btn-md" onClick={() => setPiezaAConfirmar(null)}>
+              Cancelar
+            </button>
+            <button type="button" className="btn btn-primary btn-md" onClick={confirmarCompletar}>
+              Confirmar
+            </button>
+          </>
+        }
+      />
     </div>
   );
 };
