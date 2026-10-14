@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Peredent.Api.Data;
 using Peredent.Api.DTOs.Request;
@@ -126,9 +127,10 @@ public class WhatsAppWebhookServiceTests
         return payload;
     }
 
-    private static WhatsAppWebhookService CrearServicio(ApplicationDbContext db, IWhatsAppService whatsApp, ClinicaOptions? clinica = null) =>
+    private static WhatsAppWebhookService CrearServicio(
+        ApplicationDbContext db, IWhatsAppService whatsApp, ClinicaOptions? clinica = null, ILogger<WhatsAppWebhookService>? logger = null) =>
         new(db, whatsApp, Microsoft.Extensions.Options.Options.Create(clinica ?? new ClinicaOptions()),
-            NullLogger<WhatsAppWebhookService>.Instance);
+            logger ?? NullLogger<WhatsAppWebhookService>.Instance);
 
     private static Task Procesar(ApplicationDbContext db, IWhatsAppService whatsApp, WhatsAppWebhookPayload payload, ClinicaOptions? clinica = null) =>
         CrearServicio(db, whatsApp, clinica).ProcesarAsync(payload, CancellationToken.None);
@@ -451,5 +453,54 @@ public class WhatsAppWebhookServiceTests
         var guardada = Releer(db, cita.IdCita);
         Assert.Equal("Modificar", guardada.RespuestaPaciente);
         Assert.Equal(IdPendiente, guardada.IdEstadoCita);
+    }
+
+    // ---------- Logs ----------
+
+    [Fact]
+    public async Task Logs_NuncaIncluyenWamidCompletosNiElTelefono()
+    {
+        using var db = CrearContexto();
+        await SembrarCitaAsync(db, IdPendiente, recordatorioId: WamidsDePrueba.Recordatorio);
+        var whatsApp = new FakeWhatsAppService();
+        var logger = new LoggerCapturado<WhatsAppWebhookService>();
+        var servicio = CrearServicio(db, whatsApp, logger: logger);
+        var ct = CancellationToken.None;
+
+        // Recorre los 4 logs que llevan un wamid:
+        // 1. contexto desconocido (no hay cita con ese recordatorio)
+        await servicio.ProcesarAsync(Boton(Confirmar, contextoId: WamidsDePrueba.Desconocido, id: "wamid.OTRO1234567"), ct);
+        // 2. respuesta válida y su duplicado
+        await servicio.ProcesarAsync(Boton(Confirmar, contextoId: WamidsDePrueba.Recordatorio, id: WamidsDePrueba.Respuesta), ct);
+        await servicio.ProcesarAsync(Boton(Confirmar, contextoId: WamidsDePrueba.Recordatorio, id: WamidsDePrueba.Respuesta), ct);
+        // 3. status (log Debug)
+        var value = new WhatsAppWebhookValue();
+        value.Statuses.Add(new WhatsAppWebhookStatus { Id = WamidsDePrueba.Recordatorio, Status = "read", RecipientId = TelefonoPaciente });
+        await servicio.ProcesarAsync(ConValue(value), ct);
+        // 4. error al procesar un mensaje (falla el envío de la respuesta)
+        whatsApp.Lanzar = new InvalidOperationException("fallo de prueba");
+        await servicio.ProcesarAsync(Boton(Modificar, contextoId: WamidsDePrueba.Recordatorio, id: WamidsDePrueba.Desconocido), ct);
+
+        var texto = logger.TodoElTexto;
+        Assert.Contains("no hay cita", texto);
+        Assert.Contains("webhook duplicado", texto);
+        Assert.Contains("estado read", texto);
+        Assert.Contains("Error al procesar", texto);
+        Assert.Contains(WamidWhatsApp.Enmascarar(WamidsDePrueba.Respuesta), texto);
+
+        foreach (var wamid in new[] { WamidsDePrueba.Recordatorio, WamidsDePrueba.Respuesta, WamidsDePrueba.Desconocido })
+        {
+            Assert.DoesNotContain(wamid, texto);
+        }
+
+        Assert.DoesNotContain(WamidsDePrueba.TelefonoBase64, texto);
+        Assert.DoesNotContain(TelefonoPaciente, texto);
+
+        // La base sigue guardando los wamid completos (la última respuesta, el
+        // "Modificar" del paso 4, se guardó antes de que fallara el envío).
+        db.ChangeTracker.Clear();
+        var cita = await db.Citas.SingleAsync();
+        Assert.Equal(WamidsDePrueba.Recordatorio, cita.RecordatorioMessageId);
+        Assert.Equal(WamidsDePrueba.Desconocido, cita.RespuestaMessageId);
     }
 }

@@ -60,7 +60,7 @@ public class WhatsAppService : IWhatsAppService
             if (response.IsSuccessStatusCode)
             {
                 var messageId = ExtraerMessageId(contenido);
-                _logger.LogInformation("WhatsApp ({Tipo}) enviado a {Telefono}: {MessageId}", tipo, telefonoEnmascarado, messageId);
+                _logger.LogInformation("WhatsApp ({Tipo}) enviado a {Telefono}: {MessageId}", tipo, telefonoEnmascarado, WamidWhatsApp.Enmascarar(messageId));
                 return WhatsAppEnvioResultado.Ok(messageId);
             }
 

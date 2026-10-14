@@ -44,7 +44,7 @@ public class WhatsAppWebhookService : IWhatsAppWebhookService
 
         foreach (var estado in values.SelectMany(v => v.Statuses))
         {
-            _logger.LogDebug("Webhook WhatsApp: estado {Estado} del mensaje {MessageId} ignorado", estado.Status, estado.Id);
+            _logger.LogDebug("Webhook WhatsApp: estado {Estado} del mensaje {MessageId} ignorado", estado.Status, WamidWhatsApp.Enmascarar(estado.Id));
         }
 
         foreach (var mensaje in values.SelectMany(v => v.Messages))
@@ -69,7 +69,7 @@ public class WhatsAppWebhookService : IWhatsAppWebhookService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al procesar la respuesta {MessageId} del webhook de WhatsApp", mensaje.Id);
+                _logger.LogError(ex, "Error al procesar la respuesta {MessageId} del webhook de WhatsApp", WamidWhatsApp.Enmascarar(mensaje.Id));
             }
         }
     }
@@ -89,13 +89,13 @@ public class WhatsAppWebhookService : IWhatsAppWebhookService
         {
             _logger.LogWarning(
                 "Respuesta de {Telefono} ignorada: no hay cita con el recordatorio {RecordatorioId}",
-                telefonoEnmascarado, idRecordatorio);
+                telefonoEnmascarado, WamidWhatsApp.Enmascarar(idRecordatorio));
             return;
         }
 
         if (!string.IsNullOrEmpty(mensaje.Id) && cita.RespuestaMessageId == mensaje.Id)
         {
-            _logger.LogInformation("Respuesta {MessageId} de la cita {IdCita} ya procesada (webhook duplicado)", mensaje.Id, cita.IdCita);
+            _logger.LogInformation("Respuesta {MessageId} de la cita {IdCita} ya procesada (webhook duplicado)", WamidWhatsApp.Enmascarar(mensaje.Id), cita.IdCita);
             return;
         }
 

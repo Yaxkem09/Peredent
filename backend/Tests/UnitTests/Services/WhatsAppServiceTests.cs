@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Peredent.Api.Helpers;
 using Peredent.Api.Options;
 using Peredent.Api.Services;
 using Xunit;
@@ -54,13 +56,13 @@ public class WhatsAppServiceTests
         TemplateLanguage = "es",
     };
 
-    private static WhatsAppService CrearServicio(FakeHttpMessageHandler handler, WhatsAppOptions? opciones = null)
+    private static WhatsAppService CrearServicio(FakeHttpMessageHandler handler, WhatsAppOptions? opciones = null, ILogger<WhatsAppService>? logger = null)
     {
         var httpClient = new HttpClient(handler) { BaseAddress = new Uri("https://graph.facebook.com/") };
         return new WhatsAppService(
             httpClient,
             Microsoft.Extensions.Options.Options.Create(opciones ?? OpcionesValidas()),
-            NullLogger<WhatsAppService>.Instance);
+            logger ?? NullLogger<WhatsAppService>.Instance);
     }
 
     private static Task<WhatsAppEnvioResultado> Enviar(WhatsAppService servicio, CancellationToken ct = default) =>
@@ -258,5 +260,26 @@ public class WhatsAppServiceTests
 
         Assert.False(resultado.Exitoso);
         Assert.Equal(0, handler.Llamadas);
+    }
+
+    // ---------- Logs ----------
+
+    [Fact]
+    public async Task Logs_NoIncluyenElWamidCompletoNiElTelefono()
+    {
+        var handler = FakeHttpMessageHandler.Responde(HttpStatusCode.OK,
+            $$"""{"messages":[{"id":"{{WamidsDePrueba.Recordatorio}}"}]}""");
+        var logger = new LoggerCapturado<WhatsAppService>();
+
+        var resultado = await Enviar(CrearServicio(handler, logger: logger));
+
+        // En el resultado (lo que se guarda en la base) el wamid va completo.
+        Assert.Equal(WamidsDePrueba.Recordatorio, resultado.MessageId);
+
+        var texto = logger.TodoElTexto;
+        Assert.Contains(WamidWhatsApp.Enmascarar(WamidsDePrueba.Recordatorio), texto);
+        Assert.DoesNotContain(WamidsDePrueba.Recordatorio, texto);
+        Assert.DoesNotContain(WamidsDePrueba.TelefonoBase64, texto);
+        Assert.DoesNotContain("50251234567", texto);
     }
 }
