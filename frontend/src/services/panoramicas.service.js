@@ -13,6 +13,12 @@ export const panoramicasService = {
     return data;
   },
 
+  // Contenido de un documento Word (Blob) para la vista previa.
+  obtenerContenido: async (id) => {
+    const { data } = await api.get(`/panoramicas/${id}/contenido`, { responseType: 'blob' });
+    return data;
+  },
+
   eliminar: async (id) => {
     await api.delete(`/panoramicas/${id}`);
   },

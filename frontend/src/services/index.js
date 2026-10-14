@@ -13,3 +13,4 @@ export { recetarioService } from './recetario.service';
 export { panoramicasService } from './panoramicas.service';
 export { protesisService } from './protesis.service';export { consentimientosService } from './consentimientos.service';
 export { abonosService } from './abonos.service';
+export { constanciasService } from './constancias.service';
