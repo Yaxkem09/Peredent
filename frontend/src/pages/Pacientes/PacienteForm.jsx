@@ -15,12 +15,20 @@ const CAMPOS_INICIALES = {
   fechaNacimiento: '',
   sexo: 'Femenino',
   telefono: '',
+  telefonoSecundario: '',
   correo: '',
   nit: '',
   direccion: '',
   encargadoNombre: '',
   encargadoTelefono: '',
 };
+
+// Teléfonos de Guatemala: 8 dígitos, un número por campo (el backend valida lo
+// mismo). Antes se escribían dos números en el mismo campo ("42246235\ 34401287").
+const TELEFONO_DIGITOS = 8;
+const TELEFONO_VALIDO = /^\d{8}$/;
+const CAMPOS_TELEFONO = ['telefono', 'telefonoSecundario', 'encargadoTelefono'];
+const MENSAJE_TELEFONO_FORMATO = `El teléfono debe tener ${TELEFONO_DIGITOS} dígitos.`;
 
 // El NIT es opcional: si se deja vacío se guarda como consumidor final ("CF").
 const NIT_CONSUMIDOR_FINAL = 'CF';
@@ -188,6 +196,7 @@ const PacienteForm = () => {
           fechaNacimiento: data.fechaNacimiento?.slice(0, 10) || '',
           sexo: data.sexo || 'Femenino',
           telefono: data.telefono || '',
+          telefonoSecundario: data.telefonoSecundario || '',
           correo: data.correo || '',
           // "CF" es el valor por defecto; se deja el campo vacío para no forzar al usuario a borrarlo.
           nit: data.nit && data.nit.toUpperCase() !== NIT_CONSUMIDOR_FINAL ? data.nit : '',
@@ -232,6 +241,41 @@ const PacienteForm = () => {
     }
   };
 
+  // "Agregar otro teléfono": el campo se abre con el botón o, solo, cuando el
+  // paciente ya tiene un segundo número (edición o al pegar dos números).
+  const [agregandoTelefono, setAgregandoTelefono] = useState(false);
+  const mostrarSegundoTelefono = agregandoTelefono || datos.telefonoSecundario !== '';
+
+  const quitarSegundoTelefono = () => {
+    setAgregandoTelefono(false);
+    setDatos((prev) => ({ ...prev, telefonoSecundario: '' }));
+    setErrores((prev) => ({ ...prev, telefonoSecundario: false }));
+    document.getElementById('telefono')?.focus();
+  };
+
+  // En los teléfonos solo se aceptan dígitos (máx. 8). Si pegan dos números en
+  // "Teléfono" ("42246235 34401287") y "Teléfono 2" está vacío, el segundo se
+  // pasa solo a ese campo.
+  const handleTelefono = (e) => {
+    const { name, value } = e.target;
+    const digitos = value.replace(/\D/g, '');
+    const separa = name === 'telefono' && digitos.length > TELEFONO_DIGITOS && datos.telefonoSecundario === '';
+
+    setDatos((prev) =>
+      separa
+        ? {
+            ...prev,
+            telefono: digitos.slice(0, TELEFONO_DIGITOS),
+            telefonoSecundario: digitos.slice(TELEFONO_DIGITOS, TELEFONO_DIGITOS * 2),
+          }
+        : { ...prev, [name]: digitos.slice(0, TELEFONO_DIGITOS) },
+    );
+
+    if (errores[name] || (separa && errores.telefonoSecundario)) {
+      setErrores((prev) => ({ ...prev, [name]: false, ...(separa ? { telefonoSecundario: false } : {}) }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -247,22 +291,39 @@ const PacienteForm = () => {
       if (esMenor) camposRequeridos.push('encargadoNombre', 'encargadoTelefono');
 
       const nuevosErrores = {};
-      let esValido = true;
+      let faltanRequeridos = false;
       camposRequeridos.forEach((campo) => {
         const vacio = datos[campo].trim() === '';
         nuevosErrores[campo] = vacio;
-        if (vacio) esValido = false;
+        if (vacio) faltanRequeridos = true;
+      });
+
+      // Un teléfono escrito tiene que ser un solo número de 8 dígitos (el del
+      // encargado solo cuenta si el paciente es menor).
+      let telefonoMalFormado = false;
+      CAMPOS_TELEFONO.forEach((campo) => {
+        if (campo === 'encargadoTelefono' && !esMenor) return;
+        const valor = datos[campo].trim();
+        if (valor !== '' && !TELEFONO_VALIDO.test(valor)) {
+          nuevosErrores[campo] = MENSAJE_TELEFONO_FORMATO;
+          telefonoMalFormado = true;
+        }
       });
       setErrores(nuevosErrores);
 
-      if (!esValido) {
-        const primerInvalido = camposRequeridos.find((campo) => nuevosErrores[campo]);
+      if (faltanRequeridos || telefonoMalFormado) {
+        const orden = ['nombres', 'apellidos', 'fechaNacimiento', 'telefono', 'telefonoSecundario', 'encargadoNombre', 'encargadoTelefono'];
+        const primerInvalido = orden.find((campo) => nuevosErrores[campo]);
         document.getElementById(primerInvalido)?.focus();
-        setError(
-          esMenor
-            ? 'Completa nombre, apellidos, fecha de nacimiento, teléfono y los datos del encargado antes de guardar.'
-            : 'No se puede guardar sin nombre, apellidos, fecha de nacimiento y al menos un teléfono.',
-        );
+        if (faltanRequeridos) {
+          setError(
+            esMenor
+              ? 'Completa nombre, apellidos, fecha de nacimiento, teléfono y los datos del encargado antes de guardar.'
+              : 'No se puede guardar sin nombre, apellidos, fecha de nacimiento y al menos un teléfono.',
+          );
+        } else {
+          setError(`Revisa los teléfonos: cada uno debe ser un solo número de ${TELEFONO_DIGITOS} dígitos.`);
+        }
         return;
       }
 
@@ -391,16 +452,67 @@ const PacienteForm = () => {
 
         <Seccion icono="contacto" titulo="Contacto">
           <div className="pf-grid">
-            <Campo id="telefono" label="Teléfono" requerido error={errores.telefono} mensajeError="Ingresa al menos un teléfono.">
+            <Campo
+              id="telefono"
+              label="Teléfono"
+              requerido
+              error={errores.telefono}
+              mensajeError={typeof errores.telefono === 'string' ? errores.telefono : 'Ingresa al menos un teléfono.'}
+            >
               <input
                 id="telefono"
                 name="telefono"
                 type="tel"
-                inputMode="tel"
-                placeholder="Ej. 5512 3344"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="Ej. 55123344"
                 value={datos.telefono}
-                onChange={handleChange}
+                onChange={handleTelefono}
               />
+              {/* El segundo número queda escondido detrás de un botón: la mayoría
+                  de pacientes solo tiene uno. Se muestra solo si ya tiene valor. */}
+              {mostrarSegundoTelefono ? (
+                <div className={`pf-tel-extra${errores.telefonoSecundario ? ' pf-invalid' : ''}`}>
+                  <div className="pf-tel-extra-fila">
+                    <input
+                      id="telefonoSecundario"
+                      name="telefonoSecundario"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      aria-label="Otro teléfono"
+                      placeholder="Otro teléfono, ej. 44556677"
+                      value={datos.telefonoSecundario}
+                      onChange={handleTelefono}
+                      autoFocus={agregandoTelefono && datos.telefonoSecundario === ''}
+                    />
+                    <button
+                      type="button"
+                      className="pf-tel-quitar"
+                      onClick={quitarSegundoTelefono}
+                      aria-label="Quitar el otro teléfono"
+                      title="Quitar el otro teléfono"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18" />
+                      </svg>
+                    </button>
+                  </div>
+                  {errores.telefonoSecundario && (
+                    <div className="pf-warn" role="alert">
+                      <IconoAlerta />
+                      {errores.telefonoSecundario}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button type="button" className="pf-tel-agregar" onClick={() => setAgregandoTelefono(true)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Agregar otro teléfono
+                </button>
+              )}
             </Campo>
             <Campo id="correo" label="Correo electrónico" opcional>
               <input
@@ -465,16 +577,21 @@ const PacienteForm = () => {
                 label="Teléfono del encargado"
                 requerido
                 error={errores.encargadoTelefono}
-                mensajeError="Obligatorio para pacientes menores de edad."
+                mensajeError={
+                  typeof errores.encargadoTelefono === 'string'
+                    ? errores.encargadoTelefono
+                    : 'Obligatorio para pacientes menores de edad.'
+                }
               >
                 <input
                   id="encargadoTelefono"
                   name="encargadoTelefono"
                   type="tel"
-                  inputMode="tel"
-                  placeholder="Ej. 5512 3344"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="Ej. 55123344"
                   value={datos.encargadoTelefono}
-                  onChange={handleChange}
+                  onChange={handleTelefono}
                 />
               </Campo>
             </div>

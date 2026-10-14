@@ -9,4 +9,8 @@ public class RegistrarAbonoDto
     // Plan sobre el que se abona. Opcional: si no viene se usa el plan activo.
     // Permite abonar también a un plan ya cerrado que quedó con saldo pendiente.
     public int? IdPresupuestoPlan { get; set; }
+
+    // SCRUM-276 / SCRUM-277: método de pago obligatorio. Es nullable solo para
+    // poder distinguir "no lo mandó" y responder 400 con un mensaje claro.
+    public int? IdMetodoPago { get; set; }
 }

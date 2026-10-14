@@ -289,6 +289,9 @@ const DatosTab = ({ paciente, idPaciente }) => {
         <section className="ficha-bloque">
           <h4 className="ficha-bloque-titulo">Contacto</h4>
           <Dato icono="telefono" label="Teléfono" valor={paciente.telefono} />
+          {paciente.telefonoSecundario && (
+            <Dato icono="telefono" label="Teléfono 2" valor={paciente.telefonoSecundario} />
+          )}
           <Dato icono="correo" label="Correo" valor={paciente.correo} vacio="Sin correo" />
           <Dato icono="direccion" label="Dirección" valor={paciente.direccion} vacio="Sin dirección" />
         </section>

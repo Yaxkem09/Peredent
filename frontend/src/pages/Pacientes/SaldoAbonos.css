@@ -451,7 +451,8 @@
   color: var(--ink);
 }
 
-.saldo-form-campo input {
+.saldo-form-campo input,
+.saldo-form-campo select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -462,7 +463,8 @@
   box-sizing: border-box;
 }
 
-.saldo-form-campo input:focus {
+.saldo-form-campo input:focus,
+.saldo-form-campo select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
@@ -634,6 +636,18 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
+}
+
+/* SCRUM-278: método de pago del abono en el historial. */
+.saldo-metodo {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .saldo-monto {

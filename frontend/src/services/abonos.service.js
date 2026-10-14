@@ -16,12 +16,20 @@ export const abonosService = {
     return data;
   },
 
-  // SCRUM-64: el cliente manda el monto y el plan sobre el que abona (activo o
-  // un plan cerrado con saldo pendiente); la fecha y el usuario los pone el backend.
-  registrar: async (pacienteId, monto, idPresupuestoPlan) => {
+  // SCRUM-276: opciones del campo "Método de pago" (Efectivo / Transferencia).
+  getMetodosPago: async () => {
+    const { data } = await api.get('/metodos-pago');
+    return data;
+  },
+
+  // SCRUM-64: el cliente manda el monto, el método de pago (SCRUM-276) y el plan
+  // sobre el que abona (activo o un plan cerrado con saldo pendiente); la fecha y
+  // el usuario los pone el backend.
+  registrar: async (pacienteId, monto, idPresupuestoPlan, idMetodoPago) => {
     const { data } = await api.post(`/pacientes/${pacienteId}/abonos`, {
       monto,
       idPresupuestoPlan: idPresupuestoPlan ?? null,
+      idMetodoPago,
     });
     return data;
   },

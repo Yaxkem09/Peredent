@@ -115,6 +115,7 @@ return (
                         <path d="M4.5 3.5h3.5l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3.5a1.5 1.5 0 0 1-1.6 1.5C10.5 19 5 13.5 3 6.1A1.5 1.5 0 0 1 4.5 3.5Z" />
                       </svg>
                       {paciente.telefono || 'Sin teléfono'}
+                      {paciente.telefonoSecundario && ` · ${paciente.telefonoSecundario}`}
                     </span>
                     <span className="patient-meta-item meta-registro">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">

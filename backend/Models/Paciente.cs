@@ -14,6 +14,10 @@ public class Paciente
 
     public string Telefono { get; set; } = string.Empty;
 
+    // Segundo número opcional. Antes se escribían los dos en Telefono
+    // ("42246235\ 34401287"); ver la sección 7 de PeredentScript_Sprint5.sql.
+    public string? TelefonoSecundario { get; set; }
+
     public string? Correo { get; set; }
 
     // "CF" (consumidor final) cuando el paciente no proporciona NIT.
