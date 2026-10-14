@@ -25,6 +25,17 @@
   color: var(--coral);
 }
 
+/* Respuesta del paciente a los botones del recordatorio. "Confirmo" es una
+   línea discreta; "Modificar" usa el Alert de advertencia (ámbar). */
+.cita-respuesta {
+  margin-top: 6px;
+}
+
+.cita-respuesta.confirmo {
+  font-weight: 600;
+  color: var(--verde);
+}
+
 .cita-recordatorio-detalle {
   margin-top: 2px;
   font-size: 11.5px;

@@ -12,6 +12,7 @@ import {
   formatearHora12,
   formatearRangoHora,
 } from './agenda.utils';
+import IndicadorModificar from './IndicadorModificar';
 
 // Viñetas visibles por celda; el resto se resume en "+N más" (el detalle
 // completo del día sigue estando en el panel lateral). Con 6 semanas las
@@ -110,6 +111,7 @@ const VistaMes = ({
                   >
                     <span className="mc-hora">{formatearHora12(cita.hora)}</span>
                     <span className="mc-nombre">{cita.nombrePaciente}</span>
+                    <IndicadorModificar cita={cita} />
                   </button>
                 ))}
 
@@ -180,7 +182,9 @@ const VistaMes = ({
                   <span className="sp-rango">{formatearRangoHora(cita.hora, cita.duracionMinutos)}</span>
                   <span className="sp-dot" />
                 </div>
-                <b>{cita.nombrePaciente}</b>
+                <b>
+                  {cita.nombrePaciente} <IndicadorModificar cita={cita} />
+                </b>
                 {cita.notasAdicionales && (
                   <div className="sp-nota">
                     <span className="cb-nota-label">Nota</span>

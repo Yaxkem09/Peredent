@@ -2,6 +2,9 @@
 
 Un día antes de cada cita, el sistema envía al paciente un mensaje de WhatsApp
 con la plantilla aprobada `recordatorio_cita` de la WhatsApp Cloud API de Meta.
+La plantilla tiene dos botones de respuesta rápida ("Sí asistiré" y "Modificar
+mi cita"); la respuesta del paciente llega por un webhook, se registra en la
+cita y se le contesta automáticamente (ver [Respuestas del paciente](#respuestas-del-paciente)).
 
 ## Cómo funciona
 
@@ -61,7 +64,110 @@ De esas, se **omiten** (aparecen en el resumen con su motivo, sin enviar nada):
 
 Las citas Atendidas, Canceladas o No Asistió nunca se toman. El teléfono del
 encargado (menores de edad) no se usa por ahora. En el Calendario, el modal de
-la cita muestra el estado del recordatorio (enviado, error, pendiente o no aplica).
+la cita muestra el estado del recordatorio (enviado, error, pendiente o no aplica)
+y, si el paciente respondió, su respuesta.
+
+## Respuestas del paciente
+
+### Botones de la plantilla
+
+`recordatorio_cita` tiene dos botones de **respuesta rápida**:
+
+| Botón | Qué significa | Se guarda en `Citas.RespuestaPaciente` |
+|---|---|---|
+| `Sí asistiré` | Confirma su asistencia | `Confirmo` |
+| `Modificar mi cita` | Quiere cambiar la cita | `Modificar` |
+
+Cuando el paciente toca un botón, Meta envía una notificación al webhook con un
+mensaje de tipo `button`: `button.text`/`button.payload` traen el texto del botón
+y `context.id` el `wamid` del recordatorio al que responde (que se guardó en
+`Citas.RecordatorioMessageId` al enviarlo). Los textos de los botones, los
+valores guardados y los mensajes de vuelta están en un solo lugar:
+`backend/Helpers/RespuestaRecordatorioWhatsApp.cs`. **Si se cambia el texto de
+un botón en Meta, hay que cambiarlo también ahí.**
+
+### Webhook
+
+`api/whatsapp/webhook` (`WhatsAppWebhookController`), sin JWT porque lo llaman
+los servidores de Meta:
+
+- **GET (verificación).** Al configurar el webhook en Meta, Meta llama con
+  `hub.mode=subscribe`, `hub.verify_token` y `hub.challenge`. Si el token coincide
+  con `WHATSAPP_WEBHOOK_VERIFY_TOKEN` (tiempo constante), responde el challenge en
+  texto plano; si no, `403`.
+- **POST (notificaciones).** Cada notificación trae el header
+  `X-Hub-Signature-256: sha256=<HMAC-SHA256 del cuerpo crudo con el App Secret>`.
+  El filtro `[ValidarFirmaWhatsApp]` lo valida **antes** de deserializar; si falta
+  o no coincide con `WHATSAPP_APP_SECRET`, responde `401` sin cuerpo y no procesa
+  nada. Con firma válida, `WhatsAppWebhookService` procesa el payload y el
+  endpoint responde `200` aunque el procesamiento falle (se registra en el log),
+  para que Meta no reintente la misma notificación durante horas.
+
+Si falta `WHATSAPP_APP_SECRET` o `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, la app arranca
+igual, pero el webhook rechaza todo y lo registra como error en el log.
+
+### Reglas de procesamiento
+
+Por cada mensaje de tipo `button`:
+
+1. Busca la cita cuyo `RecordatorioMessageId` es el `context.id`. Si no hay, se ignora (advertencia en el log).
+2. Si `RespuestaMessageId` ya es el id de este mensaje, es un webhook duplicado y se ignora.
+3. Si el botón no es ninguno de los dos, se ignora (advertencia en el log).
+4. Aplica la regla y responde al paciente con texto libre:
+
+| Situación | Estado de la cita | Se registra la respuesta | Mensaje al paciente |
+|---|---|---|---|
+| La cita ya empezó o pasó (o está Atendida / No Asistió) | Sin cambios | No | Cita pasada |
+| "Sí asistiré" con la cita Pendiente | Pasa a **Confirmada** | Sí (`Confirmo`) | Confirmó |
+| "Sí asistiré" con la cita Confirmada | Sin cambios | Sí (`Confirmo`) | Confirmó |
+| "Sí asistiré" con la cita Cancelada | Sin cambios (no se reactiva) | No | Cita cancelada |
+| "Modificar mi cita" | Sin cambios | Sí (`Modificar`) | Modificar (teléfono y horario) |
+
+Mensajes (con `{telefono}` = `CLINICA_TELEFONO` y `{horario}` = `CLINICA_HORARIO`):
+
+| Mensaje | Texto |
+|---|---|
+| Confirmó | ¡Gracias por confirmar! Le esperamos en su cita. |
+| Modificar | Para modificar su cita, llámenos al {telefono}. *Horario de atención:* {horario} |
+| Cita pasada | Esta cita ya pasó. Si necesita una nueva cita, llámenos al {telefono}. |
+| Cita cancelada | Esta cita fue cancelada. Si desea reagendar, llámenos al {telefono}. |
+
+- Cuando se registra, se guardan `RespuestaPaciente`, `RespuestaPacienteEn` (hora
+  de Guatemala) y `RespuestaMessageId`. Si el paciente toca un botón y luego el
+  otro, **la última respuesta válida reemplaza a la anterior** (confirmar después
+  de "Modificar" pasa la cita a Confirmada; "Modificar" después de confirmar no
+  cambia el estado).
+- El cambio se guarda **antes** de responder: si el mensaje de vuelta falla, se
+  registra en el log y la cita no se revierte.
+- El mensaje de vuelta es texto libre, que Meta solo permite dentro de las 24 h
+  siguientes al último mensaje del paciente (siempre se cumple al responder un botón).
+- Los mensajes de otros tipos (texto escrito, imágenes, etc.) y los `statuses`
+  (entregado, leído) se ignoran con un log Debug.
+- En el modal de la cita del Calendario, "Confirmo" se muestra como una línea
+  verde y "Modificar" como un aviso ámbar: **la secretaria debe dar seguimiento**
+  si el paciente no llama.
+- En las tarjetas de las citas del Calendario (vistas Día, Semana y Mes, y el
+  panel lateral del Mes) aparece un **ícono ámbar de teléfono** junto al nombre
+  del paciente mientras la respuesta sea "Modificar", la cita **no haya pasado**
+  y **no esté Cancelada** (`IndicadorModificar.jsx`).
+
+### Reprogramar una cita
+
+Cuando una cita cambia de **fecha u hora de inicio** (desde el modal o
+arrastrándola en el Calendario; ambos pasan por `CitaService.ActualizarAsync`),
+se limpian `RecordatorioEnviadoEn`, `RecordatorioMessageId`, `RecordatorioError`,
+`RespuestaPaciente`, `RespuestaPacienteEn` y `RespuestaMessageId`:
+
+- La cita vuelve a recibir un recordatorio para su nueva fecha (si queda para
+  mañana, entra en la siguiente corrida del workflow).
+- La respuesta anterior se descarta, así que el aviso y el ícono de "Modificar"
+  desaparecen: la reprogramación es justamente la atención que pedía el paciente.
+- Si el paciente toca después un botón del recordatorio **viejo**, el webhook ya
+  no encuentra la cita por ese `context.id` y lo ignora.
+
+Si solo cambian otros datos (notas, odontólogo, estado o la duración, sin mover
+la hora de inicio), no se limpia nada. Una reprogramación rechazada (por ejemplo,
+por conflicto de horario) tampoco cambia nada.
 
 ## Configuración
 
@@ -80,6 +186,10 @@ guardan valores reales en el repositorio.
 | `WHATSAPP_TEMPLATE_NAME` | No (default `recordatorio_cita`) | Nombre de la plantilla aprobada. |
 | `WHATSAPP_TEMPLATE_LANGUAGE` | No (default `es`) | Código de idioma de la plantilla. |
 | `REMINDERS_API_KEY` | Sí, para usar el endpoint | Key que debe enviar el cron en `X-Api-Key`. Si está vacía, el endpoint rechaza todo. Cadena aleatoria larga (p. ej. 64 caracteres hex). |
+| `WHATSAPP_APP_SECRET` | Sí, para el webhook | App Secret de la app de Meta (Meta for Developers → la app → App settings → Basic). Valida la firma `X-Hub-Signature-256`. Si falta, el webhook rechaza todo. |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Sí, para el webhook | Texto secreto aleatorio que se escribe también en Meta al configurar el webhook. Solo se usa en la verificación (GET). Si falta, la verificación responde 403. |
+| `CLINICA_TELEFONO` | No (default `7755-1080`) | Teléfono de la clínica en los mensajes de vuelta al paciente. |
+| `CLINICA_HORARIO` | No (default: horario de lunes a sábado) | Horario de atención en el mensaje de "Modificar". Usar `\n` para los saltos de línea. |
 
 Si `WHATSAPP_ENABLED=true` y falta `WHATSAPP_PHONE_NUMBER_ID` o
 `WHATSAPP_TOKEN`, la app **no arranca** (lanza `InvalidOperationException` con
@@ -160,6 +270,51 @@ estado Pendiente o Confirmada, de un paciente con `AceptaRecordatoriosWhatsApp =
 Para repetir la prueba, vuelve a poner en NULL `RecordatorioEnviadoEn`,
 `RecordatorioMessageId` y `RecordatorioError` de la cita.
 
+### Webhook con un payload firmado (curl)
+
+Sin depender de Meta: se simula la notificación firmándola con el App Secret
+del `.env`. Requisitos: `WHATSAPP_APP_SECRET` y `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
+en `backend/.env`, la app corriendo (`dotnet run --urls http://localhost:5199`)
+y, para ver el efecto en una cita, una cita de mañana Pendiente cuyo
+`RecordatorioMessageId` sea el `context.id` del payload (p. ej.
+`UPDATE Citas SET RecordatorioMessageId = 'wamid.PRUEBA1' WHERE ID_Cita = <id>`).
+
+```bash
+# Git Bash, desde backend/
+SECRET=$(grep '^WHATSAPP_APP_SECRET=' .env | cut -d= -f2- | tr -d '\r')
+VTOKEN=$(grep '^WHATSAPP_WEBHOOK_VERIFY_TOKEN=' .env | cut -d= -f2- | tr -d '\r')
+URL=http://localhost:5199/api/whatsapp/webhook
+
+# Cuerpo en un archivo: la firma se calcula sobre esos bytes exactos.
+cat > webhook-prueba.json <<'EOF'
+{"object":"whatsapp_business_account","entry":[{"id":"1","changes":[{"field":"messages","value":{"messaging_product":"whatsapp","messages":[{"context":{"from":"15550000000","id":"wamid.PRUEBA1"},"from":"50251234567","id":"wamid.RESPUESTA1","timestamp":"1760290000","type":"button","button":{"payload":"Sí asistiré","text":"Sí asistiré"}}]}}]}]}
+EOF
+SIG=$(openssl dgst -sha256 -hmac "$SECRET" webhook-prueba.json | sed 's/^.*= //')
+
+# Firmado: 200 y la cita pasa a Confirmada con RespuestaPaciente = 'Confirmo'
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/json' \
+  -H "X-Hub-Signature-256: sha256=$SIG" --data-binary @webhook-prueba.json "$URL"
+
+# Repetirlo: 200, pero no se procesa de nuevo (webhook duplicado)
+# Firma incorrecta: 401
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/json' \
+  -H 'X-Hub-Signature-256: sha256=0000' --data-binary @webhook-prueba.json "$URL"
+
+# Verificación de Meta: imprime 1158201444; con otro token, 403
+curl -s "$URL?hub.mode=subscribe&hub.verify_token=$VTOKEN&hub.challenge=1158201444"; echo
+
+rm webhook-prueba.json; unset SECRET VTOKEN SIG
+```
+
+- Usar `--data-binary` (no `-d`, que altera los saltos de línea y rompe la firma).
+- Para "Modificar", cambia el botón por `Modificar mi cita` y el `id` del mensaje
+  (con el mismo `id` se trata como duplicado).
+- Con `WHATSAPP_ENABLED=false` la cita se actualiza igual y el mensaje de vuelta
+  se registra como no enviado ("deshabilitado"); con `true`, el texto se envía de
+  verdad al número del campo `from`.
+- En Development, la línea `Request starting GET ...?hub.verify_token=...` del
+  log de ASP.NET Core muestra el verify token (en Production no, por el nivel de log).
+
 ## Cambiar de plantilla
 
 Si la nueva plantilla conserva **las mismas 3 variables en el cuerpo y en el
@@ -167,8 +322,11 @@ mismo orden** (nombre, fecha, hora), basta con cambiar `WHATSAPP_TEMPLATE_NAME`
 (y `WHATSAPP_TEMPLATE_LANGUAGE` si cambia el idioma) y reiniciar la app; no hay
 que tocar código. La plantilla debe estar aprobada en Meta antes del cambio.
 
-Si cambian las variables (cantidad, orden, header con imagen, botones), hay que
-ajustar el cuerpo que arma `WhatsAppService` y los formatos de `PlantillaRecordatorio`.
+Si cambian las variables (cantidad, orden, header con imagen), hay que ajustar el
+cuerpo que arma `WhatsAppService` y los formatos de `PlantillaRecordatorio`. Si
+cambia el **texto de los botones**, hay que actualizar `BotonConfirmar` y
+`BotonModificar` en `RespuestaRecordatorioWhatsApp`; si no, las respuestas se
+ignoran como "botón no reconocido".
 
 ## Si el workflow falla
 
@@ -199,13 +357,29 @@ si el repositorio es público, sus logs también lo son.
 
 - [ ] Aplicar `backend/src/db/PeredentScript_Sprint5_RecordatoriosWhatsApp.sql` en la base de Somee
       **antes** de desplegar el backend (sin las columnas nuevas, todo endpoint
-      que lea Paciente o Citas falla con "Invalid column name").
+      que lea Paciente o Citas falla con "Invalid column name"), además de los
+      scripts de develop que falten (`PeredentScript_Sprint4_AnulacionAbonos.sql`,
+      `PeredentScript_Sprint4_Consentimientos.sql`, `PeredentScript_Sprint5.sql`).
+- [ ] Ejecutar todos los scripts con **SSMS** o con **`sqlcmd -f 65001`**: sin eso,
+      los textos con acentos se guardan mal (p. ej. "Extracción de terceras
+      molares") y el código que los busca por nombre deja de encontrarlos.
 - [ ] Generar un **token permanente de System User** en Meta Business (el temporal dura 24 h).
 - [ ] Registrar el **número de WhatsApp de la clínica** en la cuenta de WhatsApp
       Business y usar su Phone Number ID (el número de prueba solo envía a destinatarios registrados).
 - [ ] Configurar en Somee `ASPNETCORE_ENVIRONMENT=Production` (en Development
       los errores 500 devuelven los headers de la petición) y las variables
-      `WHATSAPP_*` y `REMINDERS_API_KEY`.
+      `WHATSAPP_*` (incluidas `WHATSAPP_APP_SECRET` y `WHATSAPP_WEBHOOK_VERIFY_TOKEN`),
+      `REMINDERS_API_KEY` y, si cambian los datos de la clínica, `CLINICA_TELEFONO`
+      y `CLINICA_HORARIO`.
+- [ ] En Meta for Developers → la app → **WhatsApp → Configuration → Webhook**:
+      configurar la **Callback URL** `https://<sitio>.somee.com/api/whatsapp/webhook`
+      (Meta exige HTTPS con certificado válido) y el **Verify token** (el mismo
+      valor que `WHATSAPP_WEBHOOK_VERIFY_TOKEN`). Al guardar, Meta hace el GET de
+      verificación: la app ya debe estar desplegada con esas variables.
+- [ ] En **Webhook fields**, **suscribir el campo `messages`** (trae las respuestas
+      de los botones y los estados de los mensajes).
+- [ ] **Publicar la app en Meta** (modo *Live*): en modo desarrollo los webhooks
+      solo llegan para los números de prueba registrados.
 - [ ] Crear los secrets `PEREDENT_API_URL` y `RECORDATORIOS_API_KEY` en GitHub.
 - [ ] Hacer merge a `main`: el `schedule` y el botón **Run workflow** solo existen
       con el workflow en la rama por defecto. Primera ejecución manual con `dry_run` marcado.

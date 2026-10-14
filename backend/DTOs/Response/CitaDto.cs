@@ -28,6 +28,11 @@ public class CitaDto
     public DateTime? RecordatorioEnviadoEn { get; set; }
 
     public string? RecordatorioError { get; set; }
+
+    // "Confirmo" o "Modificar" (botones del recordatorio); null = sin respuesta.
+    public string? RespuestaPaciente { get; set; }
+
+    public DateTime? RespuestaPacienteEn { get; set; }
 }
 
 public class EstadoCitaDto

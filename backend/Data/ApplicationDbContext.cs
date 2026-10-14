@@ -224,6 +224,9 @@ public class ApplicationDbContext : DbContext
             entity.Property(c => c.RecordatorioEnviadoEn).HasColumnName("RecordatorioEnviadoEn").HasColumnType("datetime");
             entity.Property(c => c.RecordatorioMessageId).HasColumnName("RecordatorioMessageId").HasColumnType("varchar(150)");
             entity.Property(c => c.RecordatorioError).HasColumnName("RecordatorioError").HasColumnType("varchar(500)");
+            entity.Property(c => c.RespuestaPaciente).HasColumnName("RespuestaPaciente").HasColumnType("varchar(20)");
+            entity.Property(c => c.RespuestaPacienteEn).HasColumnName("RespuestaPacienteEn").HasColumnType("datetime");
+            entity.Property(c => c.RespuestaMessageId).HasColumnName("RespuestaMessageId").HasColumnType("varchar(150)");
 
             entity.HasOne(c => c.Usuario)
                   .WithMany()

@@ -852,4 +852,138 @@ public class CitaServiceTests
 
         Assert.Null(resultado);
     }
+
+
+    // ---------- Reprogramar reinicia el recordatorio por WhatsApp ----------
+
+    // Deja la cita como si ya se le hubiera enviado el recordatorio y el
+    // paciente hubiera tocado "Modificar mi cita".
+    private static async Task MarcarRecordatorioYRespuestaAsync(ApplicationDbContext db, Cita cita)
+    {
+        cita.RecordatorioEnviadoEn = new DateTime(2026, 1, 1, 9, 7, 0);
+        cita.RecordatorioMessageId = "wamid.RECORDATORIO1";
+        cita.RecordatorioError = "error anterior";
+        cita.RespuestaPaciente = "Modificar";
+        cita.RespuestaPacienteEn = new DateTime(2026, 1, 1, 10, 0, 0);
+        cita.RespuestaMessageId = "wamid.RESPUESTA1";
+        await db.SaveChangesAsync();
+    }
+
+    private static UpdateCitaDto ActualizacionDe(Cita cita, DateOnly fecha, TimeOnly hora, int duracionMinutos = 30, string? notas = null) => new()
+    {
+        IdPaciente = cita.IdPaciente,
+        IdUsuario = cita.IdUsuario,
+        Fecha = fecha,
+        Hora = hora,
+        DuracionMinutos = duracionMinutos,
+        NotasAdicionales = notas,
+        IdEstadoCita = cita.IdEstadoCita,
+    };
+
+    private static void AssertRecordatorioReiniciado(Cita cita)
+    {
+        Assert.Null(cita.RecordatorioEnviadoEn);
+        Assert.Null(cita.RecordatorioMessageId);
+        Assert.Null(cita.RecordatorioError);
+        Assert.Null(cita.RespuestaPaciente);
+        Assert.Null(cita.RespuestaPacienteEn);
+        Assert.Null(cita.RespuestaMessageId);
+    }
+
+    private static void AssertRecordatorioConservado(Cita cita)
+    {
+        Assert.Equal(new DateTime(2026, 1, 1, 9, 7, 0), cita.RecordatorioEnviadoEn);
+        Assert.Equal("wamid.RECORDATORIO1", cita.RecordatorioMessageId);
+        Assert.Equal("error anterior", cita.RecordatorioError);
+        Assert.Equal("Modificar", cita.RespuestaPaciente);
+        Assert.Equal(new DateTime(2026, 1, 1, 10, 0, 0), cita.RespuestaPacienteEn);
+        Assert.Equal("wamid.RESPUESTA1", cita.RespuestaMessageId);
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_ReprogramarFecha_ReiniciaRecordatorioYRespuesta()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var cita = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0));
+        await MarcarRecordatorioYRespuestaAsync(db, cita);
+
+        var resultado = await new CitaService(db).ActualizarAsync(
+            cita.IdCita, ActualizacionDe(cita, FechaFutura.AddDays(2), new TimeOnly(9, 0)));
+
+        Assert.True(resultado.Exitoso);
+        Assert.Null(resultado.Cita!.RecordatorioEnviadoEn);
+        Assert.Null(resultado.Cita.RespuestaPaciente);
+        db.ChangeTracker.Clear();
+        AssertRecordatorioReiniciado(await db.Citas.SingleAsync(c => c.IdCita == cita.IdCita));
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_ReprogramarSoloLaHora_ReiniciaRecordatorioYRespuesta()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var cita = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0));
+        await MarcarRecordatorioYRespuestaAsync(db, cita);
+
+        var resultado = await new CitaService(db).ActualizarAsync(
+            cita.IdCita, ActualizacionDe(cita, FechaFutura, new TimeOnly(11, 30)));
+
+        Assert.True(resultado.Exitoso);
+        db.ChangeTracker.Clear();
+        AssertRecordatorioReiniciado(await db.Citas.SingleAsync(c => c.IdCita == cita.IdCita));
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_SinCambiarFechaNiHora_ConservaRecordatorioYRespuesta()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var otroDentista = await CrearDentistaAsync(db, "dr.mendez");
+        var cita = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0));
+        await MarcarRecordatorioYRespuestaAsync(db, cita);
+        var idConfirmada = (await db.EstadosCita.SingleAsync(e => e.TipoEstadoCita == "Confirmada")).IdEstadoCita;
+
+        // Cambian notas, odontólogo, estado y duración; la fecha y la hora de inicio no.
+        var cambios = ActualizacionDe(cita, FechaFutura, new TimeOnly(9, 0), duracionMinutos: 60, notas: "Traer radiografía");
+        cambios.IdUsuario = otroDentista.IdUsuario;
+        cambios.IdEstadoCita = idConfirmada;
+
+        var resultado = await new CitaService(db).ActualizarAsync(cita.IdCita, cambios);
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal("Modificar", resultado.Cita!.RespuestaPaciente);
+        db.ChangeTracker.Clear();
+        var guardada = await db.Citas.SingleAsync(c => c.IdCita == cita.IdCita);
+        Assert.Equal("Traer radiografía", guardada.NotasAdicionales);
+        Assert.Equal(otroDentista.IdUsuario, guardada.IdUsuario);
+        AssertRecordatorioConservado(guardada);
+    }
+
+    [Fact]
+    public async Task ActualizarAsync_ReprogramacionRechazada_NoReiniciaNada()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(11, 0));
+        var cita = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0));
+        await MarcarRecordatorioYRespuestaAsync(db, cita);
+
+        // 11:00 ya está ocupada por otra cita del mismo odontólogo.
+        var resultado = await new CitaService(db).ActualizarAsync(
+            cita.IdCita, ActualizacionDe(cita, FechaFutura, new TimeOnly(11, 0)));
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(CitaError.ConflictoHorario, resultado.Error);
+        db.ChangeTracker.Clear();
+        AssertRecordatorioConservado(await db.Citas.SingleAsync(c => c.IdCita == cita.IdCita));
+    }
 }

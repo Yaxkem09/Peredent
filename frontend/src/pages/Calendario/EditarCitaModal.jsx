@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { citasService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
-import { Button, Modal } from '../../components/common';
+import { Alert, Button, Modal } from '../../components/common';
 import { formatDate, formatTime } from '../../utils/formatters';
 import {
   INCREMENTO_MINUTOS,
@@ -26,6 +26,37 @@ const mensajeError = (err) =>
 // Pendiente y Confirmada).
 const ESTADOS_SIN_RECORDATORIO = ['Cancelada', 'Atendida', 'No Asistio'];
 
+// Valores de Citas.RespuestaPaciente (ver RespuestaRecordatorioWhatsApp en el backend).
+const RESPUESTA_CONFIRMO = 'Confirmo';
+const RESPUESTA_MODIFICAR = 'Modificar';
+
+const fechaHora = (valor) => `${formatDate(valor)} ${formatTime(valor)}`;
+
+// Respuesta del paciente a los botones del recordatorio. "Modificar" destaca
+// más porque requiere que la clínica le dé seguimiento.
+const RespuestaPaciente = ({ cita }) => {
+  if (cita.respuestaPaciente === RESPUESTA_CONFIRMO) {
+    return (
+      <div className="cita-respuesta confirmo">
+        El paciente confirmó su asistencia el {fechaHora(cita.respuestaPacienteEn)}
+      </div>
+    );
+  }
+
+  if (cita.respuestaPaciente === RESPUESTA_MODIFICAR) {
+    return (
+      <div className="cita-respuesta">
+        <Alert type="warning">
+          <strong>El paciente solicitó modificar su cita</strong> el {fechaHora(cita.respuestaPacienteEn)}. Puede que llame
+          a la clínica; si no lo hace, conviene contactarlo.
+        </Alert>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 // Estado del recordatorio por WhatsApp del día anterior. recordatorioEnviadoEn
 // viene en hora de Guatemala sin zona, así que new Date() lo toma como hora local.
 const RecordatorioWhatsApp = ({ cita }) => {
@@ -33,7 +64,7 @@ const RecordatorioWhatsApp = ({ cita }) => {
   let clase = '';
 
   if (cita.recordatorioEnviadoEn) {
-    estado = `Enviado el ${formatDate(cita.recordatorioEnviadoEn)} ${formatTime(cita.recordatorioEnviadoEn)}`;
+    estado = `Enviado el ${fechaHora(cita.recordatorioEnviadoEn)}`;
     clase = ' enviado';
   } else if (cita.recordatorioError) {
     estado = 'Error al enviar';
@@ -54,6 +85,7 @@ const RecordatorioWhatsApp = ({ cita }) => {
           {cita.recordatorioError}
         </div>
       )}
+      <RespuestaPaciente cita={cita} />
     </div>
   );
 };

@@ -27,6 +27,16 @@ public class Cita
     // rechazo de la API, etc.).
     public string? RecordatorioError { get; set; }
 
+    // Respuesta del paciente a los botones del recordatorio: "Confirmo" o
+    // "Modificar" (ver RespuestaRecordatorioWhatsApp). La última respuesta
+    // válida reemplaza a la anterior. RespuestaPacienteEn va en hora de Guatemala.
+    public string? RespuestaPaciente { get; set; }
+
+    public DateTime? RespuestaPacienteEn { get; set; }
+
+    // wamid del mensaje de respuesta: evita procesar dos veces el mismo webhook.
+    public string? RespuestaMessageId { get; set; }
+
     public Paciente Paciente { get; set; } = null!;
 
     public Usuario Usuario { get; set; } = null!;

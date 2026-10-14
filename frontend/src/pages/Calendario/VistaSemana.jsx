@@ -16,6 +16,7 @@ import {
   toIsoDate,
 } from './agenda.utils';
 import { aplicarVistaPrevia, useArrastreCita } from './useArrastreCita';
+import IndicadorModificar from './IndicadorModificar';
 
 const HORAS_EJE = horasDelDia();
 const ALTURA_TOTAL = (HORAS_EJE.length - 1) * ALTURA_HORA_PX;
@@ -153,7 +154,10 @@ const VistaSemana = ({
                           />
                         )}
                         <span className="wk-rango">{formatearRangoHora(cita.hora, cita.duracionMinutos)}</span>
-                        <span className="wk-nombre">{cita.nombrePaciente}</span>
+                        <span className="wk-nombre">
+                          <IndicadorModificar cita={cita.original} />
+                          {cita.nombrePaciente}
+                        </span>
                         {!compacta && cita.notasAdicionales && (
                           <span className="wk-nota">{cita.notasAdicionales}</span>
                         )}

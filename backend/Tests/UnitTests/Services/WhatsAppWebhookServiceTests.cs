@@ -1,0 +1,455 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Peredent.Api.Data;
+using Peredent.Api.DTOs.Request;
+using Peredent.Api.Helpers;
+using Peredent.Api.Models;
+using Peredent.Api.Options;
+using Peredent.Api.Services;
+using Xunit;
+
+namespace Peredent.Api.Tests.UnitTests.Services;
+
+public class WhatsAppWebhookServiceTests
+{
+    private const int IdPendiente = 1;
+    private const int IdConfirmada = 2;
+    private const int IdAtendida = 3;
+    private const int IdCancelada = 4;
+    private const int IdNoAsistio = 5;
+
+    private const string TelefonoPaciente = "50251234567";
+    private const string WamidRecordatorio = "wamid.RECORDATORIO1";
+
+    private static string Confirmar => RespuestaRecordatorioWhatsApp.BotonConfirmar;
+    private static string Modificar => RespuestaRecordatorioWhatsApp.BotonModificar;
+
+    // IWhatsAppService falso: registra los textos enviados; puede fallar o lanzar.
+    private sealed class FakeWhatsAppService : IWhatsAppService
+    {
+        public List<(string Telefono, string Texto)> Textos { get; } = new();
+
+        public WhatsAppEnvioResultado Resultado { get; set; } = WhatsAppEnvioResultado.Ok("wamid.VUELTA");
+
+        public Exception? Lanzar { get; set; }
+
+        public Task<WhatsAppEnvioResultado> EnviarRecordatorioCitaAsync(
+            string telefono, string nombrePaciente, string fecha, string hora, CancellationToken ct) =>
+            throw new InvalidOperationException("El webhook no debería enviar recordatorios.");
+
+        public Task<WhatsAppEnvioResultado> EnviarTextoAsync(string telefono, string texto, CancellationToken ct)
+        {
+            Textos.Add((telefono, texto));
+            return Lanzar is null ? Task.FromResult(Resultado) : Task.FromException<WhatsAppEnvioResultado>(Lanzar);
+        }
+    }
+
+    private static readonly ClinicaOptions ClinicaPorDefecto = new();
+
+    private static string Mensaje(string plantilla, ClinicaOptions? clinica = null) =>
+        RespuestaRecordatorioWhatsApp.Formatear(plantilla, clinica ?? ClinicaPorDefecto);
+
+    private static ApplicationDbContext CrearContexto()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        return new ApplicationDbContext(options);
+    }
+
+    private static async Task<Cita> SembrarCitaAsync(
+        ApplicationDbContext db, int idEstado = IdPendiente, DateTime? fechaInicio = null, string? recordatorioId = WamidRecordatorio)
+    {
+        db.EstadosCita.AddRange(
+            new EstadoCita { IdEstadoCita = IdPendiente, TipoEstadoCita = "Pendiente" },
+            new EstadoCita { IdEstadoCita = IdConfirmada, TipoEstadoCita = "Confirmada" },
+            new EstadoCita { IdEstadoCita = IdAtendida, TipoEstadoCita = "Atendida" },
+            new EstadoCita { IdEstadoCita = IdCancelada, TipoEstadoCita = "Cancelada" },
+            new EstadoCita { IdEstadoCita = IdNoAsistio, TipoEstadoCita = "No Asistio" });
+
+        var paciente = new Paciente
+        {
+            Nombres = "Juan",
+            Apellidos = "Pérez",
+            FechaNacimiento = new DateTime(1990, 1, 1),
+            Telefono = "5123-4567",
+            AceptaRecordatoriosWhatsApp = true,
+            FechaRegistro = DateTime.UtcNow,
+        };
+        db.Pacientes.Add(paciente);
+        await db.SaveChangesAsync();
+
+        var inicio = fechaInicio ?? FechaHoraGuatemala.Ahora().Date.AddDays(1).AddHours(10);
+        var cita = new Cita
+        {
+            IdPaciente = paciente.IdPaciente,
+            IdUsuario = 1,
+            IdEstadoCita = idEstado,
+            FechaInicio = inicio,
+            FechaFin = inicio.AddMinutes(30),
+            RecordatorioEnviadoEn = FechaHoraGuatemala.Ahora().AddHours(-2),
+            RecordatorioMessageId = recordatorioId,
+        };
+        db.Citas.Add(cita);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        return cita;
+    }
+
+    // Notificación con un toque a un botón de respuesta rápida de la plantilla.
+    private static WhatsAppWebhookPayload Boton(
+        string texto, string? contextoId = WamidRecordatorio, string id = "wamid.RESPUESTA1", string? payload = null) =>
+        ConMensajes(new WhatsAppWebhookMessage
+        {
+            From = TelefonoPaciente,
+            Id = id,
+            Timestamp = "1760290000",
+            Type = "button",
+            Context = contextoId is null ? null : new WhatsAppWebhookContext { From = "15550000000", Id = contextoId },
+            Button = new WhatsAppWebhookButton { Text = texto, Payload = payload ?? texto },
+        });
+
+    private static WhatsAppWebhookPayload ConMensajes(params WhatsAppWebhookMessage[] mensajes)
+    {
+        var value = new WhatsAppWebhookValue { MessagingProduct = "whatsapp" };
+        value.Messages.AddRange(mensajes);
+        return ConValue(value);
+    }
+
+    private static WhatsAppWebhookPayload ConValue(WhatsAppWebhookValue value)
+    {
+        var change = new WhatsAppWebhookChange { Field = "messages", Value = value };
+        var entry = new WhatsAppWebhookEntry { Id = "100000000000001" };
+        entry.Changes.Add(change);
+        var payload = new WhatsAppWebhookPayload { Object = "whatsapp_business_account" };
+        payload.Entry.Add(entry);
+        return payload;
+    }
+
+    private static WhatsAppWebhookService CrearServicio(ApplicationDbContext db, IWhatsAppService whatsApp, ClinicaOptions? clinica = null) =>
+        new(db, whatsApp, Microsoft.Extensions.Options.Options.Create(clinica ?? new ClinicaOptions()),
+            NullLogger<WhatsAppWebhookService>.Instance);
+
+    private static Task Procesar(ApplicationDbContext db, IWhatsAppService whatsApp, WhatsAppWebhookPayload payload, ClinicaOptions? clinica = null) =>
+        CrearServicio(db, whatsApp, clinica).ProcesarAsync(payload, CancellationToken.None);
+
+    // Relee la cita desde la "base" (sin lo que haya en el change tracker).
+    private static Cita Releer(ApplicationDbContext db, int idCita)
+    {
+        db.ChangeTracker.Clear();
+        return db.Citas.Single(c => c.IdCita == idCita);
+    }
+
+    private static void AssertSinRespuesta(Cita cita)
+    {
+        Assert.Null(cita.RespuestaPaciente);
+        Assert.Null(cita.RespuestaPacienteEn);
+        Assert.Null(cita.RespuestaMessageId);
+    }
+
+    // ---------- b. Confirmar ----------
+
+    [Fact]
+    public async Task Confirmar_CitaPendiente_PasaAConfirmadaRegistraYResponde()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+        var antes = FechaHoraGuatemala.Ahora();
+
+        await Procesar(db, whatsApp, Boton(Confirmar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdConfirmada, guardada.IdEstadoCita);
+        Assert.Equal("Confirmo", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.RESPUESTA1", guardada.RespuestaMessageId);
+        Assert.InRange(guardada.RespuestaPacienteEn!.Value, antes.AddSeconds(-1), FechaHoraGuatemala.Ahora().AddSeconds(1));
+        Assert.Equal((TelefonoPaciente, Mensaje(RespuestaRecordatorioWhatsApp.MensajeConfirmado)), Assert.Single(whatsApp.Textos));
+    }
+
+    [Fact]
+    public async Task Confirmar_CitaYaConfirmada_NoCambiaElEstadoPeroRegistraYResponde()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdConfirmada);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdConfirmada, guardada.IdEstadoCita);
+        Assert.Equal("Confirmo", guardada.RespuestaPaciente);
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeConfirmado), Assert.Single(whatsApp.Textos).Texto);
+    }
+
+    [Fact]
+    public async Task Confirmar_CitaCancelada_NoLaReactivaNoRegistraYRespondeCancelada()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdCancelada);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdCancelada, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        var texto = Assert.Single(whatsApp.Textos).Texto;
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeCitaCancelada), texto);
+        Assert.Contains("7755-1080", texto);
+    }
+
+    // ---------- c. Modificar ----------
+
+    [Theory]
+    [InlineData(IdPendiente)]
+    [InlineData(IdConfirmada)]
+    public async Task Modificar_NoCambiaElEstadoRegistraYRespondeConTelefonoYHorario(int idEstado)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, idEstado);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Modificar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(idEstado, guardada.IdEstadoCita);
+        Assert.Equal("Modificar", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.RESPUESTA1", guardada.RespuestaMessageId);
+        Assert.NotNull(guardada.RespuestaPacienteEn);
+
+        var texto = Assert.Single(whatsApp.Textos).Texto;
+        Assert.Equal(
+            "Para modificar su cita, llámenos al 7755-1080.\n\n*Horario de atención:*\n"
+            + "Lunes a viernes: 8:00 AM a 1:00 PM y 2:00 PM a 6:00 PM\nSábados: 8:00 AM a 1:00 PM",
+            texto);
+    }
+
+    [Fact]
+    public async Task Modificar_UsaTelefonoYHorarioConfigurados()
+    {
+        using var db = CrearContexto();
+        await SembrarCitaAsync(db);
+        var whatsApp = new FakeWhatsAppService();
+        var clinica = new ClinicaOptions { Telefono = "2222-3333", Horario = "Lunes a sábado: 9:00 AM a 5:00 PM" };
+
+        await Procesar(db, whatsApp, Boton(Modificar), clinica);
+
+        Assert.Equal(
+            "Para modificar su cita, llámenos al 2222-3333.\n\n*Horario de atención:*\nLunes a sábado: 9:00 AM a 5:00 PM",
+            Assert.Single(whatsApp.Textos).Texto);
+    }
+
+    [Fact]
+    public async Task Modificar_CitaCancelada_RegistraLaSolicitudSinReactivar()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdCancelada);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Modificar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdCancelada, guardada.IdEstadoCita);
+        Assert.Equal("Modificar", guardada.RespuestaPaciente);
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeModificar), Assert.Single(whatsApp.Textos).Texto);
+    }
+
+    // ---------- a. Cita pasada ----------
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CitaQueYaEmpezo_NoCambiaNadaYRespondeCitaPasada(bool confirmar)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente, fechaInicio: FechaHoraGuatemala.Ahora().AddMinutes(-5));
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(confirmar ? Confirmar : Modificar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdPendiente, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeCitaPasada), Assert.Single(whatsApp.Textos).Texto);
+    }
+
+    [Theory]
+    [InlineData(IdAtendida)]
+    [InlineData(IdNoAsistio)]
+    public async Task CitaAtendidaONoAsistio_SeTrataComoPasada(int idEstado)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, idEstado);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(idEstado, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeCitaPasada), Assert.Single(whatsApp.Textos).Texto);
+    }
+
+    // ---------- Cambio de respuesta y duplicados ----------
+
+    [Fact]
+    public async Task CambioDeRespuesta_PrimeroModificarDespuesConfirmar_GanaLaUltima()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Modificar, id: "wamid.R1"));
+        var trasModificar = Releer(db, cita.IdCita);
+        Assert.Equal(IdPendiente, trasModificar.IdEstadoCita);
+        Assert.Equal("Modificar", trasModificar.RespuestaPaciente);
+
+        await Procesar(db, whatsApp, Boton(Confirmar, id: "wamid.R2"));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdConfirmada, guardada.IdEstadoCita);
+        Assert.Equal("Confirmo", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.R2", guardada.RespuestaMessageId);
+        Assert.Equal(
+            new[] { Mensaje(RespuestaRecordatorioWhatsApp.MensajeModificar), Mensaje(RespuestaRecordatorioWhatsApp.MensajeConfirmado) },
+            whatsApp.Textos.Select(t => t.Texto));
+    }
+
+    [Fact]
+    public async Task CambioDeRespuesta_ConfirmarDespuesModificar_MantieneConfirmadaYGuardaModificar()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar, id: "wamid.R1"));
+        await Procesar(db, whatsApp, Boton(Modificar, id: "wamid.R2"));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdConfirmada, guardada.IdEstadoCita); // Modificar no cambia el estado
+        Assert.Equal("Modificar", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.R2", guardada.RespuestaMessageId);
+    }
+
+    [Fact]
+    public async Task WebhookDuplicado_NoSeProcesaNiSeRespondeDosVeces()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar));
+        var primera = Releer(db, cita.IdCita).RespuestaPacienteEn;
+
+        await Procesar(db, whatsApp, Boton(Confirmar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(primera, guardada.RespuestaPacienteEn);
+        Assert.Single(whatsApp.Textos);
+    }
+
+    // ---------- Mensajes que se ignoran ----------
+
+    [Theory]
+    [InlineData("wamid.DESCONOCIDO")]
+    [InlineData(null)]
+    public async Task ContextoDesconocidoOAusente_SeIgnora(string? contextoId)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar, contextoId: contextoId));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdPendiente, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        Assert.Empty(whatsApp.Textos);
+    }
+
+    [Fact]
+    public async Task BotonDesconocido_SeIgnora()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton("Cancelar mi cita"));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdPendiente, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        Assert.Empty(whatsApp.Textos);
+    }
+
+    [Fact]
+    public async Task OtrosTiposDeMensajeYStatuses_SeIgnoran()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+        var value = new WhatsAppWebhookValue();
+        value.Messages.Add(new WhatsAppWebhookMessage
+        {
+            From = TelefonoPaciente, Id = "wamid.T1", Type = "text",
+            // Aunque responda al recordatorio, texto escrito no se interpreta.
+            Context = new WhatsAppWebhookContext { Id = WamidRecordatorio },
+        });
+        value.Messages.Add(new WhatsAppWebhookMessage { From = TelefonoPaciente, Id = "wamid.I1", Type = "image" });
+        value.Statuses.Add(new WhatsAppWebhookStatus { Id = WamidRecordatorio, Status = "read", RecipientId = TelefonoPaciente });
+
+        await Procesar(db, whatsApp, ConValue(value));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdPendiente, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        Assert.Empty(whatsApp.Textos);
+    }
+
+    [Fact]
+    public async Task UnMensajeIgnoradoNoImpideProcesarLosDemas()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+        var desconocido = Boton(Confirmar, contextoId: "wamid.OTRO", id: "wamid.X").Entry[0].Changes[0].Value!.Messages[0];
+        var valido = Boton(Confirmar, id: "wamid.Y").Entry[0].Changes[0].Value!.Messages[0];
+
+        await Procesar(db, whatsApp, ConMensajes(desconocido, valido));
+
+        Assert.Equal(IdConfirmada, Releer(db, cita.IdCita).IdEstadoCita);
+        Assert.Single(whatsApp.Textos);
+    }
+
+    // ---------- Fallo al responder ----------
+
+    [Fact]
+    public async Task FalloAlEnviarLaRespuesta_NoRevierteElCambioDeLaCita()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService { Resultado = WhatsAppEnvioResultado.Fallo("Meta respondió HTTP 400: (código 131047)") };
+
+        await Procesar(db, whatsApp, Boton(Confirmar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdConfirmada, guardada.IdEstadoCita);
+        Assert.Equal("Confirmo", guardada.RespuestaPaciente);
+        Assert.Single(whatsApp.Textos);
+    }
+
+    [Fact]
+    public async Task ExcepcionAlEnviarLaRespuesta_NoRevierteNiPropaga()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService { Lanzar = new InvalidOperationException("fallo inesperado") };
+
+        await Procesar(db, whatsApp, Boton(Modificar));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal("Modificar", guardada.RespuestaPaciente);
+        Assert.Equal(IdPendiente, guardada.IdEstadoCita);
+    }
+}

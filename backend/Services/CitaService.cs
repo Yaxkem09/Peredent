@@ -247,6 +247,11 @@ public class CitaService : ICitaService
         cita.FechaFin = fechaFin;
         cita.NotasAdicionales = request.NotasAdicionales;
 
+        if (cambiaFechaOHora)
+        {
+            ReiniciarRecordatorioWhatsApp(cita);
+        }
+
         await _db.SaveChangesAsync();
 
         return CitaResultado.Ok(await ObtenerDtoAsync(cita.IdCita));
@@ -278,6 +283,21 @@ public class CitaService : ICitaService
 
     private static readonly string MensajeDuracionInvalida =
         $"La duración de la cita debe ser de al menos {CitaConstantes.IncrementoMinutos} minutos y en bloques de {CitaConstantes.IncrementoMinutos} minutos.";
+
+    // Una cita reprogramada (cambia la fecha o la hora de inicio) vuelve a
+    // empezar en cuanto al recordatorio por WhatsApp: recibe uno nuevo para su
+    // nueva fecha y se descarta la respuesta del paciente al anterior (con ella
+    // desaparece el aviso de "Modificar"). Un toque tardío a un botón del
+    // recordatorio viejo ya no encuentra la cita por su wamid y se ignora.
+    private static void ReiniciarRecordatorioWhatsApp(Cita cita)
+    {
+        cita.RecordatorioEnviadoEn = null;
+        cita.RecordatorioMessageId = null;
+        cita.RecordatorioError = null;
+        cita.RespuestaPaciente = null;
+        cita.RespuestaPacienteEn = null;
+        cita.RespuestaMessageId = null;
+    }
 
     private static bool EsDuracionValida(int duracionMinutos) =>
         duracionMinutos >= CitaConstantes.IncrementoMinutos && duracionMinutos % CitaConstantes.IncrementoMinutos == 0;
@@ -357,5 +377,7 @@ public class CitaService : ICitaService
         Estado = cita.EstadoCita.TipoEstadoCita,
         RecordatorioEnviadoEn = cita.RecordatorioEnviadoEn,
         RecordatorioError = cita.RecordatorioError,
+        RespuestaPaciente = cita.RespuestaPaciente,
+        RespuestaPacienteEn = cita.RespuestaPacienteEn,
     };
 }

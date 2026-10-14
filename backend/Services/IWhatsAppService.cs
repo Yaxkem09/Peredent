@@ -8,6 +8,11 @@ public interface IWhatsAppService
     // telefono: ya normalizado (ver TelefonoWhatsApp.Normalizar).
     Task<WhatsAppEnvioResultado> EnviarRecordatorioCitaAsync(
         string telefono, string nombrePaciente, string fecha, string hora, CancellationToken ct);
+
+    // Envía un mensaje de texto libre (no plantilla), con el mismo manejo de
+    // errores. Solo funciona dentro de la ventana de 24 h desde el último
+    // mensaje del paciente, como al responder a los botones del recordatorio.
+    Task<WhatsAppEnvioResultado> EnviarTextoAsync(string telefono, string texto, CancellationToken ct);
 }
 
 // MessageId es el "wamid" que devuelve Meta al aceptar el mensaje; Error trae

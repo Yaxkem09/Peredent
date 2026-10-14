@@ -22,14 +22,25 @@ public class WhatsAppService : IWhatsAppService
         _logger = logger;
     }
 
-    public async Task<WhatsAppEnvioResultado> EnviarRecordatorioCitaAsync(
-        string telefono, string nombrePaciente, string fecha, string hora, CancellationToken ct)
+    public Task<WhatsAppEnvioResultado> EnviarRecordatorioCitaAsync(
+        string telefono, string nombrePaciente, string fecha, string hora, CancellationToken ct) =>
+        EnviarAsync(telefono, CrearCuerpo(telefono, nombrePaciente, fecha, hora), "recordatorio", ct);
+
+    // Texto libre (type "text"): Meta solo lo permite dentro de las 24 h
+    // siguientes al último mensaje del paciente (ventana de atención), que es
+    // justo el caso de la respuesta a los botones del recordatorio.
+    public Task<WhatsAppEnvioResultado> EnviarTextoAsync(string telefono, string texto, CancellationToken ct) =>
+        EnviarAsync(telefono, CrearCuerpoTexto(telefono, texto), "mensaje de texto", ct);
+
+    // Camino común a todos los envíos: nunca lanza por errores de Meta, de red
+    // o timeouts (vienen en el resultado); solo propaga la cancelación del ct.
+    private async Task<WhatsAppEnvioResultado> EnviarAsync(string telefono, object cuerpo, string tipo, CancellationToken ct)
     {
         var telefonoEnmascarado = TelefonoWhatsApp.Enmascarar(telefono);
 
         if (!_opciones.Enabled)
         {
-            _logger.LogInformation("Recordatorio a {Telefono} no enviado: WhatsApp deshabilitado (WHATSAPP_ENABLED)", telefonoEnmascarado);
+            _logger.LogInformation("WhatsApp ({Tipo}) a {Telefono} no enviado: WhatsApp deshabilitado (WHATSAPP_ENABLED)", tipo, telefonoEnmascarado);
             return WhatsAppEnvioResultado.Fallo("El envío por WhatsApp está deshabilitado (WHATSAPP_ENABLED=false).");
         }
 
@@ -37,7 +48,7 @@ public class WhatsAppService : IWhatsAppService
         // el HttpClient tipado lo comparte el pool de IHttpClientFactory.
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{_opciones.ApiVersion}/{_opciones.PhoneNumberId}/messages")
         {
-            Content = JsonContent.Create(CrearCuerpo(telefono, nombrePaciente, fecha, hora)),
+            Content = JsonContent.Create(cuerpo),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _opciones.AccessToken);
 
@@ -49,29 +60,38 @@ public class WhatsAppService : IWhatsAppService
             if (response.IsSuccessStatusCode)
             {
                 var messageId = ExtraerMessageId(contenido);
-                _logger.LogInformation("Recordatorio enviado a {Telefono}: {MessageId}", telefonoEnmascarado, messageId);
+                _logger.LogInformation("WhatsApp ({Tipo}) enviado a {Telefono}: {MessageId}", tipo, telefonoEnmascarado, messageId);
                 return WhatsAppEnvioResultado.Ok(messageId);
             }
 
             var (codigo, mensaje) = ExtraerErrorMeta(contenido);
             _logger.LogWarning(
-                "Meta rechazó el recordatorio a {Telefono}: HTTP {StatusCode}, código {CodigoError}",
-                telefonoEnmascarado, (int)response.StatusCode, codigo);
+                "Meta rechazó el {Tipo} a {Telefono}: HTTP {StatusCode}, código {CodigoError}",
+                tipo, telefonoEnmascarado, (int)response.StatusCode, codigo);
 
             var detalle = codigo is null ? mensaje : $"{mensaje} (código {codigo})";
             return WhatsAppEnvioResultado.Fallo($"Meta respondió HTTP {(int)response.StatusCode}: {detalle}");
         }
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
-            _logger.LogWarning("Timeout al enviar recordatorio a {Telefono}", telefonoEnmascarado);
+            _logger.LogWarning("Timeout al enviar {Tipo} a {Telefono}", tipo, telefonoEnmascarado);
             return WhatsAppEnvioResultado.Fallo($"Timeout: WhatsApp no respondió en {_httpClient.Timeout.TotalSeconds:0} segundos.");
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning("Error de red al enviar recordatorio a {Telefono}: {Error}", telefonoEnmascarado, ex.Message);
+            _logger.LogWarning("Error de red al enviar {Tipo} a {Telefono}: {Error}", tipo, telefonoEnmascarado, ex.Message);
             return WhatsAppEnvioResultado.Fallo($"Error de red al contactar WhatsApp: {ex.Message}");
         }
     }
+
+    private static object CrearCuerpoTexto(string telefono, string texto) => new
+    {
+        messaging_product = "whatsapp",
+        recipient_type = "individual",
+        to = telefono,
+        type = "text",
+        text = new { preview_url = false, body = texto },
+    };
 
     private object CrearCuerpo(string telefono, string nombrePaciente, string fecha, string hora) => new
     {

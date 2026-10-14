@@ -10,7 +10,9 @@ Aquí va la guía de contribución explicando cómo colaborar, estándares de c�
 El esquema combina dos mecanismos:
 
 - **Scripts SQL por sprint** en `backend/src/db/` (`ScriptDBCreacion.sql`, `PeredentScript_Sprint2.sql` ... ). Crearon la mayoría de tablas (Paciente, Citas, Recetario, etc.) y se ejecutan a mano.
-- **EF Core Migrations** en `backend/Migrations/`, desde `AddPanoramicas`. La migración `SincronizarSnapshotConScriptsSprint2a4` está vacía a propósito: solo pone el snapshot al día con lo que crearon los scripts.
+- **EF Core Migrations** en `backend/Migrations/`, desde `AddPanoramicas`. Las migraciones `SincronizarSnapshotConScriptsSprint2a4` y `SincronizarSnapshotConScriptsSprint4a5` están vacías a propósito: solo ponen el snapshot al día con lo que crearon los scripts.
+
+> **Codificación al ejecutar scripts SQL:** los scripts están en UTF-8. Ejecútalos con **SSMS** o con **`sqlcmd -f 65001`**. Sin `-f 65001`, `sqlcmd` los lee con la codificación de Windows y los textos con acentos o eñes se guardan mal (por ejemplo, "Extracción" queda como "ExtracciÃ³n"). Eso no es solo visual: el código que busca esos textos por nombre deja de encontrarlos.
 
 Antes de crear una migración nueva, verificar que el snapshot esté sincronizado con el modelo (desde `backend/`):
 

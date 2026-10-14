@@ -148,6 +148,18 @@ namespace Peredent.Api.Migrations
                         .HasColumnType("varchar(150)")
                         .HasColumnName("RecordatorioMessageId");
 
+                    b.Property<string>("RespuestaMessageId")
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("RespuestaMessageId");
+
+                    b.Property<string>("RespuestaPaciente")
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("RespuestaPaciente");
+
+                    b.Property<DateTime?>("RespuestaPacienteEn")
+                        .HasColumnType("datetime")
+                        .HasColumnName("RespuestaPacienteEn");
+
                     b.HasKey("IdCita");
 
                     b.HasIndex("IdEstadoCita");

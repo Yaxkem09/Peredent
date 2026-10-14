@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Peredent.Api.Data;
+using Peredent.Api.DTOs.Request;
 using Peredent.Api.DTOs.Response;
 using Peredent.Api.Helpers;
 using Peredent.Api.Models;
@@ -36,6 +37,10 @@ public class RecordatorioServiceTests
 
             return Responder(telefono);
         }
+
+        // El servicio de recordatorios nunca envía texto libre.
+        public Task<WhatsAppEnvioResultado> EnviarTextoAsync(string telefono, string texto, CancellationToken ct) =>
+            throw new InvalidOperationException("RecordatorioService no debería enviar texto libre.");
     }
 
     private static DateTime Manana => FechaHoraGuatemala.Ahora().Date.AddDays(1);
@@ -357,5 +362,47 @@ public class RecordatorioServiceTests
         Assert.False(primera.EjecucionEnCurso);
         Assert.Equal(1, primera.Enviadas);
         Assert.Single(whatsApp.Llamadas);
+    }
+
+
+    [Fact]
+    public async Task CitaReprogramadaParaManana_VuelveARecibirRecordatorio()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        db.Usuarios.Add(new Usuario { IdUsuario = 1, NombreUsuario = "dra.solis", Salt = "s", ContrasenaHash = "h", IdRol = 1, Estado = true });
+        await db.SaveChangesAsync();
+        var cita = await CrearCitaAsync(db, Manana.AddHours(9));
+        cita.RecordatorioEnviadoEn = FechaHoraGuatemala.Ahora().AddHours(-3);
+        cita.RecordatorioMessageId = "wamid.ANTERIOR";
+        cita.RespuestaPaciente = "Modificar";
+        cita.RespuestaPacienteEn = FechaHoraGuatemala.Ahora().AddHours(-2);
+        cita.RespuestaMessageId = "wamid.RESPUESTA";
+        await db.SaveChangesAsync();
+        var whatsApp = new FakeWhatsAppService();
+
+        // Ya recibió su recordatorio: no aparece.
+        var antes = await Ejecutar(db, whatsApp, dryRun: true);
+        Assert.Equal(0, antes.TotalEncontradas);
+
+        // La secretaria la mueve a las 11:00 (mismo día, mañana).
+        var reprogramada = await new CitaService(db).ActualizarAsync(cita.IdCita, new UpdateCitaDto
+        {
+            IdPaciente = cita.IdPaciente,
+            IdUsuario = cita.IdUsuario,
+            Fecha = DateOnly.FromDateTime(Manana),
+            Hora = new TimeOnly(11, 0),
+            DuracionMinutos = 30,
+            IdEstadoCita = cita.IdEstadoCita,
+        });
+        Assert.True(reprogramada.Exitoso, reprogramada.Mensaje);
+
+        var despues = await Ejecutar(db, whatsApp, dryRun: true);
+
+        var detalle = Assert.Single(despues.Detalle);
+        Assert.Equal(cita.IdCita, detalle.IdCita);
+        Assert.Equal(RecordatorioResultados.PorEnviar, detalle.Resultado);
+        Assert.Equal("11:00 AM", detalle.Hora);
+        Assert.Empty(whatsApp.Llamadas);
     }
 }

@@ -207,4 +207,56 @@ public class WhatsAppServiceTests
         Assert.Contains("deshabilitado", resultado.Error);
         Assert.Equal(0, handler.Llamadas);
     }
+
+    // ---------- Texto libre ----------
+
+    [Fact]
+    public async Task EnviarTexto_ArmaUrlHeaderYCuerpoDeTipoText()
+    {
+        var handler = FakeHttpMessageHandler.Responde(HttpStatusCode.OK, """{"messages":[{"id":"wamid.TEXTO1"}]}""");
+        const string texto = "Para modificar su cita, llámenos al 7755-1080.\n\n*Horario de atención:*\nSábados";
+
+        var resultado = await CrearServicio(handler).EnviarTextoAsync("50251234567", texto, CancellationToken.None);
+
+        Assert.True(resultado.Exitoso);
+        Assert.Equal("wamid.TEXTO1", resultado.MessageId);
+
+        var peticion = handler.UltimaPeticion!;
+        Assert.Equal("https://graph.facebook.com/v25.0/1234567890/messages", peticion.RequestUri!.ToString());
+        Assert.Equal(Token, peticion.Headers.Authorization!.Parameter);
+
+        using var json = JsonDocument.Parse(handler.UltimoCuerpo!);
+        var raiz = json.RootElement;
+        Assert.Equal("whatsapp", raiz.GetProperty("messaging_product").GetString());
+        Assert.Equal("50251234567", raiz.GetProperty("to").GetString());
+        Assert.Equal("text", raiz.GetProperty("type").GetString());
+        Assert.False(raiz.TryGetProperty("template", out _));
+        Assert.Equal(texto, raiz.GetProperty("text").GetProperty("body").GetString());
+        Assert.False(raiz.GetProperty("text").GetProperty("preview_url").GetBoolean());
+    }
+
+    [Fact]
+    public async Task EnviarTexto_ErrorDeMeta_DevuelveFalloConCodigoSinLanzar()
+    {
+        // 131047: fuera de la ventana de 24 h para texto libre.
+        var handler = FakeHttpMessageHandler.Responde(HttpStatusCode.BadRequest,
+            """{"error":{"message":"Re-engagement message","code":131047}}""");
+
+        var resultado = await CrearServicio(handler).EnviarTextoAsync("50251234567", "hola", CancellationToken.None);
+
+        Assert.False(resultado.Exitoso);
+        Assert.Contains("131047", resultado.Error);
+    }
+
+    [Fact]
+    public async Task EnviarTexto_Deshabilitado_NoLlamaAMeta()
+    {
+        var handler = FakeHttpMessageHandler.Responde(HttpStatusCode.OK, """{"messages":[{"id":"wamid.1"}]}""");
+
+        var resultado = await CrearServicio(handler, OpcionesValidas(enabled: false))
+            .EnviarTextoAsync("50251234567", "hola", CancellationToken.None);
+
+        Assert.False(resultado.Exitoso);
+        Assert.Equal(0, handler.Llamadas);
+    }
 }

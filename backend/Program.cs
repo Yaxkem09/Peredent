@@ -159,6 +159,25 @@ builder.Services.Configure<RecordatoriosOptions>(options =>
     options.ApiKey = builder.Configuration["REMINDERS_API_KEY"] ?? string.Empty;
 });
 
+// Datos de la clínica para los mensajes de vuelta al paciente. Opcionales:
+// sin ellos se usan los defaults de ClinicaOptions. CLINICA_HORARIO acepta
+// "\n" literal como salto de línea (las variables de entorno de un hosting
+// no siempre permiten saltos reales).
+builder.Services.Configure<ClinicaOptions>(options =>
+{
+    var telefono = builder.Configuration["CLINICA_TELEFONO"];
+    if (!string.IsNullOrWhiteSpace(telefono))
+    {
+        options.Telefono = telefono.Trim();
+    }
+
+    var horario = builder.Configuration["CLINICA_HORARIO"];
+    if (!string.IsNullOrWhiteSpace(horario))
+    {
+        options.Horario = horario.Replace("\\n", "\n");
+    }
+});
+
 // HttpClient tipado: IHttpClientFactory administra el handler (sin agotar
 // sockets). El token no va en los headers por defecto, lo pone cada request.
 builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>(client =>
@@ -171,7 +190,7 @@ builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>(client =>
 // es estático dentro del servicio, no depende de este lifetime.
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 
-// Scoped: el siguiente paso le agrega acceso a ApplicationDbContext.
+// Scoped: usa ApplicationDbContext para registrar la respuesta del paciente en la cita.
 builder.Services.AddScoped<IWhatsAppWebhookService, WhatsAppWebhookService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

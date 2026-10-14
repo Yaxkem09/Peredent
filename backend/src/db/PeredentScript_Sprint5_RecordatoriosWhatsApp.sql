@@ -8,6 +8,10 @@
 --   2. Citas.RecordatorioEnviadoEn  DATETIME NULL      (hora de Guatemala)
 --      Citas.RecordatorioMessageId  VARCHAR(150) NULL  ("wamid" de Meta)
 --      Citas.RecordatorioError      VARCHAR(500) NULL
+--   3. Respuesta del paciente a los botones del recordatorio:
+--      Citas.RespuestaPaciente      VARCHAR(20) NULL   ("Confirmo" o "Modificar")
+--      Citas.RespuestaPacienteEn    DATETIME NULL      (hora de Guatemala)
+--      Citas.RespuestaMessageId     VARCHAR(150) NULL  (wamid de la respuesta)
 --
 -- Estas columnas se gestionan con EF Core Migrations (backend/Migrations/):
 --   - 20260926232455_SincronizarSnapshotConScriptsSprint2a4 (vacía: solo
@@ -15,9 +19,10 @@
 --   - 20260926232546_AddRecordatoriosWhatsApp
 --   - 20261013010711_SincronizarSnapshotConScriptsSprint4a5 (vacía: registra
 --     lo que ya crearon los scripts Sprint 4, Sprint4_Consentimientos y Sprint 5)
+--   - 20261013012649_AddRespuestaPacienteWhatsApp
 --
 -- La sección 2 es la salida de:
---   dotnet ef migrations script 0 SincronizarSnapshotConScriptsSprint4a5 --idempotent
+--   dotnet ef migrations script 0 AddRespuestaPacienteWhatsApp --idempotent
 -- Es segura de ejecutar varias veces y sobre bases que ya tengan aplicada
 -- cualquiera de las migraciones (revisa __EFMigrationsHistory antes de cada
 -- paso). Pensada para la base de Somee, donde no se corre "dotnet ef".
@@ -158,6 +163,39 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES (N'20261013010711_SincronizarSnapshotConScriptsSprint4a5', N'9.0.0');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261013012649_AddRespuestaPacienteWhatsApp'
+)
+BEGIN
+    ALTER TABLE [Citas] ADD [RespuestaMessageId] varchar(150) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261013012649_AddRespuestaPacienteWhatsApp'
+)
+BEGIN
+    ALTER TABLE [Citas] ADD [RespuestaPaciente] varchar(20) NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261013012649_AddRespuestaPacienteWhatsApp'
+)
+BEGIN
+    ALTER TABLE [Citas] ADD [RespuestaPacienteEn] datetime NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261013012649_AddRespuestaPacienteWhatsApp'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261013012649_AddRespuestaPacienteWhatsApp', N'9.0.0');
 END;
 
 COMMIT;
