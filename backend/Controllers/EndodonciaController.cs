@@ -26,12 +26,7 @@ public class EndodonciaController : ControllerBase
         if (paciente is null)
             return NotFound(new { message = "Paciente no encontrado." });
 
-        var piezas = await _db.Endodoncias
-            .Where(e => e.IdPaciente == pacienteId)
-            .OrderBy(e => e.Pieza)
-            .ToListAsync();
-
-        return Ok(ToDto(pacienteId, piezas));
+        return Ok(await CargarDtoAsync(pacienteId));
     }
 
     [HttpPut("api/pacientes/{pacienteId:int}/endodoncia")]
@@ -41,12 +36,26 @@ public class EndodonciaController : ControllerBase
         if (paciente is null)
             return NotFound(new { message = "Paciente no encontrado." });
 
+        // Datos generales (Tx periodontal y observaciones): se guardan aparte
+        // de las piezas, así se pueden registrar aunque no haya ninguna.
+        var general = await _db.EndodonciasPaciente.FindAsync(pacienteId);
+        if (general is null)
+        {
+            general = new EndodonciaPaciente { IdPaciente = pacienteId };
+            _db.EndodonciasPaciente.Add(general);
+        }
+        general.TxPeriodontal = request.TxPeriodontal;
+        general.ObservacionesTxPeriodontal = request.TxPeriodontal ? Opcional(request.ObservacionesTxPeriodontal) : null;
+        general.ObservacionesEndodoncia = Opcional(request.ObservacionesEndodoncia);
+
         var existentes = await _db.Endodoncias
             .Where(e => e.IdPaciente == pacienteId)
             .ToListAsync();
 
+        // Filas sin pieza seleccionada se ignoran en lugar de guardarse vacías.
         var recibidas = request.Piezas
-            .GroupBy(p => p.Pieza)
+            .Where(p => !string.IsNullOrWhiteSpace(p.Pieza))
+            .GroupBy(p => p.Pieza.Trim())
             .ToDictionary(g => g.Key, g => g.Last());
 
         var aQuitar = existentes.Where(e => !recibidas.ContainsKey(e.Pieza)).ToList();
@@ -55,58 +64,44 @@ public class EndodonciaController : ControllerBase
         foreach (var (pieza, datos) in recibidas)
         {
             var existente = existentes.FirstOrDefault(e => e.Pieza == pieza);
-            if (existente is not null)
+            if (existente is null)
             {
-                existente.Mm1 = datos.Mm1;
-                existente.Mm2 = datos.Mm2;
-                existente.Mm3 = datos.Mm3;
-                existente.Mm4 = datos.Mm4;
-                existente.Diametro = datos.Diametro;
-                existente.Cuspide = datos.Cuspide;
-                existente.Obturacion = datos.Obturacion;
-                existente.TxPeriodontal = request.TxPeriodontal;
-                existente.ObservacionesTxPeriodontal = request.TxPeriodontal ? request.ObservacionesTxPeriodontal : null;
-                existente.ObservacionesEndodoncia = request.ObservacionesEndodoncia;
+                existente = new Endodoncia { IdPaciente = pacienteId, Pieza = pieza };
+                _db.Endodoncias.Add(existente);
             }
-            else
-            {
-                _db.Endodoncias.Add(new Endodoncia
-                {
-                    IdPaciente = pacienteId,
-                    Pieza = pieza,
-                    Mm1 = datos.Mm1,
-                    Mm2 = datos.Mm2,
-                    Mm3 = datos.Mm3,
-                    Mm4 = datos.Mm4,
-                    Diametro = datos.Diametro,
-                    Cuspide = datos.Cuspide,
-                    Obturacion = datos.Obturacion,
-                    TxPeriodontal = request.TxPeriodontal,
-                    ObservacionesTxPeriodontal = request.TxPeriodontal ? request.ObservacionesTxPeriodontal : null,
-                    ObservacionesEndodoncia = request.ObservacionesEndodoncia,
-                });
-            }
+
+            existente.Mm1 = datos.Mm1;
+            existente.Mm2 = datos.Mm2;
+            existente.Mm3 = datos.Mm3;
+            existente.Mm4 = datos.Mm4;
+            existente.Diametro = datos.Diametro;
+            existente.Cuspide = datos.Cuspide;
+            existente.Obturacion = datos.Obturacion;
         }
 
         await _db.SaveChangesAsync();
 
-        var resultado = await _db.Endodoncias
+        return Ok(await CargarDtoAsync(pacienteId));
+    }
+
+    private async Task<EndodonciaDto> CargarDtoAsync(int pacienteId)
+    {
+        var general = await _db.EndodonciasPaciente
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.IdPaciente == pacienteId);
+
+        var piezas = await _db.Endodoncias
+            .AsNoTracking()
             .Where(e => e.IdPaciente == pacienteId)
             .OrderBy(e => e.Pieza)
             .ToListAsync();
 
-        return Ok(ToDto(pacienteId, resultado));
-    }
-
-    private static EndodonciaDto ToDto(int pacienteId, List<Endodoncia> piezas)
-    {
-        var primera = piezas.FirstOrDefault();
         return new EndodonciaDto
         {
             IdPaciente = pacienteId,
-            TxPeriodontal = primera?.TxPeriodontal ?? false,
-            ObservacionesTxPeriodontal = primera?.ObservacionesTxPeriodontal,
-            ObservacionesEndodoncia = primera?.ObservacionesEndodoncia,
+            TxPeriodontal = general?.TxPeriodontal ?? false,
+            ObservacionesTxPeriodontal = general?.ObservacionesTxPeriodontal,
+            ObservacionesEndodoncia = general?.ObservacionesEndodoncia,
             Piezas = piezas.Select(e => new PiezaEndodonciaRespuestaDto
             {
                 IdEndodoncia = e.IdEndodoncia,
@@ -121,4 +116,7 @@ public class EndodonciaController : ControllerBase
             }).ToList(),
         };
     }
+
+    private static string? Opcional(string? valor) =>
+        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

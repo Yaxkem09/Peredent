@@ -56,19 +56,21 @@ const EndodonciaTab = ({ idPaciente }) => {
       .finally(() => setCargando(false));
   }, [idPaciente]);
 
+  const aplicarProtesis = (data) => {
+    setProtesisIndicaciones({
+      PPF: data.ppf ?? false,
+      PPRSup: data.pprSup ?? false,
+      PPRInf: data.pprInf ?? false,
+      PTSup: data.ptSup ?? false,
+      PTInf: data.ptInf ?? false,
+    });
+    setObservacionesProtesis(data.observacionesProtesis ?? '');
+  };
+
   useEffect(() => {
     protesisService.getByPaciente(idPaciente)
-      .then((data) => {
-        setProtesisIndicaciones({
-          PPF: data.ppf ?? false,
-          PPRSup: data.pprSup ?? false,
-          PPRInf: data.pprInf ?? false,
-          PTSup: data.ptSup ?? false,
-          PTInf: data.ptInf ?? false,
-        });
-        setObservacionesProtesis(data.observacionesProtesis ?? '');
-      })
-      .catch(() => {});
+      .then(aplicarProtesis)
+      .catch(() => setErrorProtesis('No se pudo cargar la prótesis registrada.'));
   }, [idPaciente]);
 
   const agregarPieza = () => setPiezas((prev) => [...prev, piezaVacia()]);
@@ -120,7 +122,7 @@ const EndodonciaTab = ({ idPaciente }) => {
     setErrorProtesis(null);
     setExitoProtesis(false);
     try {
-      await protesisService.guardar(idPaciente, {
+      const guardada = await protesisService.guardar(idPaciente, {
         ppf: protesisIndicaciones.PPF,
         pprSup: protesisIndicaciones.PPRSup,
         pprInf: protesisIndicaciones.PPRInf,
@@ -128,6 +130,7 @@ const EndodonciaTab = ({ idPaciente }) => {
         ptInf: protesisIndicaciones.PTInf,
         observacionesProtesis: observacionesProtesis || null,
       });
+      aplicarProtesis(guardada);
       setExitoProtesis(true);
     } catch {
       setErrorProtesis('No se pudo guardar la prótesis. Intenta de nuevo.');

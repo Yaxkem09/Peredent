@@ -1,0 +1,228 @@
+/* SCRUM-294: constancias odontológicas (lista, elección de tipo y formulario).
+   El formulario reutiliza el estilo de hoja de Consentimientos.css. */
+
+.constancia-item-tipo {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.constancia-item-fechas {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.constancia-item-doctor {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.constancia-item-ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal);
+}
+
+.recetario-item:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+/* Elección del tipo de constancia (SCRUM-296) */
+
+.constancia-acciones-izq {
+  justify-content: flex-start;
+}
+
+.constancia-tipos-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.constancia-tipos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.constancia-tipo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--teal);
+  border-radius: 12px;
+  padding: 18px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.constancia-tipo:hover {
+  border-color: var(--teal);
+  box-shadow: 0 4px 14px rgba(10, 38, 75, 0.1);
+  transform: translateY(-1px);
+}
+
+.constancia-tipo-nombre {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.constancia-tipo-descripcion {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* Hoja de la constancia */
+
+.constancia-doc {
+  font-size: 15px;
+  line-height: 1.8;
+  text-align: justify;
+}
+
+.constancia-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.constancia-logo img {
+  width: 190px;
+  height: auto;
+}
+
+.constancia-titulo {
+  margin: 18px 0 14px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.constancia-tratamiento {
+  padding-left: 24px;
+}
+
+.constancia-input-dias {
+  width: 70px;
+  text-align: center;
+}
+
+.constancia-ayuda {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: left;
+}
+
+.constancia-firma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(300px, 100%);
+  margin: 64px auto 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.constancia-firma .consent-firma-linea {
+  width: 100%;
+}
+
+.constancia-firma-sello {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* Modal "Mis datos profesionales" */
+
+.constancia-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.constancia-datos-intro {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.constancia-datos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.constancia-datos-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.constancia-datos-campo.completo {
+  grid-column: 1 / -1;
+}
+
+.constancia-datos-campo label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.constancia-datos-requerido {
+  color: var(--coral);
+}
+
+.constancia-datos-campo input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid #c9d5d1;
+  font: inherit;
+  font-size: 15px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.constancia-datos-campo input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.constancia-datos-campo input.invalido {
+  border-color: var(--coral);
+  background: var(--coral-soft);
+}
+
+@media (max-width: 720px) {
+  .constancia-datos-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .constancia-tratamiento {
+    padding-left: 0;
+  }
+
+  .constancia-item-ver {
+    display: none;
+  }
+}

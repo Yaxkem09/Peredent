@@ -18,6 +18,7 @@ import SaldoAbonosTab from './SaldoAbonosTab';
 import RecetarioTab from './RecetarioTab';
 import FotosPanoramicasTab from './FotosPanoramicasTab';
 import ConsentimientosTab from './ConsentimientosTab';
+import ConstanciasTab from './ConstanciasTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -88,6 +89,13 @@ const ICONOS_TAB = {
       <path d="M14 3.5v5h5M8.5 13h7M8.5 16.5l1.6-1.6 1.6 1.6 1.6-1.6 1.6 1.6" />
     </>
   ),
+  constancias: (
+    <>
+      <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z" />
+      <path d="M14 3.5v5h5M8.5 12.5h7M8.5 15.5h4" />
+      <circle cx="15.5" cy="17" r="1.6" />
+    </>
+  ),
   presupuesto: (
     <>
       <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" />
@@ -132,6 +140,7 @@ const GRUPOS_TABS = [
       { id: 'fotos', label: 'Radiografías/Panorámicas' },
       { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
       { id: 'consentimientos', label: 'Consentimientos', hideFor: ['Asistente'] },
+      { id: 'constancias', label: 'Constancias', hideFor: ['Asistente'] },
     ],
   },
   {
@@ -160,6 +169,7 @@ const TABS_DISPONIBLES = new Set([
   'recetario',
   'fotos',
   'consentimientos',
+  'constancias',
 ]);
 
 const inicialesDe = (nombres, apellidos) =>
@@ -486,8 +496,8 @@ const PacienteDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // El recetario y los consentimientos no están disponibles para asistentes
-  // (igual que en el menú lateral; SCRUM-256).
+  // El recetario, los consentimientos y las constancias no están disponibles
+  // para asistentes (igual que en el menú lateral; SCRUM-256, SCRUM-297).
   const visibleTabs = useMemo(
     () => TABS.filter((tab) => !tab.hideFor?.includes(user?.rol)),
     [user?.rol],
@@ -635,6 +645,7 @@ const PacienteDetail = () => {
           {activeTab === 'recetario' && <RecetarioTab idPaciente={id} paciente={paciente} />}
           {activeTab === 'fotos' && <FotosPanoramicasTab idPaciente={id} />}
           {activeTab === 'consentimientos' && <ConsentimientosTab idPaciente={id} paciente={paciente} />}
+          {activeTab === 'constancias' && <ConstanciasTab idPaciente={id} paciente={paciente} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"

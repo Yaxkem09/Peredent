@@ -1205,12 +1205,14 @@ body.redimensionando-cita * {
 /* ---- Vista mes: el calendario llena el alto de la pantalla ----
    Las filas (semanas) se reparten el alto disponible en vez de dejar un
    hueco vacío debajo en monitores altos; en pantallas bajas no bajan de
-   108px por fila y la página simplemente hace scroll. */
+   108px por fila y la página simplemente hace scroll. Es un alto MÍNIMO (no
+   fijo): un mes de 5 o 6 semanas puede necesitar más que la pantalla, y con
+   alto fijo + overflow: hidden la última semana quedaba cortada. */
 .month-calendar {
   display: flex;
   flex-direction: column;
-  height: max(600px, calc(100vh - 300px));
-  height: max(600px, calc(100dvh - 300px));
+  min-height: max(600px, calc(100vh - 300px));
+  min-height: max(600px, calc(100dvh - 300px));
 }
 
 .month-grid {
@@ -1225,7 +1227,7 @@ body.redimensionando-cita * {
 
 @media (max-width: 860px) {
   .month-calendar {
-    height: auto;
+    min-height: 0;
   }
 }
 

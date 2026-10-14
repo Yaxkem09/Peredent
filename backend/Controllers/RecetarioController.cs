@@ -60,6 +60,69 @@ public class RecetarioController : ControllerBase
         });
     }
 
+    // SCRUM-294: registra o actualiza los datos profesionales del odontólogo
+    // sin tener que emitir una receta (los usan las constancias). No
+    // sobrescribe la fila vigente: agrega una nueva, igual que al emitir una
+    // receta, para que las recetas ya emitidas conserven sus datos. Desde
+    // aquí, la fila nueva es la que precarga recetas y firma constancias.
+    [HttpPut("api/recetario/perfil")]
+    public async Task<ActionResult<DatosOdontologoRespuestaDto>> GuardarPerfil([FromBody] DatosOdontologoDto request)
+    {
+        var idUsuario = ObtenerIdUsuarioActual();
+        if (idUsuario is null)
+        {
+            return Unauthorized();
+        }
+
+        var faltantes = new List<string>();
+        if (string.IsNullOrWhiteSpace(request.Nombres)) faltantes.Add("nombres");
+        if (string.IsNullOrWhiteSpace(request.Apellidos)) faltantes.Add("apellidos");
+        if (string.IsNullOrWhiteSpace(request.Colegiado)) faltantes.Add("colegiado");
+        if (string.IsNullOrWhiteSpace(request.Direccion)) faltantes.Add("direccion");
+        if (string.IsNullOrWhiteSpace(request.Telefono)) faltantes.Add("telefono");
+        if (string.IsNullOrWhiteSpace(request.Correo)) faltantes.Add("correo");
+        if (faltantes.Count > 0)
+        {
+            return BadRequest(new { message = "Completa todos los datos profesionales.", campos = faltantes });
+        }
+
+        var largos = new List<string>();
+        if (request.Nombres.Trim().Length > 100) largos.Add("nombres");
+        if (request.Apellidos.Trim().Length > 100) largos.Add("apellidos");
+        if (request.Colegiado.Trim().Length > 50) largos.Add("colegiado");
+        if (request.Direccion.Trim().Length > 200) largos.Add("direccion");
+        if (request.Telefono.Trim().Length > 20) largos.Add("telefono");
+        if (request.Correo.Trim().Length > 150) largos.Add("correo");
+        if (largos.Count > 0)
+        {
+            return BadRequest(new { message = "Algunos campos superan la longitud permitida.", campos = largos });
+        }
+
+        var datos = new DatosRecetario
+        {
+            IdUsuario = idUsuario.Value,
+            NombresOdontologo = request.Nombres.Trim(),
+            ApellidosOdontologo = request.Apellidos.Trim(),
+            ColegiadoOdontologo = request.Colegiado.Trim(),
+            DireccionOdontologo = request.Direccion.Trim(),
+            TelefonoOdontologo = request.Telefono.Trim(),
+            CorreoOdontologo = request.Correo.Trim(),
+        };
+
+        _db.DatosRecetarios.Add(datos);
+        await _db.SaveChangesAsync();
+
+        return Ok(new DatosOdontologoRespuestaDto
+        {
+            Nombres = datos.NombresOdontologo,
+            Apellidos = datos.ApellidosOdontologo,
+            Colegiado = datos.ColegiadoOdontologo,
+            Direccion = datos.DireccionOdontologo,
+            Telefono = datos.TelefonoOdontologo,
+            Correo = datos.CorreoOdontologo,
+        });
+    }
+
     // Menú principal "Recetario" (SCRUM-101): busca recetas de todos los
     // pacientes por nombre, apellido o teléfono, insensible a mayúsculas y
     // acentos (mismo criterio que /api/pacientes/search). Sin texto de
