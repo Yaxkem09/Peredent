@@ -153,21 +153,22 @@ Mensajes (con `{telefono}` = `CLINICA_TELEFONO` y `{horario}` = `CLINICA_HORARIO
 
 ### Reprogramar una cita
 
-Cuando una cita cambia de **fecha u hora de inicio** (desde el modal o
-arrastrándola en el Calendario; ambos pasan por `CitaService.ActualizarAsync`),
+Cuando una cita cambia de **fecha u hora de inicio** o de **paciente** (desde el
+modal o arrastrándola en el Calendario; todo pasa por `CitaService.ActualizarAsync`),
 se limpian `RecordatorioEnviadoEn`, `RecordatorioMessageId`, `RecordatorioError`,
 `RespuestaPaciente`, `RespuestaPacienteEn` y `RespuestaMessageId`:
 
-- La cita vuelve a recibir un recordatorio para su nueva fecha (si queda para
-  mañana, entra en la siguiente corrida del workflow).
+- La cita vuelve a recibir un recordatorio para su nueva fecha, o para el nuevo
+  paciente (si queda para mañana, entra en la siguiente corrida del workflow).
 - La respuesta anterior se descarta, así que el aviso y el ícono de "Modificar"
-  desaparecen: la reprogramación es justamente la atención que pedía el paciente.
-- Si el paciente toca después un botón del recordatorio **viejo**, el webhook ya
-  no encuentra la cita por ese `context.id` y lo ignora.
+  desaparecen: la reprogramación es justamente la atención que pedía el paciente,
+  y la respuesta de otro paciente no aplica a la cita.
+- Si alguien toca después un botón del recordatorio **viejo**, el webhook ya no
+  encuentra la cita por ese `context.id` y lo ignora.
 
 Si solo cambian otros datos (notas, odontólogo, estado o la duración, sin mover
-la hora de inicio), no se limpia nada. Una reprogramación rechazada (por ejemplo,
-por conflicto de horario) tampoco cambia nada.
+la hora de inicio ni cambiar el paciente), no se limpia nada. Una actualización
+rechazada (por ejemplo, por conflicto de horario) tampoco cambia nada.
 
 ## Configuración
 

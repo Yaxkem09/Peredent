@@ -240,6 +240,9 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.EstadoNoDisponibleAun, "No se puede marcar Atendida o No Asistió antes de que llegue la hora de la cita.");
         }
 
+        // Antes de asignar: el recordatorio y la respuesta son del paciente anterior.
+        var cambiaPaciente = request.IdPaciente != cita.IdPaciente;
+
         cita.IdPaciente = request.IdPaciente;
         cita.IdUsuario = request.IdUsuario;
         cita.IdEstadoCita = request.IdEstadoCita;
@@ -247,7 +250,7 @@ public class CitaService : ICitaService
         cita.FechaFin = fechaFin;
         cita.NotasAdicionales = request.NotasAdicionales;
 
-        if (cambiaFechaOHora)
+        if (cambiaFechaOHora || cambiaPaciente)
         {
             ReiniciarRecordatorioWhatsApp(cita);
         }
@@ -284,9 +287,9 @@ public class CitaService : ICitaService
     private static readonly string MensajeDuracionInvalida =
         $"La duración de la cita debe ser de al menos {CitaConstantes.IncrementoMinutos} minutos y en bloques de {CitaConstantes.IncrementoMinutos} minutos.";
 
-    // Una cita reprogramada (cambia la fecha o la hora de inicio) vuelve a
-    // empezar en cuanto al recordatorio por WhatsApp: recibe uno nuevo para su
-    // nueva fecha y se descarta la respuesta del paciente al anterior (con ella
+    // Una cita reprogramada (cambia la fecha o la hora de inicio) o asignada a
+    // otro paciente vuelve a empezar en cuanto al recordatorio por WhatsApp:
+    // recibe uno nuevo y se descarta la respuesta al anterior (con ella
     // desaparece el aviso de "Modificar"). Un toque tardío a un botón del
     // recordatorio viejo ya no encuentra la cita por su wamid y se ignora.
     private static void ReiniciarRecordatorioWhatsApp(Cita cita)

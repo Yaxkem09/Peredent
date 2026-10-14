@@ -939,6 +939,31 @@ public class CitaServiceTests
     }
 
     [Fact]
+    public async Task ActualizarAsync_CambiarElPaciente_ReiniciaRecordatorioYRespuesta()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var otroPaciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var cita = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, FechaFutura, new TimeOnly(9, 0));
+        await MarcarRecordatorioYRespuestaAsync(db, cita);
+
+        // Misma fecha y hora; solo cambia el paciente.
+        var cambios = ActualizacionDe(cita, FechaFutura, new TimeOnly(9, 0));
+        cambios.IdPaciente = otroPaciente.IdPaciente;
+
+        var resultado = await new CitaService(db).ActualizarAsync(cita.IdCita, cambios);
+
+        Assert.True(resultado.Exitoso);
+        Assert.Null(resultado.Cita!.RespuestaPaciente);
+        db.ChangeTracker.Clear();
+        var guardada = await db.Citas.SingleAsync(c => c.IdCita == cita.IdCita);
+        Assert.Equal(otroPaciente.IdPaciente, guardada.IdPaciente);
+        AssertRecordatorioReiniciado(guardada);
+    }
+
+    [Fact]
     public async Task ActualizarAsync_SinCambiarFechaNiHora_ConservaRecordatorioYRespuesta()
     {
         using var db = CrearContexto();
