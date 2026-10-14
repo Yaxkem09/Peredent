@@ -180,6 +180,10 @@ public class PlanTratamientoController : ControllerBase
             return BadRequest(new { message = $"Las observaciones generales no pueden tener más de {ObservacionesLongitudMaxima} caracteres." });
         }
 
+        // Acepto que una pieza con tratamiento se guarde sin valor (queda en 0,
+        // "pendiente de precio") porque el odontólogo puede querer ponerle el
+        // precio más tarde; lo único que sigo rechazando es un valor negativo,
+        // que sí es un dato inválido.
         foreach (var pieza in request.Piezas)
         {
             if (string.IsNullOrWhiteSpace(pieza.Tratamiento))
@@ -187,9 +191,9 @@ public class PlanTratamientoController : ControllerBase
                 continue;
             }
 
-            if (pieza.Valor <= 0)
+            if (pieza.Valor < 0)
             {
-                return BadRequest(new { message = $"La pieza {pieza.Pieza} tiene un tratamiento pero no tiene un valor mayor a 0." });
+                return BadRequest(new { message = $"La pieza {pieza.Pieza} no puede tener un valor negativo." });
             }
         }
 

@@ -172,6 +172,7 @@ const ListaAbonos = ({ abonos, puedeEditar, onEditar, onEliminar }) => {
             <thead>
               <tr>
                 <th>Fecha</th>
+                <th>Método de pago</th>
                 <th className="saldo-num">Monto</th>
                 <th className="saldo-num">Saldo después del abono</th>
                 {puedeEditar && <th className="saldo-th-acciones">Acciones</th>}
@@ -192,6 +193,9 @@ const ListaAbonos = ({ abonos, puedeEditar, onEditar, onEliminar }) => {
                         {abono.usuarioAnulacion && `Eliminado por ${abono.usuarioAnulacion}`}
                       </span>
                     )}
+                  </td>
+                  <td>
+                    {abono.metodoPago ? <span className="saldo-metodo">{abono.metodoPago}</span> : '—'}
                   </td>
                   <td className="saldo-num saldo-monto">{formatCurrency(abono.monto)}</td>
                   <td className={`saldo-num saldo-saldo${!abono.anulado && abono.saldoPendiente > 0 ? ' debe' : ''}`}>{abono.anulado ? '—' : formatearSaldo(abono.saldoPendiente)}</td>
@@ -254,22 +258,30 @@ const InputMonto = ({ id, value, onChange, disabled }) => (
   </div>
 );
 
-// Formulario de abono de un plan. Cada plan tiene el suyo, con su propio monto.
-const FormAbono = ({ plan, onRegistrar }) => {
+// Formulario de abono de un plan. Cada plan tiene el suyo, con su propio monto
+// y método de pago.
+const FormAbono = ({ plan, metodosPago, onRegistrar }) => {
   const [monto, setMonto] = useState('');
+  // SCRUM-276 / SCRUM-277: obligatorio y sin valor por defecto, para que el
+  // usuario elija a conciencia si fue efectivo o transferencia.
+  const [idMetodoPago, setIdMetodoPago] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   const excedeSaldo = monto !== '' && Number(monto) > plan.saldo;
   const inputId = `monto-abono-${plan.idPresupuestoPlan}`;
+  const metodoId = `metodo-abono-${plan.idPresupuestoPlan}`;
 
   const enviar = async (evento) => {
     evento.preventDefault();
-    if (excedeSaldo) return;
+    if (excedeSaldo || idMetodoPago === '') return;
 
     setGuardando(true);
-    const ok = await onRegistrar(plan, Number(monto));
+    const ok = await onRegistrar(plan, Number(monto), Number(idMetodoPago));
     setGuardando(false);
-    if (ok) setMonto('');
+    if (ok) {
+      setMonto('');
+      setIdMetodoPago('');
+    }
   };
 
   return (
@@ -295,10 +307,30 @@ const FormAbono = ({ plan, onRegistrar }) => {
 
       {excedeSaldo && <p className="saldo-aviso">{avisoSaldoInsuficiente(plan.saldo)}</p>}
 
+      <div className="saldo-form-campo">
+        <label htmlFor={metodoId}>Método de pago</label>
+        <select
+          id={metodoId}
+          value={idMetodoPago}
+          onChange={(evento) => setIdMetodoPago(evento.target.value)}
+          disabled={guardando}
+          required
+        >
+          <option value="" disabled>
+            Selecciona el método de pago
+          </option>
+          {metodosPago.map((metodo) => (
+            <option key={metodo.idMetodoPago} value={metodo.idMetodoPago}>
+              {metodo.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <button
         type="submit"
         className="btn btn-primary btn-md saldo-form-submit"
-        disabled={guardando || monto === '' || excedeSaldo}
+        disabled={guardando || monto === '' || idMetodoPago === '' || excedeSaldo}
       >
         {guardando ? 'Registrando…' : 'Registrar abono'}
       </button>
@@ -306,7 +338,7 @@ const FormAbono = ({ plan, onRegistrar }) => {
   );
 };
 
-const PlanCard = ({ plan, puedeModificar, onRegistrar, onEditar, onEliminar }) => {
+const PlanCard = ({ plan, metodosPago, puedeModificar, onRegistrar, onEditar, onEliminar }) => {
   const pagado = plan.saldo <= 0;
   // Los planes cerrados y ya pagados arrancan colapsados: son solo historial.
   const [abierto, setAbierto] = useState(plan.activo || !pagado);
@@ -377,7 +409,7 @@ const PlanCard = ({ plan, puedeModificar, onRegistrar, onEditar, onEliminar }) =
           </div>
 
           <div className={`saldo-plan-grid${pagado ? ' sin-form' : ''}`}>
-            {!pagado && <FormAbono plan={plan} onRegistrar={onRegistrar} />}
+            {!pagado && <FormAbono plan={plan} metodosPago={metodosPago} onRegistrar={onRegistrar} />}
 
             <ListaAbonos
               abonos={plan.abonos}
@@ -399,6 +431,7 @@ const SaldoAbonosTab = ({ idPaciente }) => {
   const puedeModificar = user?.rol === 'Odontologo';
 
   const [estado, setEstado] = useState(null);
+  const [metodosPago, setMetodosPago] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
@@ -421,10 +454,13 @@ const SaldoAbonosTab = ({ idPaciente }) => {
     setCargando(true);
     setError(null);
 
-    abonosService
-      .getEstadoCuentaPaciente(idPaciente)
-      .then((data) => {
-        if (activo) setEstado(data);
+    // El catálogo de métodos de pago (SCRUM-276) se pide junto con el estado de
+    // cuenta: sin él no se puede registrar un abono.
+    Promise.all([abonosService.getEstadoCuentaPaciente(idPaciente), abonosService.getMetodosPago()])
+      .then(([data, metodos]) => {
+        if (!activo) return;
+        setEstado(data);
+        setMetodosPago(metodos);
       })
       .catch(() => {
         if (activo) setError('No se pudo cargar el estado de cuenta de este paciente.');
@@ -439,14 +475,19 @@ const SaldoAbonosTab = ({ idPaciente }) => {
   }, [idPaciente]);
 
   // Devuelve true si se registró, para que el formulario limpie su monto.
-  const registrar = async (plan, monto) => {
+  const registrar = async (plan, monto, idMetodoPago) => {
     if (monto > plan.saldo) {
       notify(avisoSaldoInsuficiente(plan.saldo));
       return false;
     }
 
+    if (!idMetodoPago) {
+      notify('Selecciona el método de pago del abono.');
+      return false;
+    }
+
     try {
-      await abonosService.registrar(idPaciente, monto, plan.idPresupuestoPlan);
+      await abonosService.registrar(idPaciente, monto, plan.idPresupuestoPlan, idMetodoPago);
       // El saldo se vuelve a pedir para mostrar el recálculo del backend en vez
       // de calcularlo en el cliente.
       setEstado(await abonosService.getEstadoCuentaPaciente(idPaciente));
@@ -595,6 +636,7 @@ const SaldoAbonosTab = ({ idPaciente }) => {
         <PlanCard
           key={plan.idPresupuestoPlan}
           plan={plan}
+          metodosPago={metodosPago}
           puedeModificar={puedeModificar}
           onRegistrar={registrar}
           onEditar={abrirEdicion}

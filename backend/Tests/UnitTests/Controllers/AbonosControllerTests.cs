@@ -23,6 +23,10 @@ public class AbonosControllerTests
     private const int IdUsuarioToken = 7;
     private const string PasswordAdmin = "Clave.Admin1";
 
+    // SCRUM-291: catálogo de métodos de pago que carga CrearContexto.
+    private const int IdEfectivo = 1;
+    private const int IdTransferencia = 2;
+
     // Guarda lo que se escribe en el log para poder comprobar que la traza de la
     // anulación existe y que la contraseña nunca aparece ahí.
     private sealed class LoggerEspia : ILogger<AbonosController>
@@ -49,7 +53,12 @@ public class AbonosControllerTests
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new ApplicationDbContext(options);
+        var db = new ApplicationDbContext(options);
+        db.MetodosPago.AddRange(
+            new MetodoPago { IdMetodoPago = IdEfectivo, NombreMetodoPago = "Efectivo" },
+            new MetodoPago { IdMetodoPago = IdTransferencia, NombreMetodoPago = "Transferencia" });
+        db.SaveChanges();
+        return db;
     }
 
     private static AbonosController CrearController(
@@ -158,7 +167,7 @@ public class AbonosControllerTests
         var controller = CrearController(db);
 
         var antes = DateTime.UtcNow.AddHours(-6);
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m });
         var despues = DateTime.UtcNow.AddHours(-6);
 
         var dto = ExtraerAbono(resultado);
@@ -185,10 +194,64 @@ public class AbonosControllerTests
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
 
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = monto });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = monto });
 
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
         Assert.Empty(await db.AbonosPaciente.ToListAsync());
+    }
+
+    // SCRUM-277: sin método de pago, o con uno que no existe, no se guarda nada.
+    [Theory]
+    [InlineData(null)]
+    [InlineData(99)]
+    public async Task Registrar_SinMetodoPagoValido_Devuelve400YNoGuardaNada(int? idMetodoPago)
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
+        var controller = CrearController(db);
+
+        var resultado = await controller.Registrar(
+            paciente.IdPaciente,
+            new RegistrarAbonoDto { IdMetodoPago = idMetodoPago, Monto = 500m });
+
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Empty(await db.AbonosPaciente.ToListAsync());
+    }
+
+    // SCRUM-293 / SCRUM-278: el método se guarda en el abono y aparece en el historial.
+    [Fact]
+    public async Task Registrar_GuardaElMetodoPagoYLoMuestraEnElHistorial()
+    {
+        using var db = CrearContexto();
+        var paciente = await CrearPacienteAsync(db);
+        await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
+        var controller = CrearController(db);
+
+        var dto = ExtraerAbono(await controller.Registrar(
+            paciente.IdPaciente,
+            new RegistrarAbonoDto { IdMetodoPago = IdTransferencia, Monto = 500m }));
+
+        Assert.Equal(IdTransferencia, dto.IdMetodoPago);
+        Assert.Equal("Transferencia", dto.MetodoPago);
+        Assert.Equal(IdTransferencia, (await db.AbonosPaciente.SingleAsync()).IdMetodoPago);
+
+        var estado = ExtraerEstadoCuenta(await controller.GetEstadoCuenta(paciente.IdPaciente));
+        var abono = Assert.Single(estado.Abonos);
+        Assert.Equal("Transferencia", abono.MetodoPago);
+    }
+
+    // SCRUM-276: el catálogo trae las opciones del campo "Método de pago".
+    [Fact]
+    public async Task GetMetodosPago_DevuelveEfectivoYTransferencia()
+    {
+        using var db = CrearContexto();
+
+        var resultado = await CrearController(db).GetMetodosPago();
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        var metodos = Assert.IsAssignableFrom<IEnumerable<MetodoPagoDto>>(ok.Value).ToList();
+        Assert.Equal(new[] { "Efectivo", "Transferencia" }, metodos.Select(m => m.Nombre));
     }
 
     [Fact]
@@ -197,7 +260,7 @@ public class AbonosControllerTests
         using var db = CrearContexto();
         var controller = CrearController(db);
 
-        var resultado = await controller.Registrar(999, new RegistrarAbonoDto { Monto = 500m });
+        var resultado = await controller.Registrar(999, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m });
 
         Assert.IsType<NotFoundObjectResult>(resultado.Result);
     }
@@ -210,7 +273,7 @@ public class AbonosControllerTests
         await CrearPlanAsync(db, paciente.IdPaciente, new DateTime(2026, 3, 1), 800m, 2500m);
         var controller = CrearController(db);
 
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m });
 
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
         Assert.Empty(await db.AbonosPaciente.ToListAsync());
@@ -229,7 +292,7 @@ public class AbonosControllerTests
 
         var resultado = await controller.Registrar(
             paciente.IdPaciente,
-            new RegistrarAbonoDto { Monto = 400m, IdPresupuestoPlan = cerrado.IdPresupuestoPlan });
+            new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 400m, IdPresupuestoPlan = cerrado.IdPresupuestoPlan });
 
         var dto = ExtraerAbono(resultado);
         Assert.Equal(600m, dto.SaldoPendiente);
@@ -237,7 +300,7 @@ public class AbonosControllerTests
 
         var excede = await controller.Registrar(
             paciente.IdPaciente,
-            new RegistrarAbonoDto { Monto = 600.01m, IdPresupuestoPlan = cerrado.IdPresupuestoPlan });
+            new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 600.01m, IdPresupuestoPlan = cerrado.IdPresupuestoPlan });
         Assert.IsType<BadRequestObjectResult>(excede.Result);
     }
 
@@ -251,7 +314,7 @@ public class AbonosControllerTests
 
         var resultado = await CrearController(db).Registrar(
             paciente.IdPaciente,
-            new RegistrarAbonoDto { Monto = 100m, IdPresupuestoPlan = planAjeno.IdPresupuestoPlan });
+            new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 100m, IdPresupuestoPlan = planAjeno.IdPresupuestoPlan });
 
         Assert.IsType<NotFoundObjectResult>(resultado.Result);
         Assert.Empty(await db.AbonosPaciente.ToListAsync());
@@ -265,7 +328,7 @@ public class AbonosControllerTests
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db, idUsuario: null);
 
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m });
 
         Assert.IsType<UnauthorizedResult>(resultado.Result);
         Assert.Empty(await db.AbonosPaciente.ToListAsync());
@@ -367,7 +430,7 @@ public class AbonosControllerTests
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
 
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = monto });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = monto });
 
         if (seEsperaOk)
         {
@@ -392,10 +455,10 @@ public class AbonosControllerTests
         var controller = CrearController(db);
 
         // 3300 - 300 = 3000 disponibles.
-        var pasado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 3000.01m });
+        var pasado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 3000.01m });
         Assert.IsType<BadRequestObjectResult>(pasado.Result);
 
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 1000m });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 1000m });
         Assert.Equal(2000m, ExtraerAbono(resultado).SaldoPendiente);
     }
 
@@ -406,7 +469,7 @@ public class AbonosControllerTests
         var paciente = await CrearPacienteAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m, 1200m);
 
-        var resultado = await CrearController(db).Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 1500m });
+        var resultado = await CrearController(db).Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 1500m });
 
         // 800 + 2500 + 1200 = 4500; 4500 - 1500 = 3000.
         Assert.Equal(3000m, ExtraerAbono(resultado).SaldoPendiente);
@@ -422,7 +485,7 @@ public class AbonosControllerTests
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
 
-        ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 3300m }));
+        ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 3300m }));
 
         // El plan se edita y se quita la pieza de 2500: el total baja a 800.
         var piezaCara = await db.PlanesTratamiento.SingleAsync(pt => pt.Valor == 2500m);
@@ -435,7 +498,7 @@ public class AbonosControllerTests
         Assert.Equal(-2500m, estado.Saldo);
 
         // Con saldo a favor ya no cabe ningún abono nuevo.
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 100m });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 100m });
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
     }
 
@@ -615,7 +678,7 @@ public class AbonosControllerTests
         Assert.False(estado.Planes[0].Activo);
         Assert.Equal("Juan Pérez", estado.NombrePaciente);
 
-        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 100m });
+        var resultado = await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 100m });
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
     }
 
@@ -656,7 +719,7 @@ public class AbonosControllerTests
         await CrearAdminAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m }));
 
         var resultado = await controller.Editar(
             paciente.IdPaciente,
@@ -679,7 +742,7 @@ public class AbonosControllerTests
         await CrearAdminAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m }));
 
         var resultado = await controller.Editar(
             paciente.IdPaciente,
@@ -707,7 +770,7 @@ public class AbonosControllerTests
         await CrearAdminAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 1000m);
         var controller = CrearController(db);
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m }));
 
         var resultado = await controller.Editar(
             paciente.IdPaciente,
@@ -766,7 +829,7 @@ public class AbonosControllerTests
         await CrearAdminAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m }));
 
         var antes = DateTime.UtcNow.AddHours(-6);
         var resultado = await controller.Anular(
@@ -806,7 +869,7 @@ public class AbonosControllerTests
         await CrearAdminAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m }));
 
         var resultado = await controller.Anular(paciente.IdPaciente, abono.IdAbonoPaciente, new AnularAbonoDto { Password = password });
 
@@ -823,7 +886,7 @@ public class AbonosControllerTests
         var paciente = await CrearPacienteAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m }));
 
         var resultado = await controller.Anular(paciente.IdPaciente, abono.IdAbonoPaciente, new AnularAbonoDto { Password = PasswordAdmin });
 
@@ -907,7 +970,7 @@ public class AbonosControllerTests
         await CrearAdminAsync(db);
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 500m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 500m }));
 
         var resultado = await controller.Anular(
             paciente.IdPaciente,
@@ -994,16 +1057,16 @@ public class AbonosControllerTests
         await CrearPlanAsync(db, paciente.IdPaciente, null, 800m, 2500m);
         var controller = CrearController(db);
 
-        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 3300m }));
+        var abono = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 3300m }));
         // El plan quedó saldado: no cabe otro abono.
         Assert.IsType<BadRequestObjectResult>(
-            (await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 100m })).Result);
+            (await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 100m })).Result);
 
         ExtraerEstadoCuenta(await controller.Anular(
             paciente.IdPaciente, abono.IdAbonoPaciente, new AnularAbonoDto { Password = PasswordAdmin }));
 
         // Al anular se libera el saldo completo.
-        var otro = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { Monto = 3300m }));
+        var otro = ExtraerAbono(await controller.Registrar(paciente.IdPaciente, new RegistrarAbonoDto { IdMetodoPago = IdEfectivo, Monto = 3300m }));
         Assert.Equal(0m, otro.SaldoPendiente);
 
         var estado = ExtraerEstadoCuenta(await controller.GetEstadoCuenta(paciente.IdPaciente));

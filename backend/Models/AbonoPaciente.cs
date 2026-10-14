@@ -17,6 +17,9 @@ public class AbonoPaciente
 
     public DateTime FechaAbono { get; set; }
 
+    // SCRUM-293: efectivo o transferencia (catálogo dbo.MetodoPago). Obligatorio.
+    public int IdMetodoPago { get; set; }
+
     // SCRUM-63 (anulación): un abono mal registrado no se borra, se anula y queda
     // tachado en el historial. Un abono anulado no cuenta para el abonado ni el
     // saldo, pero sigue apareciendo en la lista.

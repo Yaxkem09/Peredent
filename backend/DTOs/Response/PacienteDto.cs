@@ -14,6 +14,8 @@ public class PacienteDto
 
     public string Telefono { get; set; } = string.Empty;
 
+    public string? TelefonoSecundario { get; set; }
+
     public string? Correo { get; set; }
 
     public string Nit { get; set; } = "CF";

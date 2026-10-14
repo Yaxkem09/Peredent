@@ -55,7 +55,7 @@ public class R2StorageService : IR2StorageService, IDisposable
         return objectKey;
     }
 
-    public Task<string> GenerarUrlFirmadaAsync(string objectKey, TimeSpan duracion)
+    public Task<string> GenerarUrlFirmadaAsync(string objectKey, TimeSpan duracion, string? nombreDescarga = null)
     {
         var request = new GetPreSignedUrlRequest
         {
@@ -66,7 +66,24 @@ public class R2StorageService : IR2StorageService, IDisposable
             Expires = DateTime.UtcNow.Add(duracion),
         };
 
+        if (!string.IsNullOrWhiteSpace(nombreDescarga))
+        {
+            // filename= en ASCII para navegadores viejos y filename*= en UTF-8
+            // para conservar acentos y ñ del nombre original.
+            var ascii = new string(nombreDescarga.Select(c => c < 128 && c != '"' && c != '\\' ? c : '_').ToArray());
+            request.ResponseHeaderOverrides.ContentDisposition =
+                $"attachment; filename=\"{ascii}\"; filename*=UTF-8''{Uri.EscapeDataString(nombreDescarga)}";
+        }
+
         return _s3Client.GetPreSignedURLAsync(request);
+    }
+
+    public async Task<byte[]> DescargarArchivoAsync(string objectKey)
+    {
+        using var respuesta = await _s3Client.GetObjectAsync(_bucketName, objectKey);
+        using var memoria = new MemoryStream();
+        await respuesta.ResponseStream.CopyToAsync(memoria);
+        return memoria.ToArray();
     }
 
     public async Task EliminarArchivoAsync(string objectKey)

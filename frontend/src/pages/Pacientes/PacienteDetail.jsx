@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { pacientesService } from '../../services/pacientes.service';
@@ -18,6 +18,7 @@ import SaldoAbonosTab from './SaldoAbonosTab';
 import RecetarioTab from './RecetarioTab';
 import FotosPanoramicasTab from './FotosPanoramicasTab';
 import ConsentimientosTab from './ConsentimientosTab';
+import ConstanciasTab from './ConstanciasTab';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -88,6 +89,13 @@ const ICONOS_TAB = {
       <path d="M14 3.5v5h5M8.5 13h7M8.5 16.5l1.6-1.6 1.6 1.6 1.6-1.6 1.6 1.6" />
     </>
   ),
+  constancias: (
+    <>
+      <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z" />
+      <path d="M14 3.5v5h5M8.5 12.5h7M8.5 15.5h4" />
+      <circle cx="15.5" cy="17" r="1.6" />
+    </>
+  ),
   presupuesto: (
     <>
       <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" />
@@ -132,6 +140,7 @@ const GRUPOS_TABS = [
       { id: 'fotos', label: 'Radiografías/Panorámicas' },
       { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
       { id: 'consentimientos', label: 'Consentimientos', hideFor: ['Asistente'] },
+      { id: 'constancias', label: 'Constancias', hideFor: ['Asistente'] },
     ],
   },
   {
@@ -160,6 +169,7 @@ const TABS_DISPONIBLES = new Set([
   'recetario',
   'fotos',
   'consentimientos',
+  'constancias',
 ]);
 
 const inicialesDe = (nombres, apellidos) =>
@@ -279,6 +289,9 @@ const DatosTab = ({ paciente, idPaciente }) => {
         <section className="ficha-bloque">
           <h4 className="ficha-bloque-titulo">Contacto</h4>
           <Dato icono="telefono" label="Teléfono" valor={paciente.telefono} />
+          {paciente.telefonoSecundario && (
+            <Dato icono="telefono" label="Teléfono 2" valor={paciente.telefonoSecundario} />
+          )}
           <Dato icono="correo" label="Correo" valor={paciente.correo} vacio="Sin correo" />
           <Dato icono="direccion" label="Dirección" valor={paciente.direccion} vacio="Sin dirección" />
         </section>
@@ -486,8 +499,8 @@ const PacienteDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // El recetario y los consentimientos no están disponibles para asistentes
-  // (igual que en el menú lateral; SCRUM-256).
+  // El recetario, los consentimientos y las constancias no están disponibles
+  // para asistentes (igual que en el menú lateral; SCRUM-256, SCRUM-297).
   const visibleTabs = useMemo(
     () => TABS.filter((tab) => !tab.hideFor?.includes(user?.rol)),
     [user?.rol],
@@ -500,6 +513,19 @@ const PacienteDetail = () => {
       setActiveTab('datos');
     }
   }, [visibleTabs, activeTab]);
+
+  // Referencia al tab de "Plan de tratamiento": cuando estamos parados ahí y el
+  // usuario pide otra pestaña, le preguntamos a él en vez de cambiar directo, para
+  // que pueda avisar si hay cambios sin guardar (SCRUM-283).
+  const planTabRef = useRef(null);
+
+  const manejarClickTab = (idTabDestino) => {
+    if (activeTab === 'plan' && idTabDestino !== 'plan' && planTabRef.current) {
+      planTabRef.current.intentarCambiarTab(idTabDestino);
+    } else {
+      setActiveTab(idTabDestino);
+    }
+  };
 
   const [paciente, setPaciente] = useState(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(true);
@@ -581,7 +607,7 @@ const PacienteDetail = () => {
                         key={tab.id}
                         className={`exp-tab${activeTab === tab.id ? ' active' : ''}`}
                         aria-current={activeTab === tab.id ? 'page' : undefined}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => manejarClickTab(tab.id)}
                       >
                         <svg
                           width="17"
@@ -610,7 +636,9 @@ const PacienteDetail = () => {
             <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
           {activeTab === 'citas' && <HistorialCitas idPaciente={id} />}
-          {activeTab === 'plan' && <PlanTratamientoTab idPaciente={id} />}
+          {activeTab === 'plan' && (
+            <PlanTratamientoTab idPaciente={id} ref={planTabRef} onCambiarTab={setActiveTab} />
+          )}
           {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
           {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
           {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}
@@ -620,6 +648,7 @@ const PacienteDetail = () => {
           {activeTab === 'recetario' && <RecetarioTab idPaciente={id} paciente={paciente} />}
           {activeTab === 'fotos' && <FotosPanoramicasTab idPaciente={id} />}
           {activeTab === 'consentimientos' && <ConsentimientosTab idPaciente={id} paciente={paciente} />}
+          {activeTab === 'constancias' && <ConstanciasTab idPaciente={id} paciente={paciente} />}
           {!TABS_DISPONIBLES.has(activeTab) && (
             <EmptyState
               title="En construcción"
