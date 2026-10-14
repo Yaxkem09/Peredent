@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { pacientesService } from '../../services/pacientes.service';
@@ -511,6 +511,19 @@ const PacienteDetail = () => {
     }
   }, [visibleTabs, activeTab]);
 
+  // Referencia al tab de "Plan de tratamiento": cuando estamos parados ahí y el
+  // usuario pide otra pestaña, le preguntamos a él en vez de cambiar directo, para
+  // que pueda avisar si hay cambios sin guardar (SCRUM-283).
+  const planTabRef = useRef(null);
+
+  const manejarClickTab = (idTabDestino) => {
+    if (activeTab === 'plan' && idTabDestino !== 'plan' && planTabRef.current) {
+      planTabRef.current.intentarCambiarTab(idTabDestino);
+    } else {
+      setActiveTab(idTabDestino);
+    }
+  };
+
   const [paciente, setPaciente] = useState(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(true);
   const [errorPaciente, setErrorPaciente] = useState(null);
@@ -591,7 +604,7 @@ const PacienteDetail = () => {
                         key={tab.id}
                         className={`exp-tab${activeTab === tab.id ? ' active' : ''}`}
                         aria-current={activeTab === tab.id ? 'page' : undefined}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => manejarClickTab(tab.id)}
                       >
                         <svg
                           width="17"
@@ -620,7 +633,9 @@ const PacienteDetail = () => {
             <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
           {activeTab === 'citas' && <HistorialCitas idPaciente={id} />}
-          {activeTab === 'plan' && <PlanTratamientoTab idPaciente={id} />}
+          {activeTab === 'plan' && (
+            <PlanTratamientoTab idPaciente={id} ref={planTabRef} onCambiarTab={setActiveTab} />
+          )}
           {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
           {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
           {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}

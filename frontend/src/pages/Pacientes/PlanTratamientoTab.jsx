@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { PIEZAS_DENTALES } from '../../utils/piezasDentales';
 import { formatCurrency } from '../../utils/formatters';
 import { planTratamientoService } from '../../services/plan-tratamiento.service';
@@ -34,7 +34,7 @@ const combinarConGuardado = (piezasGuardadas) => {
   });
 };
 
-const PlanTratamientoTab = ({ idPaciente }) => {
+const PlanTratamientoTab = forwardRef(({ idPaciente, onCambiarTab }, ref) => {
   const { notify } = useNotification();
   const [filas, setFilas] = useState(() => PIEZAS_DENTALES.map(filaInicial));
   const [descuento, setDescuento] = useState(0);
@@ -47,6 +47,40 @@ const PlanTratamientoTab = ({ idPaciente }) => {
   const [existePlanActivo, setExistePlanActivo] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
   const [mostrarConfirmarFinalizar, setMostrarConfirmarFinalizar] = useState(false);
+  const [tabPendiente, setTabPendiente] = useState(null);
+  const [mostrarCambiosSinGuardar, setMostrarCambiosSinGuardar] = useState(false);
+
+  // PacienteDetail controla el cambio de pestaña, pero antes de moverse fuera de "plan"
+  // nos pregunta a través de esta ref: si no hay cambios sin guardar dejamos pasar de
+  // inmediato, si los hay mostramos nuestro propio aviso en vez de perder lo escrito.
+  useImperativeHandle(
+    ref,
+    () => ({
+      intentarCambiarTab: (destino) => {
+        if (guardado) {
+          onCambiarTab?.(destino);
+        } else {
+          setTabPendiente(destino);
+          setMostrarCambiosSinGuardar(true);
+        }
+      },
+    }),
+    [guardado, onCambiarTab],
+  );
+
+  // Repito el mismo aviso para el cierre/recarga del navegador (SCRUM-286): registro
+  // el listener de beforeunload solo mientras haya cambios sin guardar, y lo quito en
+  // cuanto guardo o se desmonta el componente.
+  useEffect(() => {
+    if (guardado) return undefined;
+
+    const onBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [guardado]);
 
   useEffect(() => {
     let activo = true;
@@ -104,22 +138,12 @@ const PlanTratamientoTab = ({ idPaciente }) => {
     marcarCambio();
   };
 
-  const piezasSinValor = () => filas.filter((f) => f.tratamiento.trim() !== '' && !(Number(f.valor) > 0));
-
+  // Devuelvo true/false según el guardado haya tenido éxito: lo necesito para
+  // decidir si "Guardar y salir" puede avanzar al cambio de pestaña o no.
+  // Ya no bloqueo el guardado de una pieza con tratamiento y sin valor: se
+  // guarda en 0 y queda "Pendiente de precio" hasta que se le ponga un valor.
   const guardar = async () => {
     setErrorGuardar(null);
-
-    const invalidas = piezasSinValor();
-    if (invalidas.length > 0) {
-      const etiquetas = invalidas.map((f) => f.etiqueta).join(', ');
-      setErrorGuardar(
-        invalidas.length === 1
-          ? `La pieza ${etiquetas} tiene un tratamiento pero no tiene un valor. Ingresa un valor mayor a 0 antes de guardar.`
-          : `Las piezas ${etiquetas} tienen un tratamiento pero no tienen un valor. Ingresa un valor mayor a 0 antes de guardar.`,
-      );
-      return;
-    }
-
     setGuardando(true);
     try {
       const payload = {
@@ -138,11 +162,32 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       setExistePlanActivo(Boolean(actualizado.fechaInicio));
       setGuardado(true);
       notify('Plan de tratamiento guardado exitosamente.');
+      return true;
     } catch {
       setErrorGuardar('No se pudo guardar el plan de tratamiento. Intenta de nuevo.');
+      return false;
     } finally {
       setGuardando(false);
     }
+  };
+
+  // "Guardar y salir" del aviso de cambios sin guardar: intento guardar con la misma
+  // función de siempre; solo si tuvo éxito cierro el aviso y confirmo el cambio de
+  // pestaña pendiente. Si falla, dejo el aviso abierto y el error visible (arriba, en
+  // el Alert ya existente) para que el usuario pueda corregir sin perder lo escrito.
+  const guardarYSalirDeTab = async () => {
+    const exito = await guardar();
+    if (exito) {
+      setMostrarCambiosSinGuardar(false);
+      onCambiarTab?.(tabPendiente);
+      setTabPendiente(null);
+    }
+  };
+
+  // "Cancelar" del mismo aviso: nos quedamos en "plan" sin perder lo escrito.
+  const cancelarCambioTab = () => {
+    setMostrarCambiosSinGuardar(false);
+    setTabPendiente(null);
   };
 
   const confirmarFinalizarPlan = async () => {
@@ -214,6 +259,13 @@ const PlanTratamientoTab = ({ idPaciente }) => {
                 value={fila.valor === 0 ? '' : fila.valor}
                 onChange={(e) => cambiarValor(fila.numero, e.target.value)}
               />
+              {/* Un tratamiento guardado sin valor (0) no es un error: lo dejo
+                  claro con esta etiqueta (reutilizo el mismo estilo "tag" de la
+                  columna de tratamiento), en vez de mostrar "Q0" como si fuera
+                  un precio real, y el campo sigue editable para ponerlo luego. */}
+              {fila.tratamiento.trim() !== '' && !(Number(fila.valor) > 0) && (
+                <span className="tag plan-estado-tag tag-pending">Pendiente de precio</span>
+              )}
             </td>
           </tr>
         ))}
@@ -361,8 +413,32 @@ const PlanTratamientoTab = ({ idPaciente }) => {
         Este plan pasará al historial y ya no se podrá editar. La próxima vez que guardes cambios se creará un plan
         nuevo en blanco.
       </Modal>
+
+      <Modal
+        open={mostrarCambiosSinGuardar}
+        onClose={cancelarCambioTab}
+        title="Tiene cambios sin guardar. ¿Desea guardarlos antes de salir?"
+        icon={
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 9v4M12 16.5h.01" />
+            <path d="M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" />
+          </svg>
+        }
+        footer={
+          <>
+            <button type="button" className="btn btn-secondary btn-md" onClick={cancelarCambioTab} disabled={guardando}>
+              Cancelar
+            </button>
+            <button type="button" className="btn btn-primary btn-md" onClick={guardarYSalirDeTab} disabled={guardando}>
+              {guardando ? 'Guardando…' : 'Guardar y salir'}
+            </button>
+          </>
+        }
+      />
     </div>
   );
-};
+});
+
+PlanTratamientoTab.displayName = 'PlanTratamientoTab';
 
 export default PlanTratamientoTab;
