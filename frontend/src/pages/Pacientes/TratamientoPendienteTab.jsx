@@ -109,6 +109,17 @@ const TratamientoPendienteTab = ({ idPaciente }) => {
         <span className="tx-pendiente-total">Por realizar: {formatCurrency(totalPendiente)}</span>
       </div>
 
+      <p className="tx-pendiente-aviso">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 8v4.5M12 16h.01" />
+        </svg>
+        <span>
+          Usa <strong>“Marcar como completado”</strong> solo cuando estés seguro de que el tratamiento en esa pieza ya
+          terminó: la pieza pasa al historial de tratamientos.
+        </span>
+      </p>
+
       <table className="tx-pendiente-table">
         <thead>
           <tr>

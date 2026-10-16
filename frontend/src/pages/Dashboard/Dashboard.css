@@ -444,3 +444,360 @@
     min-width: 0;
   }
 }
+
+/* ---- SCRUM-265: pagos recibidos hoy y en la semana (solo odontólogo). ---- */
+.dash-panel.tono-verde {
+  --tono: var(--verde);
+  --tono-soft: var(--verde-soft);
+}
+
+.dash-pagos {
+  margin-top: 20px;
+}
+
+.dash-pagos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  padding: 10px 0 4px;
+}
+
+.dash-pagos-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: var(--surface);
+}
+
+.dash-pagos-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dash-pagos-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.dash-pagos-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dash-pagos-total {
+  margin-top: 6px;
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--verde);
+}
+
+.dash-pagos-cantidad {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+/* Botones Lun–Dom para consultar otro día de la semana. */
+.dash-pagos-dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.dash-pagos-dias button {
+  min-width: 42px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.dash-pagos-dias button:hover:not(:disabled) {
+  border-color: var(--verde);
+  background: var(--verde-soft);
+}
+
+.dash-pagos-dias button.active {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #ffffff;
+}
+
+.dash-pagos-dias button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dash-pagos-metodos {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-pagos-metodo-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.dash-pagos-metodo-monto {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.dash-pagos-barra {
+  margin-top: 5px;
+  height: 6px;
+  border-radius: 6px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+
+.dash-pagos-barra span {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--verde);
+  transition: width 0.3s ease;
+}
+
+/* Navegación entre semanas en el encabezado de "Pagos recibidos". */
+.dash-semanas {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dash-semanas-rango {
+  min-width: 120px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dash-semanas button {
+  border: 1px solid color-mix(in srgb, var(--verde) 35%, transparent);
+  background: var(--surface);
+  color: var(--verde);
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.dash-semanas-flecha {
+  width: 30px;
+  height: 30px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.dash-semanas-actual {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.dash-semanas button:hover:not(:disabled) {
+  background: var(--verde-soft);
+}
+
+.dash-semanas button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dash-pagos-grid.cargando {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+/* ---- Top 10 de saldos pendientes (solo odontólogo). ---- */
+.dash-panel.tono-rojo {
+  --tono: var(--rojo);
+  --tono-soft: var(--rojo-soft);
+}
+
+.dash-saldos {
+  margin-top: 20px;
+}
+
+.dash-saldos-lista {
+  list-style: none;
+  padding: 8px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
+}
+
+.dash-saldo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-saldo:hover {
+  background: #f7f9fb;
+  box-shadow: 0 8px 18px -12px rgba(10, 38, 75, 0.5);
+}
+
+.dash-saldo-pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--rojo-soft);
+  color: var(--rojo);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dash-saldo-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-saldo-nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-saldo-detalle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 3px;
+}
+
+.dash-saldo-tel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dash-saldo-tel svg {
+  color: var(--teal);
+}
+
+.dash-saldo-planes {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--rojo-soft);
+  color: var(--rojo);
+}
+
+/* Resumen arriba de la lista: total por cobrar y cuántos pacientes deben. */
+.dash-saldos-resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  padding: 12px 0 4px;
+}
+
+.dash-saldos-resumen > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-saldos-resumen-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.dash-saldos-resumen-monto,
+.dash-saldos-resumen-num {
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-saldos-resumen-monto {
+  color: var(--rojo);
+}
+
+.dash-saldos-resumen-num {
+  color: var(--ink);
+}
+
+/* Lista completa: se limita el alto y se desplaza dentro del panel. */
+.dash-saldos-lista.completa {
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.dash-saldos-ver {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--rojo) 35%, transparent);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--rojo);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.dash-saldos-ver:hover {
+  background: var(--rojo-soft);
+}
+
+.dash-saldo-monto {
+  flex-shrink: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  color: var(--rojo);
+}

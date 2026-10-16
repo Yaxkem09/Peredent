@@ -167,9 +167,10 @@
   margin: 4px 0 0;
   padding-top: 12px;
   border-top: 1px solid var(--line);
-  font-size: 12px;
-  font-style: italic;
-  color: var(--ink-soft);
+  font-size: 13.5px;
+  /* SCRUM-269: "Sujeto a cambios" en negrita y oscuro (también en el PDF). */
+  font-weight: 700;
+  color: var(--ink);
 }
 
 /* Documento del presupuesto: proporción de hoja, centrado. */

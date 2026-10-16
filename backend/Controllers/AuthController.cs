@@ -25,13 +25,15 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto request)
     {
-        // Se puede entrar con el nombre de usuario o con el correo (el correo se
-        // guarda normalizado en minúsculas y es único entre usuarios).
-        var identificador = (request.Usuario ?? string.Empty).Trim();
-        var correo = ValidacionCorreo.Normalizar(identificador);
-        var usuario = await _db.Usuarios
-            .Include(u => u.Rol)
-            .FirstOrDefaultAsync(u => u.NombreUsuario == identificador || u.CorreoUsuario == correo);
+        // Solo se entra con el correo: es único entre usuarios y se guarda
+        // normalizado en minúsculas. El nombre de usuario ya no sirve para entrar,
+        // así una cuenta sin correo no puede iniciar sesión.
+        var correo = ValidacionCorreo.Normalizar(request.Correo ?? string.Empty);
+        var usuario = string.IsNullOrEmpty(correo)
+            ? null
+            : await _db.Usuarios
+                .Include(u => u.Rol)
+                .FirstOrDefaultAsync(u => u.CorreoUsuario == correo);
 
         // SCRUM-230: la verificación es dual (bcrypt o el SHA2_256 legado de los
         // usuarios sembrados por SQL) y la resuelve el propio IPasswordHasher.

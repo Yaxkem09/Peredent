@@ -9,9 +9,10 @@ using Peredent.Api.Services;
 
 namespace Peredent.Api.Controllers;
 
+// SCRUM-288: "Radiografías/Panorámicas" es solo del odontólogo.
 [ApiController]
 [Route("api/panoramicas")]
-[Authorize]
+[Authorize(Roles = "Odontologo")]
 public class PanoramicasController : ControllerBase
 {
     private const long TamanoMaximoBytes = 15L * 1024 * 1024;

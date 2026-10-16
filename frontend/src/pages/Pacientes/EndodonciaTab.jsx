@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { endodonciaService } from '../../services/endodoncia.service';
 import { protesisService } from '../../services/protesis.service';
 import { Alert, Loader } from '../../components/common';
+import AvisoCambiosSinGuardar from '../../components/common/AvisoCambiosSinGuardar';
+import { useAvisoCambiosSinGuardar } from '../../hooks/useAvisoCambiosSinGuardar';
 import './EndodonciaTab.css';
 
 const PIEZAS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -19,7 +21,7 @@ const piezaVacia = () => ({
   diametro: '', cuspide: '', obturacion: false,
 });
 
-const EndodonciaTab = ({ idPaciente }) => {
+const EndodonciaTab = forwardRef(({ idPaciente, onCambiarTab }, ref) => {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
@@ -37,6 +39,11 @@ const EndodonciaTab = ({ idPaciente }) => {
   const [guardandoProtesis, setGuardandoProtesis] = useState(false);
   const [errorProtesis, setErrorProtesis] = useState(null);
   const [exitoProtesis, setExitoProtesis] = useState(false);
+
+  // Cambios sin guardar de cada bloque (cada uno tiene su botón de guardar).
+  // Solo los marcan las ediciones del usuario, no la carga inicial.
+  const [cambiosEndodoncia, setCambiosEndodoncia] = useState(false);
+  const [cambiosProtesis, setCambiosProtesis] = useState(false);
 
   useEffect(() => {
     endodonciaService.getByPaciente(idPaciente)
@@ -73,10 +80,20 @@ const EndodonciaTab = ({ idPaciente }) => {
       .catch(() => setErrorProtesis('No se pudo cargar la prótesis registrada.'));
   }, [idPaciente]);
 
-  const agregarPieza = () => setPiezas((prev) => [...prev, piezaVacia()]);
-  const eliminarPieza = (i) => setPiezas((prev) => prev.filter((_, idx) => idx !== i));
+  // Envuelve un setter para que además marque el bloque como modificado.
+  const conCambioEndodoncia = (setter) => (valor) => {
+    setter(valor);
+    setCambiosEndodoncia(true);
+  };
+  const conCambioProtesis = (setter) => (valor) => {
+    setter(valor);
+    setCambiosProtesis(true);
+  };
+
+  const agregarPieza = () => conCambioEndodoncia(setPiezas)((prev) => [...prev, piezaVacia()]);
+  const eliminarPieza = (i) => conCambioEndodoncia(setPiezas)((prev) => prev.filter((_, idx) => idx !== i));
   const actualizarPieza = (i, campo, valor) =>
-    setPiezas((prev) => prev.map((p, idx) => idx === i ? { ...p, [campo]: valor } : p));
+    conCambioEndodoncia(setPiezas)((prev) => prev.map((p, idx) => idx === i ? { ...p, [campo]: valor } : p));
 
   const guardar = async () => {
     setGuardando(true);
@@ -110,8 +127,11 @@ const EndodonciaTab = ({ idPaciente }) => {
       setObservacionesTxPeriodontal(actualizado.observacionesTxPeriodontal ?? '');
       setObservacionesEndodoncia(actualizado.observacionesEndodoncia ?? '');
       setExitoGuardar(true);
+      setCambiosEndodoncia(false);
+      return true;
     } catch {
       setErrorGuardar('No se pudo guardar. Intenta de nuevo.');
+      return false;
     } finally {
       setGuardando(false);
     }
@@ -132,12 +152,32 @@ const EndodonciaTab = ({ idPaciente }) => {
       });
       aplicarProtesis(guardada);
       setExitoProtesis(true);
+      setCambiosProtesis(false);
+      return true;
     } catch {
       setErrorProtesis('No se pudo guardar la prótesis. Intenta de nuevo.');
+      return false;
     } finally {
       setGuardandoProtesis(false);
     }
   };
+
+  // "Guardar y salir" del aviso: guarda solo los bloques con cambios. Si alguno
+  // falla no se sale, y el error queda visible en su bloque.
+  const guardarCambiosPendientes = async () => {
+    const okEndodoncia = cambiosEndodoncia ? await guardar() : true;
+    const okProtesis = cambiosProtesis ? await guardarProtesis() : true;
+    return okEndodoncia && okProtesis;
+  };
+
+  // SCRUM-283 (extendido a esta pestaña): aviso de cambios sin guardar al
+  // cambiar de pestaña, salir del expediente o cerrar el navegador.
+  const aviso = useAvisoCambiosSinGuardar({
+    ref,
+    hayCambios: cambiosEndodoncia || cambiosProtesis,
+    guardar: guardarCambiosPendientes,
+    onCambiarTab,
+  });
 
   if (cargando) return <Loader />;
   if (error) return <Alert type="error">{error}</Alert>;
@@ -184,7 +224,7 @@ const EndodonciaTab = ({ idPaciente }) => {
               {piezas.length === 0 && (
                 <tr>
                   <td colSpan={9} className="endo-vacio">
-                    Sin piezas registradas. Usa “Agregar pieza” para empezar.
+                    Sin piezas registradas. Usa <strong>“+ Agregar pieza”</strong> para empezar.
                   </td>
                 </tr>
               )}
@@ -276,7 +316,7 @@ const EndodonciaTab = ({ idPaciente }) => {
               <input
                 type="checkbox"
                 checked={txPeriodontal}
-                onChange={(e) => setTxPeriodontal(e.target.checked)}
+                onChange={(e) => conCambioEndodoncia(setTxPeriodontal)(e.target.checked)}
               />
               <span className="endo-switch-pista" aria-hidden="true" />
               <span className="endo-switch-texto">Tx Periodontal</span>
@@ -286,7 +326,7 @@ const EndodonciaTab = ({ idPaciente }) => {
                 className="endo-textarea"
                 rows={3}
                 value={observacionesTxPeriodontal}
-                onChange={(e) => setObservacionesTxPeriodontal(e.target.value)}
+                onChange={(e) => conCambioEndodoncia(setObservacionesTxPeriodontal)(e.target.value)}
                 placeholder="Especifica el tratamiento periodontal realizado"
               />
             ) : (
@@ -309,7 +349,7 @@ const EndodonciaTab = ({ idPaciente }) => {
               className="endo-textarea"
               rows={3}
               value={observacionesEndodoncia}
-              onChange={(e) => setObservacionesEndodoncia(e.target.value)}
+              onChange={(e) => conCambioEndodoncia(setObservacionesEndodoncia)(e.target.value)}
               placeholder="Notas adicionales respecto a las medidas y tratamientos registrados en la tabla"
             />
           </div>
@@ -353,7 +393,7 @@ const EndodonciaTab = ({ idPaciente }) => {
                 type="checkbox"
                 checked={protesisIndicaciones[clave]}
                 onChange={(e) =>
-                  setProtesisIndicaciones((prev) => ({ ...prev, [clave]: e.target.checked }))
+                  conCambioProtesis(setProtesisIndicaciones)((prev) => ({ ...prev, [clave]: e.target.checked }))
                 }
               />
               <span className="protesis-opcion-check" aria-hidden="true">
@@ -382,7 +422,7 @@ const EndodonciaTab = ({ idPaciente }) => {
             className="endo-textarea"
             rows={3}
             value={observacionesProtesis}
-            onChange={(e) => setObservacionesProtesis(e.target.value)}
+            onChange={(e) => conCambioProtesis(setObservacionesProtesis)(e.target.value)}
             placeholder="Notas adicionales sobre la indicación protésica"
           />
         </div>
@@ -398,8 +438,12 @@ const EndodonciaTab = ({ idPaciente }) => {
           </button>
         </div>
       </section>
+
+      <AvisoCambiosSinGuardar {...aviso} />
     </div>
   );
-};
+});
+
+EndodonciaTab.displayName = 'EndodonciaTab';
 
 export default EndodonciaTab;

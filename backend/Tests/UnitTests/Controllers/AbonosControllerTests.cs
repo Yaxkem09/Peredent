@@ -692,18 +692,17 @@ public class AbonosControllerTests
         Assert.IsType<NotFoundObjectResult>(resultado.Result);
     }
 
-    // La historia es de la asistente, pero el odontólogo entra con el mismo rol
-    // autenticado: el controller exige autenticación y no restringe Roles ni pide
-    // una policy. Si alguien agrega [Authorize(Roles = ...)] este test lo avisa.
+    // SCRUM-288: "Saldo y abonos" es solo del odontólogo; antes el controller
+    // también lo usaba la asistente y solo exigía autenticación.
     [Fact]
-    public void AbonosController_ExigeAutenticacion_PeroNoRestringeRol()
+    public void AbonosController_SoloRolOdontologo()
     {
         var autorizaciones = typeof(AbonosController)
             .GetCustomAttributes<AuthorizeAttribute>(inherit: true)
             .ToList();
 
-        Assert.Contains(autorizaciones, a => a.Roles is null && a.Policy is null);
-        Assert.DoesNotContain(autorizaciones, a => a.Roles is not null || a.Policy is not null);
+        Assert.Contains(autorizaciones, a => a.Roles == AbonosController.RolOdontologo);
+        Assert.DoesNotContain(autorizaciones, a => a.Roles is null && a.Policy is null);
     }
 
     // ------------------------------------------------------------------
