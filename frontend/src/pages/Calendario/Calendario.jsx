@@ -13,6 +13,7 @@ import NuevaCitaModal from './NuevaCitaModal';
 import EditarCitaModal from './EditarCitaModal';
 import BloqueoDiaModal from './BloqueoDiaModal';
 import {
+  DIAS_SEMANA_CORTO,
   MESES_LARGO,
   addDays,
   addMonths,
@@ -27,6 +28,8 @@ import {
 } from './agenda.utils';
 import '../../styles/page-header.css';
 import './Calendario.css';
+import BotonGuia from '../../components/common/BotonGuia';
+import { GUIA_AGENDA } from '../guiasPantallas';
 
 const VISTAS = [
   { id: 'dia', label: 'Día' },
@@ -179,9 +182,12 @@ const Calendario = () => {
   // estado aparte de fechaActual a propósito: cambiar fechaActual recarga las
   // citas (ver refrescarEnFechaDeCita), y elegir un día no debería hacerlo.
   const [diaSemanaSeleccionado, setDiaSemanaSeleccionado] = useState(null);
+  // Lo mismo para el día marcado en la vista mes.
+  const [diaMesSeleccionado, setDiaMesSeleccionado] = useState(null);
 
   // Fecha con la que abre "+ Nueva cita": en la vista semana, el día elegido
-  // (si pertenece a la semana visible); en las demás, fechaActual.
+  // (si pertenece a la semana visible); en la vista mes, el día marcado; en la
+  // vista día, fechaActual.
   // Memoizado: NuevaCitaModal resetea su formulario cuando cambia.
   const fechaParaNuevaCita = useMemo(() => {
     if (
@@ -192,8 +198,13 @@ const Calendario = () => {
     ) {
       return parseIsoDate(diaSemanaSeleccionado);
     }
+    // En la vista mes siempre hay un día marcado (VistaMes lo avisa al montarse
+    // y al cambiar de mes), aunque sea uno de la orilla del mes vecino.
+    if (vista === 'mes' && diaMesSeleccionado) {
+      return parseIsoDate(diaMesSeleccionado);
+    }
     return fechaActual;
-  }, [vista, diaSemanaSeleccionado, rango, fechaActual]);
+  }, [vista, diaSemanaSeleccionado, diaMesSeleccionado, rango, fechaActual]);
 
   useEffect(() => {
     // Asistente sin odontólogo elegido todavía (lista aún cargando, o no hay
@@ -313,7 +324,16 @@ const Calendario = () => {
   // Botón de la vista día: ahí fechaActual sí señala un único día sin
   // ambigüedad (en semana/mes es solo el ancla del rango, por eso ese botón
   // no aparece ahí -- la vista mes maneja su propio día seleccionado aparte).
-  const bloqueoDelDiaActual = bloqueos.find((b) => b.fecha === toIsoDate(fechaActual));
+  // Día sobre el que actúa "Marcar día no laboral": en la vista día, el que se
+  // ve; en la vista semana, el día marcado en el encabezado (el mismo con el que
+  // abre "+ Nueva cita").
+  const fechaParaBloquear = vista === 'semana' ? fechaParaNuevaCita : fechaActual;
+  const bloqueoDelDiaElegido = bloqueos.find((b) => b.fecha === toIsoDate(fechaParaBloquear));
+  // En la semana se dice qué día se va a bloquear, porque no es obvio a simple vista.
+  const diaDelBloqueo =
+    vista === 'semana'
+      ? ` (${DIAS_SEMANA_CORTO[(fechaParaBloquear.getDay() + 6) % 7].toLowerCase()} ${fechaParaBloquear.getDate()})`
+      : '';
 
   const abrirModalBloqueo = (fecha) => {
     setFechaParaBloqueo(fecha);
@@ -418,20 +438,21 @@ const Calendario = () => {
               + Nueva cita
             </Button>
 
-            {esOdontologo && vista === 'dia' && (
+            {esOdontologo && (vista === 'dia' || vista === 'semana') && (
               <button
                 type="button"
-                className={`agenda-bloqueo-btn ${bloqueoDelDiaActual ? 'quitar' : ''}`.trim()}
+                className={`agenda-bloqueo-btn ${bloqueoDelDiaElegido ? 'quitar' : ''}`.trim()}
+                title={vista === 'semana' ? 'Haz clic en el encabezado de un día para elegir cuál' : undefined}
                 onClick={() =>
-                  bloqueoDelDiaActual ? quitarBloqueo(bloqueoDelDiaActual) : abrirModalBloqueo(fechaActual)
+                  bloqueoDelDiaElegido ? quitarBloqueo(bloqueoDelDiaElegido) : abrirModalBloqueo(fechaParaBloquear)
                 }
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3.5" y="5" width="17" height="15" rx="2" />
                   <path d="M3.5 9.5h17M8 3v4M16 3v4" />
-                  {bloqueoDelDiaActual ? <path d="M9 14.5l2 2 4-4" /> : <path d="M9.5 12.5l5 5M14.5 12.5l-5 5" />}
+                  {bloqueoDelDiaElegido ? <path d="M9 14.5l2 2 4-4" /> : <path d="M9.5 12.5l5 5M14.5 12.5l-5 5" />}
                 </svg>
-                {bloqueoDelDiaActual ? 'Quitar bloqueo' : 'Marcar día no laboral'}
+                {bloqueoDelDiaElegido ? `Quitar bloqueo${diaDelBloqueo}` : `Marcar día no laboral${diaDelBloqueo}`}
               </button>
             )}
 
@@ -466,6 +487,8 @@ const Calendario = () => {
                 </select>
               </label>
             )}
+
+            <BotonGuia pasos={GUIA_AGENDA} className="nav-btn agenda-guia" />
           </div>
         </div>
       </div>
@@ -497,6 +520,7 @@ const Calendario = () => {
           onVerMas={irADia}
           onMarcarBloqueo={abrirModalBloqueo}
           onQuitarBloqueo={quitarBloqueo}
+          onSeleccionarDia={setDiaMesSeleccionado}
         />
       ) : (
         <VistaDia

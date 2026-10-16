@@ -13,13 +13,17 @@ import './Login.css';
 // la derecha; al tocar "¿Olvidaste tu contraseña?" el logo se desliza a la derecha
 // y descubre el formulario de recuperación a la izquierda. La ruta
 // /olvide-contrasena abre la misma pantalla ya en modo "recuperar".
+// Misma regla que valida el backend (algo@dominio.ext).
+const FORMATO_CORREO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 const Login = ({ modoInicial = 'login' }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [usuario, setUsuario] = useState('');
+  const [correo, setCorreo] = useState('');
   const [clave, setClave] = useState('');
-  const [errorUsuario, setErrorUsuario] = useState(false);
+  // null: sin error; si no, el texto del error del campo correo.
+  const [errorCorreo, setErrorCorreo] = useState(null);
   const [errorClave, setErrorClave] = useState(false);
   const [errorBanner, setErrorBanner] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,9 +31,9 @@ const Login = ({ modoInicial = 'login' }) => {
   const [modo, setModo] = useState(modoInicial);
   const recuperando = modo === 'recuperar';
 
-  const handleUsuarioChange = (e) => {
-    setUsuario(e.target.value);
-    if (errorUsuario) setErrorUsuario(false);
+  const handleCorreoChange = (e) => {
+    setCorreo(e.target.value);
+    if (errorCorreo) setErrorCorreo(null);
   };
 
   const handleClaveChange = (e) => {
@@ -40,20 +44,28 @@ const Login = ({ modoInicial = 'login' }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const usuarioVacio = usuario.trim() === '';
+    // Solo se entra con el correo: se avisa aquí si falta o no tiene formato
+    // de correo (el backend tampoco acepta el nombre de usuario).
+    const correoLimpio = correo.trim();
+    const errorDelCorreo =
+      correoLimpio === ''
+        ? 'Escribe tu correo electrónico para continuar.'
+        : !FORMATO_CORREO.test(correoLimpio)
+          ? 'Inicia sesión con tu correo electrónico (por ejemplo, nombre@peredent.com).'
+          : null;
     const claveVacia = clave.trim() === '';
 
-    setErrorUsuario(usuarioVacio);
+    setErrorCorreo(errorDelCorreo);
     setErrorClave(claveVacia);
     setErrorBanner(false);
 
-    if (usuarioVacio || claveVacia) {
+    if (errorDelCorreo || claveVacia) {
       return;
     }
 
     setLoading(true);
     try {
-      await login({ usuario, clave });
+      await login({ correo: correoLimpio, clave });
       navigate(ROUTES.PACIENTES);
     } catch (error) {
       setErrorBanner(true);
@@ -66,8 +78,11 @@ const Login = ({ modoInicial = 'login' }) => {
     <div className="login-screen">
       <FondoDental />
       <div className={`login-card login-deslizante${recuperando ? ' modo-recuperar' : ''}`}>
+        {/* data-nosnippet: los textos de los formularios (incluido el aviso de
+            error, que siempre está en el HTML aunque oculto) no se usan como
+            descripción en los resultados de Google. */}
         {/* Panel izquierdo: recuperación de contraseña (tapado por el logo en modo login). */}
-        <section className="login-panel panel-recuperar" aria-hidden={!recuperando} inert={recuperando ? undefined : ''}>
+        <section data-nosnippet className="login-panel panel-recuperar" aria-hidden={!recuperando} inert={recuperando ? undefined : ''}>
           <div className="login-logo-movil">
             <img src={logo} alt="Peredent" />
           </div>
@@ -75,7 +90,7 @@ const Login = ({ modoInicial = 'login' }) => {
         </section>
 
         {/* Panel derecho: inicio de sesión (tapado por el logo en modo recuperar). */}
-        <section className="login-panel panel-login" aria-hidden={recuperando} inert={recuperando ? '' : undefined}>
+        <section data-nosnippet className="login-panel panel-login" aria-hidden={recuperando} inert={recuperando ? '' : undefined}>
           <div className="login-logo-movil">
             <img src={logo} alt="Peredent" />
           </div>
@@ -85,30 +100,31 @@ const Login = ({ modoInicial = 'login' }) => {
           </div>
 
           <div className={`login-error-banner${errorBanner ? ' show' : ''}`}>
-            El usuario, correo o contraseña no son correctos.
+            El correo o la contraseña no son correctos.
           </div>
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="login-field">
-              <label htmlFor="usuario">Usuario o correo electrónico</label>
-              <div className={`login-input-wrap${errorUsuario ? ' error' : ''}`}>
+              <label htmlFor="correo">Correo electrónico</label>
+              <div className={`login-input-wrap${errorCorreo ? ' error' : ''}`}>
                 <svg className="login-input-icono" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21a8 8 0 0 1 16 0" />
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <path d="M3.5 6.5l8.5 6 8.5-6" />
                 </svg>
                 <input
-                  id="usuario"
-                  name="usuario"
-                  type="text"
-                  placeholder="Escribe tu usuario o correo"
-                  autoComplete="username"
-                  value={usuario}
-                  onChange={handleUsuarioChange}
-                  className={errorUsuario ? 'error' : ''}
+                  id="correo"
+                  name="correo"
+                  type="email"
+                  inputMode="email"
+                  placeholder="nombre@peredent.com"
+                  autoComplete="email"
+                  value={correo}
+                  onChange={handleCorreoChange}
+                  className={errorCorreo ? 'error' : ''}
                 />
               </div>
-              <span className={`login-field-error${errorUsuario ? ' show' : ''}`}>
-                Escribe tu usuario o correo para continuar.
+              <span className={`login-field-error${errorCorreo ? ' show' : ''}`}>
+                {errorCorreo || 'Escribe tu correo electrónico para continuar.'}
               </span>
             </div>
 

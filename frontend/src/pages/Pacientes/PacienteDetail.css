@@ -927,3 +927,41 @@
     width: 100%;
   }
 }
+
+/* ---- SCRUM-200: botón que abre la guía de la pestaña activa. ---- */
+.exp-ayuda {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 16px;
+}
+
+.exp-ayuda-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.exp-ayuda-boton:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  .exp-ayuda {
+    justify-content: stretch;
+  }
+
+  .exp-ayuda-boton {
+    flex: 1;
+    justify-content: center;
+  }
+}

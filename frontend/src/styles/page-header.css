@@ -134,3 +134,19 @@
     font-size: 23px;
   }
 }
+
+/* Botones del banner agrupados (p. ej. la guía de uso junto a la acción
+   principal). */
+.page-head-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-head .page-head-acciones .boton-guia {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 14px;
+}

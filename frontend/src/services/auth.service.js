@@ -7,8 +7,9 @@ const ROL_KEY = 'rol';
 const ES_ADMIN_KEY = 'esAdmin';
 
 export const authService = {
-  login: async ({ usuario, clave }) => {
-    const { data } = await api.post('/auth/login', { usuario, clave });
+  // Solo se inicia sesión con el correo (ya no con el nombre de usuario).
+  login: async ({ correo, clave }) => {
+    const { data } = await api.post('/auth/login', { correo, clave });
     localStorage.setItem(TOKEN_KEY, data.token);
     localStorage.setItem(ID_USUARIO_KEY, String(data.idUsuario));
     localStorage.setItem(USUARIO_KEY, data.usuario);

@@ -63,8 +63,26 @@ const HistorialPlanesTab = ({ idPaciente }) => {
           <div className="historial-detalle-head">
             <div>
               <div className="historial-detalle-fecha">Plan del {formatDate(seleccionado.fechaInicio)}</div>
-              <div className="historial-detalle-sub">
-                Cerrado el {formatDate(seleccionado.fechaCierre)} · {seleccionado.piezas.length} pieza(s) registradas
+              {/* Fechas y cantidad de piezas en etiquetas, para leerlas de un vistazo. */}
+              <div className="historial-detalle-datos">
+                <span className="historial-dato">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3.5" y="5" width="17" height="15" rx="2" />
+                    <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+                  </svg>
+                  Iniciado el <strong>{formatDate(seleccionado.fechaInicio)}</strong>
+                </span>
+                <span className="historial-dato historial-dato-cierre">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8.5" />
+                    <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+                  </svg>
+                  Cerrado el <strong>{formatDate(seleccionado.fechaCierre)}</strong>
+                </span>
+                <span className="historial-dato">
+                  <strong>{seleccionado.piezas.length}</strong>
+                  {seleccionado.piezas.length === 1 ? 'pieza registrada' : 'piezas registradas'}
+                </span>
               </div>
             </div>
             <div className="historial-detalle-total">
@@ -107,12 +125,16 @@ const HistorialPlanesTab = ({ idPaciente }) => {
             <span>Descuento aplicado: {formatCurrency(seleccionado.descuento)}</span>
           </div>
 
-          {seleccionado.observacionesGenerales && (
-            <div className="historial-observaciones">
-              <div className="historial-observaciones-label">Observaciones generales</div>
-              <p>{seleccionado.observacionesGenerales}</p>
+          <div className={`historial-observaciones${seleccionado.observacionesGenerales ? '' : ' vacia'}`}>
+            <div className="historial-observaciones-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 4.5h14a1 1 0 0 1 1 1v10.5a1 1 0 0 1-1 1H10l-4.5 3.5V17H5a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z" />
+                <path d="M8 9h8M8 12.5h5" />
+              </svg>
+              Observaciones generales
             </div>
-          )}
+            <p>{seleccionado.observacionesGenerales || 'Este plan no tiene observaciones.'}</p>
+          </div>
         </div>
       </div>
     );

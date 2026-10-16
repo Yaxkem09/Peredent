@@ -1,4 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  Navigate,
+  Outlet,
+  Route,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
+} from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -16,47 +23,58 @@ import InventarioList from './pages/Inventario/InventarioList';
 import AdministracionUsuarios from './pages/Administracion/AdministracionUsuarios';
 import Configuracion from './pages/Configuracion/Configuracion';
 
+// Los providers van dentro del router (como antes, dentro de BrowserRouter),
+// en la ruta raíz, para que puedan usar los hooks de navegación.
+const Raiz = () => (
+  <NotificationProvider>
+    <AuthProvider>
+      <Outlet />
+    </AuthProvider>
+  </NotificationProvider>
+);
+
+// Data router (createBrowserRouter) en lugar de <BrowserRouter>: es el que
+// permite useBlocker, con el que el plan de tratamiento avisa de cambios sin
+// guardar también al salir por el menú lateral o "Volver a pacientes" (SCRUM-284).
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route element={<Raiz />}>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={<Login />} />
+      {/* SCRUM-231: rutas públicas de recuperación (sin sesión). */}
+      {/* Misma pantalla del login, abierta con el panel de recuperación. */}
+      <Route path="/olvide-contrasena" element={<Login modoInicial="recuperar" />} />
+      <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route element={<MainLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/pacientes" element={<PacientesList />} />
+          <Route path="/pacientes/nuevo" element={<PacienteForm />} />
+          <Route path="/pacientes/:id" element={<PacienteDetail />} />
+          <Route path="/pacientes/:id/editar" element={<PacienteForm />} />
+          <Route path="/calendario" element={<Calendario />} />
+          <Route path="/inventario" element={<InventarioList />} />
+          {/* SCRUM-237: configuración de la propia cuenta (cualquier rol). */}
+          <Route path="/configuracion" element={<Configuracion />} />
+
+          <Route element={<PermissionRoute allow={(u) => u?.rol !== 'Asistente'} />}>
+            <Route path="/recetario" element={<Recetario />} />
+          </Route>
+
+          <Route element={<PermissionRoute allow={(u) => Boolean(u?.esAdmin)} />}>
+            <Route path="/administracion" element={<AdministracionUsuarios />} />
+          </Route>
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Route>,
+  ),
+);
+
 function App() {
-  return (
-    <BrowserRouter>
-      <NotificationProvider>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/login" element={<Login />} />
-            {/* SCRUM-231: rutas públicas de recuperación (sin sesión). */}
-            {/* Misma pantalla del login, abierta con el panel de recuperación. */}
-            <Route path="/olvide-contrasena" element={<Login modoInicial="recuperar" />} />
-            <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
-
-            <Route element={<ProtectedRoute />}>
-              <Route element={<MainLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/pacientes" element={<PacientesList />} />
-                <Route path="/pacientes/nuevo" element={<PacienteForm />} />
-                <Route path="/pacientes/:id" element={<PacienteDetail />} />
-                <Route path="/pacientes/:id/editar" element={<PacienteForm />} />
-                <Route path="/calendario" element={<Calendario />} />
-                <Route path="/inventario" element={<InventarioList />} />
-                {/* SCRUM-237: configuración de la propia cuenta (cualquier rol). */}
-                <Route path="/configuracion" element={<Configuracion />} />
-
-                <Route element={<PermissionRoute allow={(u) => u?.rol !== 'Asistente'} />}>
-                  <Route path="/recetario" element={<Recetario />} />
-                </Route>
-
-                <Route element={<PermissionRoute allow={(u) => Boolean(u?.esAdmin)} />}>
-                  <Route path="/administracion" element={<AdministracionUsuarios />} />
-                </Route>
-              </Route>
-            </Route>
-
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </AuthProvider>
-      </NotificationProvider>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

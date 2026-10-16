@@ -46,7 +46,8 @@ public class CuentaController : ControllerBase
         return Ok(ToDto(usuario));
     }
 
-    // SCRUM-237: cambio del correo. El correo vacío se guarda como NULL.
+    // SCRUM-237: cambio del correo. No se puede dejar vacío: es lo único con lo
+    // que se inicia sesión.
     [HttpPut("correo")]
     public async Task<ActionResult<CuentaDto>> ActualizarCorreo([FromBody] ActualizarCorreoDto request)
     {
@@ -61,16 +62,21 @@ public class CuentaController : ControllerBase
             return BadRequest(new { message = "La contraseña actual no es correcta." });
         }
 
-        var correo = string.IsNullOrWhiteSpace(request.Correo) ? null : ValidacionCorreo.Normalizar(request.Correo);
+        if (string.IsNullOrWhiteSpace(request.Correo))
+        {
+            return BadRequest(new { message = "El correo es obligatorio: con él inicias sesión." });
+        }
 
-        if (correo is not null && !ValidacionCorreo.EsValido(correo))
+        var correo = ValidacionCorreo.Normalizar(request.Correo);
+
+        if (!ValidacionCorreo.EsValido(correo))
         {
             return BadRequest(new { message = "Ingresa un correo electrónico válido." });
         }
 
         // Unicidad: se excluye el propio usuario (volver a guardar el mismo correo
         // no es un choque).
-        if (correo is not null && await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo && u.IdUsuario != usuario.IdUsuario))
+        if (await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo && u.IdUsuario != usuario.IdUsuario))
         {
             return BadRequest(new { message = "Ese correo ya está en uso por otro usuario." });
         }

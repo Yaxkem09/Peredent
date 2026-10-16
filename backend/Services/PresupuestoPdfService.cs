@@ -17,6 +17,8 @@ public class PresupuestoPdfService : IPresupuestoPdfService
     private const string ColorTeal = "#0F766E";
     private const string ColorLinea = "#E5E7EB";
     private const string ColorTextoTenue = "#6B7280";
+    // SCRUM-269: casi negro, para la leyenda "sujeto a cambios".
+    private const string ColorTextoFuerte = "#111827";
 
     // Para las etiquetas (Paciente, Fecha de emisión, Plan del, las firmas): un
     // gris bastante más oscuro que ColorTextoTenue, para que resalten en vez de
@@ -152,9 +154,10 @@ public class PresupuestoPdfService : IPresupuestoPdfService
                 });
             });
 
-            // SCRUM-80: leyenda de conformidad.
-            col.Item().PaddingTop(10).Text(p.LeyendaConformidad)
-                .FontSize(8.5f).Italic().FontColor(ColorTextoTenue);
+            // SCRUM-80: leyenda de conformidad. SCRUM-269: en negrita, para que el
+            // paciente tenga claro que los montos pueden variar.
+            col.Item().PaddingTop(12).Text(p.LeyendaConformidad)
+                .FontSize(10).Bold().FontColor(ColorTextoFuerte);
 
             col.Item().PaddingTop(28).Text($"Fecha de emisión: {FormatearFecha(p.FechaEmision)}")
                 .FontSize(8.5f).FontColor(ColorTextoTenue);

@@ -15,12 +15,11 @@ namespace Peredent.Api.Controllers;
 // SCRUM-63: abonos que hace el paciente y su saldo pendiente. El saldo no se
 // almacena en la base: se recalcula contra el total del plan de tratamiento
 // (SCRUM-65), así que siempre refleja el plan tal como está guardado hoy.
-// Solo [Authorize]: la historia es de la asistente, pero el odontólogo entra con
-// el mismo rol autenticado, igual que en el resto de los controllers clínicos.
-// La edición y la eliminación (anulación) de un abono son la excepción: solo
-// las puede hacer el rol Odontologo, confirmando con su contraseña.
+// SCRUM-288: "Saldo y abonos" es solo del odontólogo, así que todo el
+// controller exige el rol Odontologo (antes también lo usaba la asistente).
+// La edición y la eliminación (anulación) además piden su contraseña.
 [ApiController]
-[Authorize]
+[Authorize(Roles = RolOdontologo)]
 public class AbonosController : ControllerBase
 {
     // Tope de abonos anulados por plan: es un seguro para que el historial de un

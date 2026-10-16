@@ -27,6 +27,7 @@ const VistaMes = ({
   onVerMas,
   onMarcarBloqueo,
   onQuitarBloqueo,
+  onSeleccionarDia,
 }) => {
   const anio = fechaActual.getFullYear();
   const mes = fechaActual.getMonth();
@@ -40,6 +41,13 @@ const VistaMes = ({
     const hoyEnEsteMes = ahora.getFullYear() === anio && ahora.getMonth() === mes;
     setFechaSeleccionada(hoyEnEsteMes ? ahora : new Date(anio, mes, 1));
   }, [anio, mes]);
+
+  // Avisa a Calendario el día marcado (ISO), para que "+ Nueva cita" abra con
+  // esa fecha en vez de la de hoy.
+  const fechaSeleccionadaIsoAviso = toIsoDate(fechaSeleccionada);
+  useEffect(() => {
+    onSeleccionarDia?.(fechaSeleccionadaIsoAviso);
+  }, [fechaSeleccionadaIsoAviso, onSeleccionarDia]);
 
   const primerDiaMes = new Date(anio, mes, 1);
   const inicioGrid = mondayOf(primerDiaMes);
