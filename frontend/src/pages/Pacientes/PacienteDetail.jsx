@@ -209,6 +209,12 @@ const ICONOS_DATO = {
       <path d="m3.5 7 8.5 6 8.5-6" />
     </>
   ),
+  recordatorios: (
+    <>
+      <path d="M4 18.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7.5L4 18.5z" />
+      <path d="m8.5 10 2.2 2.2L15.5 7.5" />
+    </>
+  ),
   direccion: (
     <>
       <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
@@ -299,6 +305,11 @@ const DatosTab = ({ paciente, idPaciente }) => {
           )}
           <Dato icono="correo" label="Correo" valor={paciente.correo} vacio="Sin correo" />
           <Dato icono="direccion" label="Dirección" valor={paciente.direccion} vacio="Sin dirección" />
+          <Dato
+            icono="recordatorios"
+            label="Recordatorios por WhatsApp"
+            valor={paciente.aceptaRecordatoriosWhatsApp ? 'Sí' : 'No'}
+          />
         </section>
 
         {paciente.encargadoNombre && (

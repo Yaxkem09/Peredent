@@ -111,6 +111,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(p => p.NombreEncargado).HasColumnName("Nombre_Encargado").HasMaxLength(100);
             entity.Property(p => p.TelefonoEncargado).HasColumnName("Telefono_Encargado").HasMaxLength(20);
             entity.Property(p => p.FechaRegistro).HasColumnName("Fecha_Registro");
+            entity.Property(p => p.AceptaRecordatoriosWhatsApp).HasColumnName("AceptaRecordatoriosWhatsApp").HasColumnType("bit").HasDefaultValue(false).IsRequired();
         });
 
         modelBuilder.Entity<HistoriaMedica>(entity =>
@@ -224,6 +225,12 @@ public class ApplicationDbContext : DbContext
             entity.Property(c => c.FechaInicio).HasColumnName("Fecha_Inicio");
             entity.Property(c => c.FechaFin).HasColumnName("Fecha_Fin");
             entity.Property(c => c.NotasAdicionales).HasColumnName("NotasAdicionales").HasMaxLength(500);
+            entity.Property(c => c.RecordatorioEnviadoEn).HasColumnName("RecordatorioEnviadoEn").HasColumnType("datetime");
+            entity.Property(c => c.RecordatorioMessageId).HasColumnName("RecordatorioMessageId").HasColumnType("varchar(150)");
+            entity.Property(c => c.RecordatorioError).HasColumnName("RecordatorioError").HasColumnType("varchar(500)");
+            entity.Property(c => c.RespuestaPaciente).HasColumnName("RespuestaPaciente").HasColumnType("varchar(20)");
+            entity.Property(c => c.RespuestaPacienteEn).HasColumnName("RespuestaPacienteEn").HasColumnType("datetime");
+            entity.Property(c => c.RespuestaMessageId).HasColumnName("RespuestaMessageId").HasColumnType("varchar(150)");
 
             entity.HasOne(c => c.Usuario)
                   .WithMany()

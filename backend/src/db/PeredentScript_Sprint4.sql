@@ -12,6 +12,11 @@
 -- IMPORTANTE: hacer respaldo (backup) de la base de datos antes de ejecutar.
 -- =========================================================================
 
+-- Requerido por el índice filtrado UQ_Usuario_CorreoUsuario (sqlcmd lo
+-- trae desactivado por defecto; SSMS ya lo tiene activado).
+SET QUOTED_IDENTIFIER ON;
+GO
+
 BEGIN TRANSACTION;
 
 -- -------------------------------------------------------------------------

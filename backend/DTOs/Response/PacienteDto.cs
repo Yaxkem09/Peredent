@@ -27,4 +27,6 @@ public class PacienteDto
     public string? EncargadoTelefono { get; set; }
 
     public DateTime FechaRegistro { get; set; }
+
+    public bool AceptaRecordatoriosWhatsApp { get; set; }
 }

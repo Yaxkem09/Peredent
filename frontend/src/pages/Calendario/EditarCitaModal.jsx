@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { citasService } from '../../services';
 import { useNotification } from '../../hooks/useNotification';
-import { Button, Modal } from '../../components/common';
+import { Alert, Button, Modal } from '../../components/common';
+import { formatDate, formatTime } from '../../utils/formatters';
 import {
   INCREMENTO_MINUTOS,
   claseDeEstado,
@@ -20,6 +21,78 @@ const ESTADOS_QUE_REQUIEREN_CITA_YA_OCURRIDA = ['Atendida', 'No Asistio'];
 
 const mensajeError = (err) =>
   err?.response?.data?.message || 'No se pudo guardar la cita. Intenta de nuevo.';
+
+// Estados en los que ya no se enviará recordatorio (el backend solo envía a
+// Pendiente y Confirmada).
+const ESTADOS_SIN_RECORDATORIO = ['Cancelada', 'Atendida', 'No Asistio'];
+
+// Valores de Citas.RespuestaPaciente (ver RespuestaRecordatorioWhatsApp en el backend).
+const RESPUESTA_CONFIRMO = 'Confirmo';
+const RESPUESTA_MODIFICAR = 'Modificar';
+
+const fechaHora = (valor) => `${formatDate(valor)} ${formatTime(valor)}`;
+
+// formatTime en es-GT termina en "a. m."/"p. m.": si el texto ya acaba en punto
+// no se agrega otro al cerrar la oración (evita "p. m..").
+const conPuntoFinal = (texto) => (texto.endsWith('.') ? texto : `${texto}.`);
+
+// Respuesta del paciente a los botones del recordatorio. "Modificar" destaca
+// más porque requiere que la clínica le dé seguimiento.
+const RespuestaPaciente = ({ cita }) => {
+  if (cita.respuestaPaciente === RESPUESTA_CONFIRMO) {
+    return (
+      <div className="cita-respuesta confirmo">
+        El paciente confirmó su asistencia el {fechaHora(cita.respuestaPacienteEn)}
+      </div>
+    );
+  }
+
+  if (cita.respuestaPaciente === RESPUESTA_MODIFICAR) {
+    return (
+      <div className="cita-respuesta">
+        <Alert type="warning">
+          <strong>El paciente solicitó modificar su cita</strong> el {conPuntoFinal(fechaHora(cita.respuestaPacienteEn))} Puede que llame
+          a la clínica; si no lo hace, conviene contactarlo.
+        </Alert>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+// Estado del recordatorio por WhatsApp del día anterior. recordatorioEnviadoEn
+// viene en hora de Guatemala sin zona, así que new Date() lo toma como hora local.
+const RecordatorioWhatsApp = ({ cita }) => {
+  let estado;
+  let clase = '';
+
+  if (cita.recordatorioEnviadoEn) {
+    estado = `Enviado el ${fechaHora(cita.recordatorioEnviadoEn)}`;
+    clase = ' enviado';
+  } else if (cita.recordatorioError) {
+    estado = 'Error al enviar';
+    clase = ' error';
+  } else if (ESTADOS_SIN_RECORDATORIO.includes(cita.estado) || esCitaPasada(cita.fecha, cita.hora)) {
+    // Con la fecha/estado guardados de la cita, no con lo que se esté editando en el formulario.
+    estado = 'No aplica';
+  } else {
+    estado = 'Pendiente';
+  }
+
+  return (
+    <div className="cita-recordatorio">
+      <span className="cita-recordatorio-label">Recordatorio WhatsApp:</span>{' '}
+      <span className={`cita-recordatorio-estado${clase}`}>{estado}</span>
+      {!cita.recordatorioEnviadoEn && cita.recordatorioError && (
+        <div className="cita-recordatorio-detalle" title={cita.recordatorioError}>
+          {cita.recordatorioError}
+        </div>
+      )}
+      <RespuestaPaciente cita={cita} />
+    </div>
+  );
+};
 
 // Para cancelar una cita se elige el estado "Cancelada" en el select y se
 // guarda: no hay botón aparte.
@@ -122,6 +195,7 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada }) => {
       <p className="cita-modal-sub">
         Ajusta la fecha, horario o estado de la cita de <strong>{cita.nombrePaciente}</strong>.
       </p>
+      <RecordatorioWhatsApp cita={cita} />
 
       <form className="cita-form" onSubmit={handleSubmit}>
         <section className="cita-seccion cita-seccion-paciente">

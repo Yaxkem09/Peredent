@@ -23,6 +23,16 @@ public class CitaDto
     public int IdEstadoCita { get; set; }
 
     public string Estado { get; set; } = string.Empty;
+
+    // null = todavía no se envió el recordatorio por WhatsApp.
+    public DateTime? RecordatorioEnviadoEn { get; set; }
+
+    public string? RecordatorioError { get; set; }
+
+    // "Confirmo" o "Modificar" (botones del recordatorio); null = sin respuesta.
+    public string? RespuestaPaciente { get; set; }
+
+    public DateTime? RespuestaPacienteEn { get; set; }
 }
 
 public class EstadoCitaDto

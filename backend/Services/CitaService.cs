@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Data;
 using Peredent.Api.DTOs.Request;
 using Peredent.Api.DTOs.Response;
+using Peredent.Api.Helpers;
 using Peredent.Api.Models;
 
 namespace Peredent.Api.Services;
@@ -76,7 +77,7 @@ public class CitaService : ICitaService
     // Alimenta el panel "Citas de hoy" y "Próximas citas" del dashboard.
     public async Task<List<CitaDto>> GetProximasAsync(int limite = 50)
     {
-        var inicioHoy = DateOnly.FromDateTime(AhoraGuatemala()).ToDateTime(TimeOnly.MinValue);
+        var inicioHoy = DateOnly.FromDateTime(FechaHoraGuatemala.Ahora()).ToDateTime(TimeOnly.MinValue);
         var idEstadoCancelada = await ObtenerIdEstadoAsync(EstadoCancelada);
 
         var citas = await ConQuery()
@@ -114,7 +115,7 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.DentistaNoEncontrado, "El odontólogo indicado no existe.");
         }
 
-        if (request.Fecha < DateOnly.FromDateTime(AhoraGuatemala()))
+        if (request.Fecha < DateOnly.FromDateTime(FechaHoraGuatemala.Ahora()))
         {
             return CitaResultado.Fallo(CitaError.FechaEnElPasado, "No se puede crear una cita en una fecha ya pasada.");
         }
@@ -190,7 +191,7 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.EstadoInvalido, "El estado de cita indicado no existe.");
         }
 
-        var ahoraGuatemala = AhoraGuatemala();
+        var ahoraGuatemala = FechaHoraGuatemala.Ahora();
 
         // Solo evaluamos "fecha pasada" cuando el request realmente intenta mover
         // la fecha/hora: reenviar sin cambios la fecha ya pasada de una cita
@@ -239,12 +240,20 @@ public class CitaService : ICitaService
             return CitaResultado.Fallo(CitaError.EstadoNoDisponibleAun, "No se puede marcar Atendida o No Asistió antes de que llegue la hora de la cita.");
         }
 
+        // Antes de asignar: el recordatorio y la respuesta son del paciente anterior.
+        var cambiaPaciente = request.IdPaciente != cita.IdPaciente;
+
         cita.IdPaciente = request.IdPaciente;
         cita.IdUsuario = request.IdUsuario;
         cita.IdEstadoCita = request.IdEstadoCita;
         cita.FechaInicio = fechaInicio;
         cita.FechaFin = fechaFin;
         cita.NotasAdicionales = request.NotasAdicionales;
+
+        if (cambiaFechaOHora || cambiaPaciente)
+        {
+            ReiniciarRecordatorioWhatsApp(cita);
+        }
 
         await _db.SaveChangesAsync();
 
@@ -277,6 +286,21 @@ public class CitaService : ICitaService
 
     private static readonly string MensajeDuracionInvalida =
         $"La duración de la cita debe ser de al menos {CitaConstantes.IncrementoMinutos} minutos y en bloques de {CitaConstantes.IncrementoMinutos} minutos.";
+
+    // Una cita reprogramada (cambia la fecha o la hora de inicio) o asignada a
+    // otro paciente vuelve a empezar en cuanto al recordatorio por WhatsApp:
+    // recibe uno nuevo y se descarta la respuesta al anterior (con ella
+    // desaparece el aviso de "Modificar"). Un toque tardío a un botón del
+    // recordatorio viejo ya no encuentra la cita por su wamid y se ignora.
+    private static void ReiniciarRecordatorioWhatsApp(Cita cita)
+    {
+        cita.RecordatorioEnviadoEn = null;
+        cita.RecordatorioMessageId = null;
+        cita.RecordatorioError = null;
+        cita.RespuestaPaciente = null;
+        cita.RespuestaPacienteEn = null;
+        cita.RespuestaMessageId = null;
+    }
 
     private static bool EsDuracionValida(int duracionMinutos) =>
         duracionMinutos >= CitaConstantes.IncrementoMinutos && duracionMinutos % CitaConstantes.IncrementoMinutos == 0;
@@ -314,11 +338,6 @@ public class CitaService : ICitaService
     // El odontólogo marcó ese día como no laborable (ver BloqueoAgendaService).
     private Task<bool> EsDiaBloqueadoAsync(int idUsuario, DateOnly fecha) =>
         _db.BloqueosAgenda.AnyAsync(b => b.IdUsuario == idUsuario && b.Fecha == fecha);
-
-    // Hora actual en Guatemala (UTC-6, sin horario de verano). Autoridad para
-    // "fecha pasada" y "todavía no llega la hora": el navegador puede estar en
-    // otra zona horaria, pero el backend siempre decide con esta referencia.
-    private static DateTime AhoraGuatemala() => DateTime.UtcNow.AddHours(-6);
 
     // Compara por IdEstadoCita contra el catálogo (nunca por el string del
     // nombre): "No Asistio" no lleva tilde y una diferencia de tilde/mayúsculas
@@ -359,5 +378,9 @@ public class CitaService : ICitaService
         NotasAdicionales = cita.NotasAdicionales,
         IdEstadoCita = cita.IdEstadoCita,
         Estado = cita.EstadoCita.TipoEstadoCita,
+        RecordatorioEnviadoEn = cita.RecordatorioEnviadoEn,
+        RecordatorioError = cita.RecordatorioError,
+        RespuestaPaciente = cita.RespuestaPaciente,
+        RespuestaPacienteEn = cita.RespuestaPacienteEn,
     };
 }
