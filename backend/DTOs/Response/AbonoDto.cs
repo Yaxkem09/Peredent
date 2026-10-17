@@ -9,6 +9,11 @@ public class AbonoDto
 
     public DateTime Fecha { get; set; }
 
+    // SCRUM-278: método de pago con el que se hizo el abono.
+    public int IdMetodoPago { get; set; }
+
+    public string? MetodoPago { get; set; }
+
     // Saldo del plan después de aplicar este abono. Puede ser negativo (a favor
     // del paciente) si el plan se editó después de abonar.
     // Es null en los abonos anulados: no dejan saldo propio porque no cuentan.

@@ -61,6 +61,9 @@ public class ApplicationDbContext : DbContext
     // backend/src/db/PeredentScript_Sprint4.sql).
     public DbSet<AbonoPaciente> AbonosPaciente => Set<AbonoPaciente>();
 
+    // SCRUM-291: catálogo de métodos de pago (PeredentScript_Sprint5.sql).
+    public DbSet<MetodoPago> MetodosPago => Set<MetodoPago>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Rol>(entity =>
@@ -101,6 +104,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(p => p.Sexo).HasColumnName("Sexo").HasMaxLength(10);
             entity.Property(p => p.FechaNacimiento).HasColumnName("Fecha_Nacimiento");
             entity.Property(p => p.Telefono).HasColumnName("Telefono").HasMaxLength(20).IsRequired();
+            entity.Property(p => p.TelefonoSecundario).HasColumnName("Telefono_Secundario").HasMaxLength(20);
             entity.Property(p => p.Correo).HasColumnName("Correo").HasMaxLength(100);
             entity.Property(p => p.Nit).HasColumnName("NIT").HasColumnType("varchar(15)").IsRequired();
             entity.Property(p => p.Direccion).HasColumnName("Direccion").HasMaxLength(200);
@@ -520,6 +524,21 @@ public class ApplicationDbContext : DbContext
             entity.Property(a => a.FechaAnulacion).HasColumnName("FechaAnulacion").HasColumnType("datetime");
             entity.Property(a => a.IdUsuarioAnulacion).HasColumnName("ID_UsuarioAnulacion");
             entity.Property(a => a.MotivoAnulacion).HasColumnName("MotivoAnulacion").HasColumnType("varchar(300)");
+            entity.Property(a => a.IdMetodoPago).HasColumnName("ID_MetodoPago");
+
+            entity.HasOne<MetodoPago>()
+                  .WithMany()
+                  .HasForeignKey(a => a.IdMetodoPago)
+                  .HasConstraintName("FK_AbonoPaciente_MetodoPago")
+                  .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<MetodoPago>(entity =>
+        {
+            entity.ToTable("MetodoPago");
+            entity.HasKey(m => m.IdMetodoPago);
+            entity.Property(m => m.IdMetodoPago).HasColumnName("ID_MetodoPago");
+            entity.Property(m => m.NombreMetodoPago).HasColumnName("NombreMetodoPago").HasColumnType("varchar(50)").IsRequired();
         });
     }
 }

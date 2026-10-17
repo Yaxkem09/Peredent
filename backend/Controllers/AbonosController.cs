@@ -15,12 +15,11 @@ namespace Peredent.Api.Controllers;
 // SCRUM-63: abonos que hace el paciente y su saldo pendiente. El saldo no se
 // almacena en la base: se recalcula contra el total del plan de tratamiento
 // (SCRUM-65), así que siempre refleja el plan tal como está guardado hoy.
-// Solo [Authorize]: la historia es de la asistente, pero el odontólogo entra con
-// el mismo rol autenticado, igual que en el resto de los controllers clínicos.
-// La edición y la eliminación (anulación) de un abono son la excepción: solo
-// las puede hacer el rol Odontologo, confirmando con su contraseña.
+// SCRUM-288: "Saldo y abonos" es solo del odontólogo, así que todo el
+// controller exige el rol Odontologo (antes también lo usaba la asistente).
+// La edición y la eliminación (anulación) además piden su contraseña.
 [ApiController]
-[Authorize]
+[Authorize(Roles = RolOdontologo)]
 public class AbonosController : ControllerBase
 {
     // Tope de abonos anulados por plan: es un seguro para que el historial de un
@@ -60,6 +59,19 @@ public class AbonosController : ControllerBase
         if (request.Monto <= 0)
         {
             return BadRequest(new { message = "El monto del abono debe ser mayor a 0." });
+        }
+
+        // SCRUM-277: no se guarda un abono sin método de pago, ni con uno que no
+        // exista en el catálogo.
+        if (request.IdMetodoPago is not int idMetodoPago)
+        {
+            return BadRequest(new { message = "Selecciona el método de pago del abono." });
+        }
+
+        var metodoPago = await _db.MetodosPago.FirstOrDefaultAsync(m => m.IdMetodoPago == idMetodoPago);
+        if (metodoPago is null)
+        {
+            return BadRequest(new { message = "El método de pago seleccionado no es válido." });
         }
 
         // Si el cliente indica el plan se abona sobre ese (activo o ya cerrado: un
@@ -112,6 +124,7 @@ public class AbonosController : ControllerBase
             // El cliente no manda la fecha: la asigna el backend en hora de
             // Guatemala, igual que el resto de fechas del proyecto (SCRUM-64).
             FechaAbono = FechaGuatemala.Ahora(),
+            IdMetodoPago = metodoPago.IdMetodoPago,
             // Explícito: la columna es NOT NULL con DEFAULT 0, pero el INSERT no
             // depende del default de la base.
             Anulado = false,
@@ -125,9 +138,23 @@ public class AbonosController : ControllerBase
             IdAbonoPaciente = abono.IdAbonoPaciente,
             Monto = abono.MontoAbono,
             Fecha = abono.FechaAbono,
+            IdMetodoPago = metodoPago.IdMetodoPago,
+            MetodoPago = metodoPago.NombreMetodoPago,
             // Saldo que queda después de este abono (SCRUM-64 / SCRUM-65).
             SaldoPendiente = TotalesPlan.CalcularSaldo(total, abonado + abono.MontoAbono),
         });
+    }
+
+    // SCRUM-276: opciones del campo "Método de pago" (Efectivo / Transferencia).
+    [HttpGet("api/metodos-pago")]
+    public async Task<ActionResult<IEnumerable<MetodoPagoDto>>> GetMetodosPago()
+    {
+        var metodos = await _db.MetodosPago
+            .OrderBy(m => m.IdMetodoPago)
+            .Select(m => new MetodoPagoDto { IdMetodoPago = m.IdMetodoPago, Nombre = m.NombreMetodoPago })
+            .ToListAsync();
+
+        return Ok(metodos);
     }
 
     // SCRUM-66 (primera parte): estado de cuenta del plan activo, con el saldo
@@ -151,8 +178,9 @@ public class AbonosController : ControllerBase
 
         var abonos = await ObtenerAbonosAsync(new[] { planActivo.IdPresupuestoPlan });
         var nombres = await ObtenerNombresUsuariosAsync(abonos);
+        var metodos = await ObtenerNombresMetodosPagoAsync();
 
-        return Ok(ArmarEstadoCuentaPlan(pacienteId, planActivo, abonos, nombres));
+        return Ok(ArmarEstadoCuentaPlan(pacienteId, planActivo, abonos, nombres, metodos));
     }
 
     // SCRUM-66: estado de cuenta completo del paciente. Devuelve TODOS sus planes
@@ -190,13 +218,15 @@ public class AbonosController : ControllerBase
             .GroupBy(a => a.IdPresupuestoPlan)
             .ToDictionary(g => g.Key, g => g.ToList());
         var nombres = await ObtenerNombresUsuariosAsync(abonos);
+        var metodos = await ObtenerNombresMetodosPagoAsync();
 
         var estados = ordenados
             .Select(plan => ArmarEstadoCuentaPlan(
                 pacienteId,
                 plan,
                 abonosPorPlan.TryGetValue(plan.IdPresupuestoPlan, out var delPlan) ? delPlan : new List<AbonoPaciente>(),
-                nombres))
+                nombres,
+                metodos))
             .ToList();
 
         return Ok(new EstadoCuentaPacienteDto
@@ -303,8 +333,9 @@ public class AbonosController : ControllerBase
         // resumen, lista y saldo con lo que calculó el backend.
         var abonos = await ObtenerAbonosAsync(new[] { plan.IdPresupuestoPlan });
         var nombres = await ObtenerNombresUsuariosAsync(abonos);
+        var metodos = await ObtenerNombresMetodosPagoAsync();
 
-        return Ok(ArmarEstadoCuentaPlan(pacienteId, plan, abonos, nombres));
+        return Ok(ArmarEstadoCuentaPlan(pacienteId, plan, abonos, nombres, metodos));
     }
 
     // Edición del monto de un abono: SOLO el rol Odontologo, confirmada con la
@@ -384,8 +415,9 @@ public class AbonosController : ControllerBase
 
         var abonos = await ObtenerAbonosAsync(new[] { plan.IdPresupuestoPlan });
         var nombres = await ObtenerNombresUsuariosAsync(abonos);
+        var metodos = await ObtenerNombresMetodosPagoAsync();
 
-        return Ok(ArmarEstadoCuentaPlan(pacienteId, plan, abonos, nombres));
+        return Ok(ArmarEstadoCuentaPlan(pacienteId, plan, abonos, nombres, metodos));
     }
 
     // Reutiliza exactamente la verificación del login (mismo hash y mismo salt del
@@ -478,12 +510,20 @@ public class AbonosController : ControllerBase
             .ToDictionaryAsync(u => u.IdUsuario, u => u.NombreUsuario);
     }
 
+    // SCRUM-278: nombre de cada método de pago para el historial. El catálogo es
+    // de dos filas, así que se lee completo en una consulta.
+    private Task<Dictionary<int, string>> ObtenerNombresMetodosPagoAsync()
+    {
+        return _db.MetodosPago.ToDictionaryAsync(m => m.IdMetodoPago, m => m.NombreMetodoPago);
+    }
+
     // Arma el estado de cuenta de un plan ya cargado: totales, abonado, saldo e historial.
     private static EstadoCuentaPlanDto ArmarEstadoCuentaPlan(
         int pacienteId,
         PresupuestoPlan plan,
         List<AbonoPaciente> abonos,
-        IReadOnlyDictionary<int, string> nombresUsuarios)
+        IReadOnlyDictionary<int, string> nombresUsuarios,
+        IReadOnlyDictionary<int, string> nombresMetodosPago)
     {
         var subtotal = plan.Piezas.Sum(pt => pt.Valor);
         var descuento = plan.CantidadDescuento ?? 0;
@@ -509,6 +549,8 @@ public class AbonosController : ControllerBase
                 IdAbonoPaciente = abono.IdAbonoPaciente,
                 Monto = abono.MontoAbono,
                 Fecha = abono.FechaAbono,
+                IdMetodoPago = abono.IdMetodoPago,
+                MetodoPago = nombresMetodosPago.TryGetValue(abono.IdMetodoPago, out var metodo) ? metodo : null,
                 SaldoPendiente = CuentaParaElSaldo(abono) ? TotalesPlan.CalcularSaldo(total, acumulado) : null,
                 Anulado = abono.Anulado,
                 FechaAnulacion = abono.FechaAnulacion,

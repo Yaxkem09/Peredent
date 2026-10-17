@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,9 @@ public class PacientesController : ControllerBase
 {
     private const string NitConsumidorFinal = "CF";
     private const int NitLongitudMaxima = 15;
+
+    // Teléfonos de Guatemala: exactamente 8 dígitos, un número por campo.
+    private const int TelefonoDigitos = 8;
 
     private readonly ApplicationDbContext _db;
 
@@ -44,7 +48,8 @@ public class PacientesController : ControllerBase
             query = query.Where(p =>
                 EF.Functions.Like(EF.Functions.Collate(p.Nombres, "Latin1_General_CI_AI"), $"%{texto}%") ||
                 EF.Functions.Like(EF.Functions.Collate(p.Apellidos, "Latin1_General_CI_AI"), $"%{texto}%") ||
-                EF.Functions.Like(EF.Functions.Collate(p.Telefono, "Latin1_General_CI_AI"), $"%{texto}%"));
+                EF.Functions.Like(EF.Functions.Collate(p.Telefono, "Latin1_General_CI_AI"), $"%{texto}%") ||
+                EF.Functions.Like(EF.Functions.Collate(p.TelefonoSecundario!, "Latin1_General_CI_AI"), $"%{texto}%"));
         }
 
         var pacientes = await query.OrderBy(p => p.Apellidos).ToListAsync();
@@ -78,18 +83,24 @@ public class PacientesController : ControllerBase
             return BadRequest(new { message = $"El NIT no puede tener más de {NitLongitudMaxima} caracteres." });
         }
 
+        if (ValidarTelefonos(request) is string errorTelefono)
+        {
+            return BadRequest(new { message = errorTelefono });
+        }
+
         var paciente = new Paciente
         {
             Nombres = request.Nombres.Trim(),
             Apellidos = request.Apellidos.Trim(),
             Sexo = request.Sexo,
             FechaNacimiento = request.FechaNacimiento,
-            Telefono = request.Telefono.Trim(),
+            Telefono = NormalizarTelefono(request.Telefono)!,
+            TelefonoSecundario = NormalizarTelefono(request.TelefonoSecundario),
             Correo = request.Correo,
             Nit = NormalizarNit(request.Nit),
             Direccion = request.Direccion,
             NombreEncargado = request.EncargadoNombre,
-            TelefonoEncargado = request.EncargadoTelefono,
+            TelefonoEncargado = NormalizarTelefono(request.EncargadoTelefono),
             FechaRegistro = DateTime.UtcNow,
             AceptaRecordatoriosWhatsApp = request.AceptaRecordatoriosWhatsApp ?? false,
         };
@@ -114,16 +125,22 @@ public class PacientesController : ControllerBase
             return BadRequest(new { message = $"El NIT no puede tener más de {NitLongitudMaxima} caracteres." });
         }
 
+        if (ValidarTelefonos(request) is string errorTelefono)
+        {
+            return BadRequest(new { message = errorTelefono });
+        }
+
         paciente.Nombres = request.Nombres.Trim();
         paciente.Apellidos = request.Apellidos.Trim();
         paciente.Sexo = request.Sexo;
         paciente.FechaNacimiento = request.FechaNacimiento;
-        paciente.Telefono = request.Telefono.Trim();
+        paciente.Telefono = NormalizarTelefono(request.Telefono)!;
+        paciente.TelefonoSecundario = NormalizarTelefono(request.TelefonoSecundario);
         paciente.Correo = request.Correo;
         paciente.Nit = NormalizarNit(request.Nit);
         paciente.Direccion = request.Direccion;
         paciente.NombreEncargado = request.EncargadoNombre;
-        paciente.TelefonoEncargado = request.EncargadoTelefono;
+        paciente.TelefonoEncargado = NormalizarTelefono(request.EncargadoTelefono);
 
         // Sin el campo en el request se conserva el consentimiento actual.
         if (request.AceptaRecordatoriosWhatsApp is not null)
@@ -161,6 +178,48 @@ public class PacientesController : ControllerBase
         return limpio;
     }
 
+    // Se quitan espacios y guiones ("5512-3344", "5512 3344"): se guarda solo
+    // el número. Vacío => null.
+    private static string? NormalizarTelefono(string? telefono)
+    {
+        var limpio = Regex.Replace(telefono ?? string.Empty, @"[\s\-]", string.Empty);
+        return limpio.Length == 0 ? null : limpio;
+    }
+
+    private static bool TelefonoValido(string? telefono) =>
+        telefono is not null && telefono.Length == TelefonoDigitos && telefono.All(char.IsAsciiDigit);
+
+    // Un número por campo: así no vuelven a entrar dos teléfonos juntos en
+    // Telefono ("42246235\ 34401287"). El principal es obligatorio; el
+    // secundario y el del encargado, opcionales pero con el mismo formato.
+    private static string? ValidarTelefonos(CreatePacienteDto request)
+    {
+        var principal = NormalizarTelefono(request.Telefono);
+        if (principal is null)
+        {
+            return "El teléfono es obligatorio.";
+        }
+
+        if (!TelefonoValido(principal))
+        {
+            return $"El teléfono debe tener {TelefonoDigitos} dígitos. Si el paciente tiene otro número, ingrésalo en \"Teléfono 2\".";
+        }
+
+        var secundario = NormalizarTelefono(request.TelefonoSecundario);
+        if (secundario is not null && !TelefonoValido(secundario))
+        {
+            return $"El teléfono 2 debe tener {TelefonoDigitos} dígitos.";
+        }
+
+        var encargado = NormalizarTelefono(request.EncargadoTelefono);
+        if (encargado is not null && !TelefonoValido(encargado))
+        {
+            return $"El teléfono del encargado debe tener {TelefonoDigitos} dígitos.";
+        }
+
+        return null;
+    }
+
     private static bool NitExcedeLongitud(string? nit) => (nit?.Trim().Length ?? 0) > NitLongitudMaxima;
 
     private static PacienteDto ToDto(Paciente paciente) => new()
@@ -171,6 +230,7 @@ public class PacientesController : ControllerBase
         Sexo = paciente.Sexo,
         FechaNacimiento = paciente.FechaNacimiento,
         Telefono = paciente.Telefono,
+        TelefonoSecundario = paciente.TelefonoSecundario,
         Correo = paciente.Correo,
         Nit = paciente.Nit,
         Direccion = paciente.Direccion,

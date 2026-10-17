@@ -101,8 +101,14 @@
 .endo-vacio {
   padding: 22px 12px !important;
   text-align: center;
-  font-style: italic;
-  color: var(--ink-faint);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface-alt);
+}
+
+.endo-vacio strong {
+  color: var(--teal);
 }
 
 .endo-select,

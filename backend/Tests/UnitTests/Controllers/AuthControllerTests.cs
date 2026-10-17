@@ -15,6 +15,7 @@ namespace Peredent.Api.Tests.UnitTests.Controllers;
 public class AuthControllerTests
 {
     private const string ClaveValida = "claveSegura123";
+    private const string CorreoValido = "dra.solis@peredent.com";
 
     // Fake mínimo: estos tests verifican la lógica de AuthController (credenciales,
     // estado del usuario), no la generación real del JWT -- eso ya lo cubre
@@ -46,6 +47,7 @@ public class AuthControllerTests
         var usuario = new Usuario
         {
             NombreUsuario = nombreUsuario,
+            CorreoUsuario = CorreoValido,
             IdRol = 1,
             Estado = estado,
         };
@@ -73,7 +75,7 @@ public class AuthControllerTests
         await SembrarUsuarioAsync(db);
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = ClaveValida });
+        var resultado = await controller.Login(new LoginDto { Correo = CorreoValido, Clave = ClaveValida });
 
         var ok = Assert.IsType<OkObjectResult>(resultado.Result);
         var dto = Assert.IsType<AuthResponseDto>(ok.Value);
@@ -91,7 +93,7 @@ public class AuthControllerTests
         await db.SaveChangesAsync();
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "  Dra.Solis@Peredent.com ", Clave = ClaveValida });
+        var resultado = await controller.Login(new LoginDto { Correo = "  Dra.Solis@Peredent.com ", Clave = ClaveValida });
 
         var ok = Assert.IsType<OkObjectResult>(resultado.Result);
         var dto = Assert.IsType<AuthResponseDto>(ok.Value);
@@ -106,7 +108,33 @@ public class AuthControllerTests
         usuario.CorreoUsuario = "dra.solis@peredent.com";
         await db.SaveChangesAsync();
 
-        var resultado = await CrearController(db).Login(new LoginDto { Usuario = "dra.solis@peredent.com", Clave = "otra" });
+        var resultado = await CrearController(db).Login(new LoginDto { Correo = "dra.solis@peredent.com", Clave = "otra" });
+
+        Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
+    }
+
+    // Solo se entra con el correo: el nombre de usuario ya no sirve.
+    [Fact]
+    public async Task Login_ConNombreDeUsuario_Devuelve401()
+    {
+        using var db = CrearContexto();
+        await SembrarUsuarioAsync(db);
+
+        var resultado = await CrearController(db).Login(new LoginDto { Correo = "dra.solis", Clave = ClaveValida });
+
+        Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
+    }
+
+    // Una cuenta vieja sin correo no puede entrar (ni con correo vacío).
+    [Fact]
+    public async Task Login_UsuarioSinCorreo_Devuelve401()
+    {
+        using var db = CrearContexto();
+        var usuario = await SembrarUsuarioAsync(db);
+        usuario.CorreoUsuario = null;
+        await db.SaveChangesAsync();
+
+        var resultado = await CrearController(db).Login(new LoginDto { Correo = "", Clave = ClaveValida });
 
         Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
     }
@@ -118,7 +146,7 @@ public class AuthControllerTests
         await SembrarUsuarioAsync(db);
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = "claveIncorrecta" });
+        var resultado = await controller.Login(new LoginDto { Correo = CorreoValido, Clave = "claveIncorrecta" });
 
         Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
     }
@@ -129,7 +157,7 @@ public class AuthControllerTests
         using var db = CrearContexto();
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "no.existe", Clave = ClaveValida });
+        var resultado = await controller.Login(new LoginDto { Correo = "no.existe@peredent.com", Clave = ClaveValida });
 
         Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
     }
@@ -141,7 +169,7 @@ public class AuthControllerTests
         await SembrarUsuarioAsync(db, estado: false);
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = ClaveValida });
+        var resultado = await controller.Login(new LoginDto { Correo = CorreoValido, Clave = ClaveValida });
 
         Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
     }
@@ -155,7 +183,7 @@ public class AuthControllerTests
         var usuario = await SembrarUsuarioAsync(db, hashLegado: true);
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = ClaveValida });
+        var resultado = await controller.Login(new LoginDto { Correo = CorreoValido, Clave = ClaveValida });
 
         Assert.IsType<OkObjectResult>(resultado.Result);
 
@@ -173,7 +201,7 @@ public class AuthControllerTests
         var usuario = await SembrarUsuarioAsync(db, hashLegado: true);
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = "claveIncorrecta" });
+        var resultado = await controller.Login(new LoginDto { Correo = CorreoValido, Clave = "claveIncorrecta" });
 
         Assert.IsType<UnauthorizedObjectResult>(resultado.Result);
         var guardado = await db.Usuarios.SingleAsync(u => u.IdUsuario == usuario.IdUsuario);
@@ -188,7 +216,7 @@ public class AuthControllerTests
         var usuario = await SembrarUsuarioAsync(db);
         var controller = CrearController(db);
 
-        var resultado = await controller.Login(new LoginDto { Usuario = "dra.solis", Clave = ClaveValida });
+        var resultado = await controller.Login(new LoginDto { Correo = CorreoValido, Clave = ClaveValida });
 
         Assert.IsType<OkObjectResult>(resultado.Result);
         var guardado = await db.Usuarios.SingleAsync(u => u.IdUsuario == usuario.IdUsuario);

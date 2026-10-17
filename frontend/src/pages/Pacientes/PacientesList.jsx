@@ -5,6 +5,8 @@ import { formatDate } from '../../utils/formatters';
 import { Alert, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
 import '../../styles/page-header.css';
+import BotonGuia from '../../components/common/BotonGuia';
+import { GUIA_PACIENTES } from '../guiasPantallas';
 import './Pacientes.css';
 
 const inicialesDe = (nombres, apellidos) =>
@@ -39,19 +41,22 @@ useEffect(() => {
   };
 }, [termino]);
 return (
-    <div className="page-block">
+    <div className="page-block pacientes-page">
       <div className="page-head">
         <div>
           <div className="eyebrow">Base de pacientes</div>
           <h2>Pacientes</h2>
           <p>Busca, registra y da seguimiento a cada expediente.</p>
         </div>
+        <div className="page-head-acciones">
+        <BotonGuia pasos={GUIA_PACIENTES} className="btn btn-md btn-head-sec" />
         <Link className="btn btn-primary pacientes-nuevo" to={ROUTES.PACIENTE_NUEVO}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
           </svg>
           Nuevo paciente
         </Link>
+        </div>
       </div>
 
       <div className="pacientes-buscador">
@@ -115,6 +120,7 @@ return (
                         <path d="M4.5 3.5h3.5l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3.5a1.5 1.5 0 0 1-1.6 1.5C10.5 19 5 13.5 3 6.1A1.5 1.5 0 0 1 4.5 3.5Z" />
                       </svg>
                       {paciente.telefono || 'Sin teléfono'}
+                      {paciente.telefonoSecundario && ` · ${paciente.telefonoSecundario}`}
                     </span>
                     <span className="patient-meta-item meta-registro">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">

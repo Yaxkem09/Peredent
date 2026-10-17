@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { PIEZAS_DENTALES } from '../../utils/piezasDentales';
 import { formatCurrency } from '../../utils/formatters';
 import { planTratamientoService } from '../../services/plan-tratamiento.service';
 import { Alert, Loader, Modal } from '../../components/common';
+import AvisoCambiosSinGuardar from '../../components/common/AvisoCambiosSinGuardar';
 import { useNotification } from '../../hooks/useNotification';
+import { useAvisoCambiosSinGuardar } from '../../hooks/useAvisoCambiosSinGuardar';
 import './PlanTratamiento.css';
 
 const filaInicial = (pieza) => ({
@@ -34,7 +36,7 @@ const combinarConGuardado = (piezasGuardadas) => {
   });
 };
 
-const PlanTratamientoTab = ({ idPaciente }) => {
+const PlanTratamientoTab = forwardRef(({ idPaciente, onCambiarTab }, ref) => {
   const { notify } = useNotification();
   const [filas, setFilas] = useState(() => PIEZAS_DENTALES.map(filaInicial));
   const [descuento, setDescuento] = useState(0);
@@ -104,22 +106,12 @@ const PlanTratamientoTab = ({ idPaciente }) => {
     marcarCambio();
   };
 
-  const piezasSinValor = () => filas.filter((f) => f.tratamiento.trim() !== '' && !(Number(f.valor) > 0));
-
+  // Devuelvo true/false según el guardado haya tenido éxito: lo necesito para
+  // decidir si "Guardar y salir" puede avanzar al cambio de pestaña o no.
+  // Ya no bloqueo el guardado de una pieza con tratamiento y sin valor: se
+  // guarda en 0 y queda "Pendiente de precio" hasta que se le ponga un valor.
   const guardar = async () => {
     setErrorGuardar(null);
-
-    const invalidas = piezasSinValor();
-    if (invalidas.length > 0) {
-      const etiquetas = invalidas.map((f) => f.etiqueta).join(', ');
-      setErrorGuardar(
-        invalidas.length === 1
-          ? `La pieza ${etiquetas} tiene un tratamiento pero no tiene un valor. Ingresa un valor mayor a 0 antes de guardar.`
-          : `Las piezas ${etiquetas} tienen un tratamiento pero no tienen un valor. Ingresa un valor mayor a 0 antes de guardar.`,
-      );
-      return;
-    }
-
     setGuardando(true);
     try {
       const payload = {
@@ -138,12 +130,18 @@ const PlanTratamientoTab = ({ idPaciente }) => {
       setExistePlanActivo(Boolean(actualizado.fechaInicio));
       setGuardado(true);
       notify('Plan de tratamiento guardado exitosamente.');
+      return true;
     } catch {
       setErrorGuardar('No se pudo guardar el plan de tratamiento. Intenta de nuevo.');
+      return false;
     } finally {
       setGuardando(false);
     }
   };
+
+  // SCRUM-283: aviso de cambios sin guardar al cambiar de pestaña, salir del
+  // expediente o cerrar el navegador. "Guardar y salir" usa el mismo guardar().
+  const aviso = useAvisoCambiosSinGuardar({ ref, hayCambios: !guardado, guardar, onCambiarTab });
 
   const confirmarFinalizarPlan = async () => {
     setMostrarConfirmarFinalizar(false);
@@ -214,6 +212,13 @@ const PlanTratamientoTab = ({ idPaciente }) => {
                 value={fila.valor === 0 ? '' : fila.valor}
                 onChange={(e) => cambiarValor(fila.numero, e.target.value)}
               />
+              {/* Un tratamiento guardado sin valor (0) no es un error: lo dejo
+                  claro con esta etiqueta (reutilizo el mismo estilo "tag" de la
+                  columna de tratamiento), en vez de mostrar "Q0" como si fuera
+                  un precio real, y el campo sigue editable para ponerlo luego. */}
+              {fila.tratamiento.trim() !== '' && !(Number(fila.valor) > 0) && (
+                <span className="tag plan-estado-tag tag-pending">Pendiente de precio</span>
+              )}
             </td>
           </tr>
         ))}
@@ -361,8 +366,12 @@ const PlanTratamientoTab = ({ idPaciente }) => {
         Este plan pasará al historial y ya no se podrá editar. La próxima vez que guardes cambios se creará un plan
         nuevo en blanco.
       </Modal>
+
+      <AvisoCambiosSinGuardar {...aviso} />
     </div>
   );
-};
+});
+
+PlanTratamientoTab.displayName = 'PlanTratamientoTab';
 
 export default PlanTratamientoTab;

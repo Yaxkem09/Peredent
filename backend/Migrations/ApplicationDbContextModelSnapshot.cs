@@ -43,6 +43,10 @@ namespace Peredent.Api.Migrations
                         .HasColumnType("datetime")
                         .HasColumnName("FechaAnulacion");
 
+                    b.Property<int>("IdMetodoPago")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_MetodoPago");
+
                     b.Property<int>("IdPresupuestoPlan")
                         .HasColumnType("int")
                         .HasColumnName("ID_PresupuestoPlan");
@@ -64,6 +68,8 @@ namespace Peredent.Api.Migrations
                         .HasColumnName("MotivoAnulacion");
 
                     b.HasKey("IdAbonoPaciente");
+
+                    b.HasIndex("IdMetodoPago");
 
                     b.ToTable("AbonoPaciente", (string)null);
                 });
@@ -623,6 +629,25 @@ namespace Peredent.Api.Migrations
                     b.ToTable("MedicamentosReceta", (string)null);
                 });
 
+            modelBuilder.Entity("Peredent.Api.Models.MetodoPago", b =>
+                {
+                    b.Property<int>("IdMetodoPago")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_MetodoPago");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMetodoPago"));
+
+                    b.Property<string>("NombreMetodoPago")
+                        .IsRequired()
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("NombreMetodoPago");
+
+                    b.HasKey("IdMetodoPago");
+
+                    b.ToTable("MetodoPago", (string)null);
+                });
+
             modelBuilder.Entity("Peredent.Api.Models.Paciente", b =>
                 {
                     b.Property<int>("IdPaciente")
@@ -693,6 +718,11 @@ namespace Peredent.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("Telefono_Encargado");
+
+                    b.Property<string>("TelefonoSecundario")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Telefono_Secundario");
 
                     b.HasKey("IdPaciente");
 
@@ -1027,6 +1057,16 @@ namespace Peredent.Api.Migrations
                     b.HasIndex("IdRol");
 
                     b.ToTable("Usuario", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.AbonoPaciente", b =>
+                {
+                    b.HasOne("Peredent.Api.Models.MetodoPago", null)
+                        .WithMany()
+                        .HasForeignKey("IdMetodoPago")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("FK_AbonoPaciente_MetodoPago");
                 });
 
             modelBuilder.Entity("Peredent.Api.Models.BloqueoAgenda", b =>

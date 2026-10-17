@@ -173,8 +173,10 @@ public class PlanTratamientoControllerTests
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
     }
 
+    // Subtarea de Rodrigo dentro de SCRUM-283: una pieza con tratamiento pero sin
+    // valor ya no se bloquea, se guarda con Valor = 0 ("pendiente de precio").
     [Fact]
-    public async Task Guardar_TratamientoSinValor_Devuelve400YNoGuardaNada()
+    public async Task Guardar_TratamientoSinValor_GuardaConValorCero()
     {
         using var db = CrearContexto();
         await SembrarEstadosAsync(db);
@@ -186,10 +188,12 @@ public class PlanTratamientoControllerTests
             Piezas = new List<PiezaPlanDto> { new() { Pieza = "16", Tratamiento = "Obturación", Valor = 0 } },
         };
 
-        var resultado = await controller.Guardar(paciente.IdPaciente, request);
+        var guardado = ExtraerDto(await controller.Guardar(paciente.IdPaciente, request));
 
-        Assert.IsType<BadRequestObjectResult>(resultado.Result);
-        Assert.Empty(await db.PlanesTratamiento.ToListAsync());
+        var fila = Assert.Single(guardado.Piezas);
+        Assert.Equal("Obturación", fila.Tratamiento);
+        Assert.Equal(0, fila.Valor);
+        Assert.Equal("Pendiente", fila.Estado);
     }
 
     [Fact]

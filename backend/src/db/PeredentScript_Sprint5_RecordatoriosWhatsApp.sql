@@ -20,9 +20,11 @@
 --   - 20261013010711_SincronizarSnapshotConScriptsSprint4a5 (vacía: registra
 --     lo que ya crearon los scripts Sprint 4, Sprint4_Consentimientos y Sprint 5)
 --   - 20261013012649_AddRespuestaPacienteWhatsApp
+--   - 20261017011359_SincronizarSnapshotConScriptsSprint5MetodoPago (vacía: registra lo que
+--     ya crearon las secciones 5 a 7 de PeredentScript_Sprint5.sql)
 --
 -- La sección 2 es la salida de:
---   dotnet ef migrations script 0 AddRespuestaPacienteWhatsApp --idempotent
+--   dotnet ef migrations script 0 SincronizarSnapshotConScriptsSprint5MetodoPago --idempotent
 -- Es segura de ejecutar varias veces y sobre bases que ya tengan aplicada
 -- cualquiera de las migraciones (revisa __EFMigrationsHistory antes de cada
 -- paso). Pensada para la base de Somee, donde no se corre "dotnet ef".
@@ -196,6 +198,15 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES (N'20261013012649_AddRespuestaPacienteWhatsApp', N'9.0.0');
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261017011359_SincronizarSnapshotConScriptsSprint5MetodoPago'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261017011359_SincronizarSnapshotConScriptsSprint5MetodoPago', N'9.0.0');
 END;
 
 COMMIT;

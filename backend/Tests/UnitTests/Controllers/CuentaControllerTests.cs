@@ -320,11 +320,13 @@ public class CuentaControllerTests
         Assert.Equal("nueva.direccion@peredent.com", (await db.Usuarios.SingleAsync()).CorreoUsuario);
     }
 
+    // El correo no se puede borrar: sin él no se podría volver a iniciar sesión.
     [Fact]
-    public async Task ActualizarCorreo_Vacio_LoDejaEnNulo()
+    public async Task ActualizarCorreo_Vacio_Devuelve400YNoLoBorra()
     {
         using var db = CrearContexto();
         await CrearUsuarioAsync(db);
+        var correoAntes = (await db.Usuarios.SingleAsync()).CorreoUsuario;
 
         var resultado = await CrearController(db).ActualizarCorreo(new ActualizarCorreoDto
         {
@@ -332,8 +334,8 @@ public class CuentaControllerTests
             ContrasenaActual = ClaveActual,
         });
 
-        Assert.Null(ExtraerCuenta(resultado).Correo);
-        Assert.Null((await db.Usuarios.SingleAsync()).CorreoUsuario);
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Equal(correoAntes, (await db.Usuarios.SingleAsync()).CorreoUsuario);
     }
 
     [Theory]

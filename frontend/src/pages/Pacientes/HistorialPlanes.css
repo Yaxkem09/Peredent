@@ -73,12 +73,6 @@
   color: var(--ink);
 }
 
-.historial-detalle-sub {
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin-top: 4px;
-}
-
 .historial-detalle-total {
   text-align: right;
   flex-shrink: 0;
@@ -148,24 +142,88 @@
 }
 
 .historial-observaciones {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-soft);
 }
 
 .historial-observaciones-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
 }
 
 .historial-observaciones p {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
   white-space: pre-wrap;
+}
+
+/* Sin observaciones: tarjeta neutra y texto atenuado. */
+.historial-observaciones.vacia {
+  border-color: var(--line);
+  border-left-color: var(--line);
+  background: var(--surface-alt);
+}
+
+.historial-observaciones.vacia .historial-observaciones-label {
+  color: var(--ink-soft);
+}
+
+.historial-observaciones.vacia p {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* Fechas del plan y número de piezas, en etiquetas. */
+.historial-detalle-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.historial-dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface-alt);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.historial-dato strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.historial-dato svg {
+  color: var(--teal);
+}
+
+.historial-dato-cierre {
+  border-color: color-mix(in srgb, var(--verde) 35%, transparent);
+  background: var(--verde-soft);
+  color: var(--verde);
+}
+
+.historial-dato-cierre strong,
+.historial-dato-cierre svg {
+  color: var(--verde);
 }
 
 /* ---- Tarjetas del historial: ícono, datos en píldoras, barra de avance y

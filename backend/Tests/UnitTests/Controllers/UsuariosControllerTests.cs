@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Peredent.Api.Controllers;
@@ -83,8 +85,9 @@ public class UsuariosControllerTests
         Assert.Empty(db.Usuarios);
     }
 
+    // Solo se inicia sesión con el correo: un usuario sin correo no podría entrar.
     [Fact]
-    public async Task Create_SinCorreo_CreaElUsuarioConCorreoNulo()
+    public async Task Create_SinCorreo_Devuelve400YNoCrea()
     {
         using var db = CrearContexto();
         await SembrarRolAsync(db);
@@ -92,8 +95,8 @@ public class UsuariosControllerTests
 
         var resultado = await controller.Create(NuevoUsuarioDto("nuevo.usuario", idRol: 1, correo: "   "));
 
-        var dto = Assert.IsType<UsuarioDto>(Assert.IsType<OkObjectResult>(resultado.Result).Value);
-        Assert.Null(dto.Correo);
+        Assert.IsType<BadRequestObjectResult>(resultado.Result);
+        Assert.Empty(db.Usuarios);
     }
 
     // SCRUM-235: la contraseña del alta tiene que cumplir la política.
@@ -141,5 +144,34 @@ public class UsuariosControllerTests
         var resultado = await controller.Create(NuevoUsuarioDto("repetido", idRol: 1));
 
         Assert.IsType<BadRequestObjectResult>(resultado.Result);
+    }
+
+    // SCRUM-268: el último acceso solo lo ve el administrador.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetAll_UltimoAcceso_SoloSeMandaAlAdmin(bool esAdmin)
+    {
+        using var db = CrearContexto();
+        await SembrarRolAsync(db);
+        var acceso = new DateTime(2026, 10, 12, 9, 30, 0);
+        db.Usuarios.Add(new Usuario { NombreUsuario = "doctor", IdRol = 1, Estado = true, UltimoAcceso = acceso });
+        await db.SaveChangesAsync();
+
+        var controller = CrearController(db);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                    new[] { new Claim("esAdmin", esAdmin ? "true" : "false") }, "Test")),
+            },
+        };
+
+        var resultado = await controller.GetAll();
+
+        var ok = Assert.IsType<OkObjectResult>(resultado.Result);
+        var dto = Assert.Single(Assert.IsAssignableFrom<IEnumerable<UsuarioDto>>(ok.Value));
+        Assert.Equal(esAdmin ? acceso : null, dto.UltimoAcceso);
     }
 }
