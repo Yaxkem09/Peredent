@@ -32,6 +32,10 @@ const RESPUESTA_MODIFICAR = 'Modificar';
 
 const fechaHora = (valor) => `${formatDate(valor)} ${formatTime(valor)}`;
 
+// formatTime en es-GT termina en "a. m."/"p. m.": si el texto ya acaba en punto
+// no se agrega otro al cerrar la oración (evita "p. m..").
+const conPuntoFinal = (texto) => (texto.endsWith('.') ? texto : `${texto}.`);
+
 // Respuesta del paciente a los botones del recordatorio. "Modificar" destaca
 // más porque requiere que la clínica le dé seguimiento.
 const RespuestaPaciente = ({ cita }) => {
@@ -47,7 +51,7 @@ const RespuestaPaciente = ({ cita }) => {
     return (
       <div className="cita-respuesta">
         <Alert type="warning">
-          <strong>El paciente solicitó modificar su cita</strong> el {fechaHora(cita.respuestaPacienteEn)}. Puede que llame
+          <strong>El paciente solicitó modificar su cita</strong> el {conPuntoFinal(fechaHora(cita.respuestaPacienteEn))} Puede que llame
           a la clínica; si no lo hace, conviene contactarlo.
         </Alert>
       </div>
