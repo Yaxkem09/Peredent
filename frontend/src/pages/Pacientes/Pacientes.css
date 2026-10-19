@@ -18,7 +18,14 @@
 .patient-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 28px;
+  margin-top: 4px;
+}
+
+.patient-group-tarjetas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .patient-row {
@@ -121,22 +128,19 @@
   color: #ffffff;
 }
 
-/* Pantallas anchas: la lista pasa a tarjetas en columnas para no dejar filas
-   larguísimas con el nombre a un extremo y los botones al otro. */
-@media (min-width: 1280px) {
-  .patient-list {
+/* Pantallas anchas: la lista pasa a tarjetas en 2 columnas para no dejar filas
+   larguísimas con el nombre a un extremo y los botones al otro. El orden
+   alfabético se lee de izquierda a derecha y de arriba hacia abajo. */
+@media (min-width: 1100px) {
+  .patient-group-tarjetas {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
 }
 
 /* ---- Tarjetas de paciente: blancas, un solo color (azul marino) y datos en
    píldoras. Sin franja lateral de color para no parecer una cita. ---- */
-.patient-list {
-  gap: 12px;
-}
-
 .patient-row {
   gap: 16px;
   padding: 18px 20px;
@@ -319,4 +323,170 @@
 
 .patient-meta-item.meta-registro svg {
   color: #1f5590;
+}
+
+/* ---- Separadores por letra ----
+   Cada letra abre su sección con un distintivo azul marino (mismo degradado
+   que los avatares), una línea que corre a lo ancho y el total de pacientes. */
+.patient-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.patient-group-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.patient-group-letra {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  box-shadow: 0 8px 18px -10px rgba(10, 38, 75, 0.8);
+  color: #ffffff;
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.patient-group-linea {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #1f5590 0%, rgba(31, 85, 144, 0.25) 35%, rgba(31, 85, 144, 0) 100%);
+}
+
+.patient-group-cuenta {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #dde7f6;
+  color: #1a3f73;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---- Índice A-Z para saltar a una letra ----
+   Barra horizontal que se queda fija arriba al hacer scroll y marca la letra
+   que se está viendo. Las letras sin pacientes se ven tenues y no se pueden
+   presionar. (flex-direction explícito: Sidebar.css tiene un estilo global
+   para <nav> en columna.) */
+.pacientes-indice {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 24px;
+  padding: 8px 10px 8px 18px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(10, 38, 75, 0.04), 0 12px 24px -20px rgba(10, 38, 75, 0.6);
+}
+
+.pacientes-indice-titulo {
+  flex-shrink: 0;
+  padding-right: 12px;
+  border-right: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.pacientes-indice-letras {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pacientes-indice-letras::-webkit-scrollbar {
+  display: none;
+}
+
+.pacientes-indice-letra {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #0a264b;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.pacientes-indice-letra:hover:not(:disabled):not(.activa) {
+  background: #dde7f6;
+  transform: translateY(-1px);
+}
+
+.pacientes-indice-letra.activa {
+  background: linear-gradient(135deg, #0a264b 0%, #1f5590 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 12px -6px rgba(10, 38, 75, 0.8);
+}
+
+.pacientes-indice-letra:focus-visible {
+  outline: 2px solid #1f5590;
+  outline-offset: 1px;
+}
+
+.pacientes-indice-letra:disabled {
+  color: #cfd7e2;
+  font-weight: 500;
+  cursor: default;
+}
+
+/* La sección queda debajo del índice fijo al saltar a una letra. */
+.patient-group {
+  scroll-margin-top: 80px;
+}
+
+@media (max-width: 640px) {
+  .patient-group-letra {
+    width: 38px;
+    height: 38px;
+    font-size: 19px;
+  }
+
+  .pacientes-indice {
+    padding-left: 12px;
+  }
+
+  .pacientes-indice-titulo {
+    display: none;
+  }
+
+  .pacientes-indice-letras {
+    justify-content: flex-start;
+  }
+
+  .pacientes-indice-letra {
+    width: 30px;
+    height: 30px;
+    font-size: 12.5px;
+  }
 }
