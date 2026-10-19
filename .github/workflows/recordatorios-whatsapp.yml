@@ -75,8 +75,11 @@ jobs:
           for intento in $(seq 1 "$max_intentos"); do
             # Sin -v ni -i: nunca se imprimen los headers (llevan la API key).
             # curl deja status=000 si hubo error de red o timeout.
+            # --data '' envía un cuerpo vacío con "Content-Length: 0": sin él, un
+            # POST sin cuerpo no lleva Content-Length y el IIS de Somee lo
+            # rechaza con 411 Length Required.
             status=$(curl -sS -o "$respuesta" -w '%{http_code}' --max-time 120 \
-              -X POST -H "X-Api-Key: ${RECORDATORIOS_API_KEY}" "$url") || true
+              -X POST --data '' -H "X-Api-Key: ${RECORDATORIOS_API_KEY}" "$url") || true
             status=${status:-000}
             echo "Intento ${intento}/${max_intentos}: HTTP ${status}"
 
