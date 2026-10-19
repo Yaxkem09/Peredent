@@ -35,7 +35,19 @@ public class UsuariosController : ControllerBase
             .OrderBy(u => u.NombreUsuario)
             .ToListAsync();
 
-        return Ok(usuarios.Select(ToDto));
+        // SCRUM-268: el último acceso solo lo ve el administrador. Como esta lista
+        // la usa cualquier usuario autenticado, a los demás se les manda en null.
+        var esAdmin = User?.HasClaim("esAdmin", "true") == true;
+
+        return Ok(usuarios.Select(u =>
+        {
+            var dto = ToDto(u);
+            if (!esAdmin)
+            {
+                dto.UltimoAcceso = null;
+            }
+            return dto;
+        }));
     }
 
     // Lista completa de la tabla Rol (no solo los roles que ya tienen usuarios),
@@ -79,11 +91,16 @@ public class UsuariosController : ControllerBase
             return BadRequest(new { message = "El nombre de usuario no puede tener el carácter @." });
         }
 
-        // SCRUM-237: el correo es opcional (la columna admite NULL); si viene, se
+        // El correo es obligatorio: es lo único con lo que se inicia sesión. Se
         // valida con la misma regla que el cambio de correo de la propia cuenta.
-        var correo = string.IsNullOrWhiteSpace(request.Correo) ? null : ValidacionCorreo.Normalizar(request.Correo);
+        if (string.IsNullOrWhiteSpace(request.Correo))
+        {
+            return BadRequest(new { message = "El correo es obligatorio: con él se inicia sesión." });
+        }
 
-        if (correo is not null && !ValidacionCorreo.EsValido(correo))
+        var correo = ValidacionCorreo.Normalizar(request.Correo);
+
+        if (!ValidacionCorreo.EsValido(correo))
         {
             return BadRequest(new { message = "Ingresa un correo electrónico válido." });
         }
@@ -93,7 +110,7 @@ public class UsuariosController : ControllerBase
             return BadRequest(new { message = "Ya existe un usuario con ese nombre." });
         }
 
-        if (correo is not null && await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo))
+        if (await _db.Usuarios.AnyAsync(u => u.CorreoUsuario == correo))
         {
             return BadRequest(new { message = "Ya existe un usuario con ese correo." });
         }

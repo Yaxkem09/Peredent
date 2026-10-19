@@ -1509,3 +1509,37 @@ body.redimensionando-cita * {
   height: 15px;
   border-radius: 4px;
 }
+
+/* Botón de la guía de uso en la barra de la agenda. */
+.nav-btn.agenda-guia {
+  gap: 7px;
+  height: 40px;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.nav-btn.agenda-guia:hover {
+  background: var(--teal-soft);
+}
+
+/* Indicador "el paciente pidió modificar su cita" (respuesta al recordatorio
+   de WhatsApp) junto al nombre en las tarjetas. Círculo ámbar sólido para que
+   se lea sobre cualquier color de estado. Ver IndicadorModificar.jsx. */
+.indicador-modificar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: #ffffff;
+  vertical-align: -2px;
+}
+
+.wk-nombre .indicador-modificar {
+  margin-right: 4px;
+}

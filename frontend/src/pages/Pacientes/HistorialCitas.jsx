@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../routes/routes';
 import { formatDate } from '../../utils/formatters';
 import { citasService } from '../../services/citas.service';
+import { usuariosService } from '../../services/usuarios.service';
 import { formatearRangoHora } from '../Calendario/agenda.utils';
 import { Alert, EmptyState, Loader } from '../../components/common';
 import './HistorialCitas.css';
 
-const FILTROS_INICIALES = { estado: '', desde: '', hasta: '' };
+const FILTROS_INICIALES = { estado: '', desde: '', hasta: '', odontologo: '' };
 
 // Estado (string) que devuelve CitaDto -> modificador de clase del badge y
 // de los filtros. Misma paleta que la agenda (Calendario) y su leyenda.
@@ -35,6 +36,7 @@ const HistorialCitas = ({ idPaciente }) => {
   const [error, setError] = useState(null);
 
   const [estados, setEstados] = useState([]);
+  const [odontologos, setOdontologos] = useState([]);
 
   useEffect(() => {
     let activo = true;
@@ -47,6 +49,17 @@ const HistorialCitas = ({ idPaciente }) => {
       .catch(() => {
         // El catálogo es solo para poblar el dropdown; si falla, el filtro de
         // estado simplemente queda sin opciones, no bloquea el resto del tab.
+      });
+
+    // Opciones del filtro de odontólogo. Incluye a los inactivos: pueden tener
+    // citas pasadas con el paciente.
+    usuariosService
+      .getAll()
+      .then((data) => {
+        if (activo) setOdontologos(data.filter((u) => u.rol === 'Odontologo'));
+      })
+      .catch(() => {
+        // Igual que con los estados: si falla, las opciones salen de las citas.
       });
 
     return () => {
@@ -80,7 +93,26 @@ const HistorialCitas = ({ idPaciente }) => {
     };
   }, [idPaciente, filtros.estado, filtros.desde, filtros.hasta]);
 
-  const hayFiltrosActivos = Boolean(filtros.estado || filtros.desde || filtros.hasta);
+  const hayFiltrosActivos = Boolean(filtros.estado || filtros.desde || filtros.hasta || filtros.odontologo);
+
+  // Odontólogos del filtro: los registrados más cualquiera que aparezca en las
+  // citas del paciente (por si su usuario cambió de rol).
+  const opcionesOdontologo = useMemo(() => {
+    const porId = new Map(odontologos.map((o) => [o.id, o.nombreUsuario]));
+    citas.forEach((c) => {
+      if (!porId.has(c.idUsuario)) porId.set(c.idUsuario, c.nombreOdontologo);
+    });
+    return [...porId.entries()]
+      .map(([id, nombre]) => ({ id, nombre }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [odontologos, citas]);
+
+  // El odontólogo se filtra aquí: el historial de un paciente es corto y cada
+  // cita ya trae su odontólogo (estado y fechas los filtra el backend).
+  const citasVisibles = useMemo(
+    () => (filtros.odontologo ? citas.filter((c) => String(c.idUsuario) === filtros.odontologo) : citas),
+    [citas, filtros.odontologo],
+  );
 
   const cambiarFiltro = (campo, valor) => setFiltros((prev) => ({ ...prev, [campo]: valor }));
   const limpiarFiltros = () => setFiltros(FILTROS_INICIALES);
@@ -106,7 +138,7 @@ const HistorialCitas = ({ idPaciente }) => {
           <span className="hc-filtros-titulo">Filtrar citas</span>
           {!cargando && (
             <span className="hc-contador">
-              {citas.length} cita{citas.length === 1 ? '' : 's'}
+              {citasVisibles.length} cita{citasVisibles.length === 1 ? '' : 's'}
             </span>
           )}
           <button
@@ -140,6 +172,22 @@ const HistorialCitas = ({ idPaciente }) => {
               min={filtros.desde || undefined}
               onChange={(e) => cambiarFiltro('hasta', e.target.value)}
             />
+          </div>
+
+          <div className="hc-filtro">
+            <label htmlFor="hc-odontologo">Odontólogo</label>
+            <select
+              id="hc-odontologo"
+              value={filtros.odontologo}
+              onChange={(e) => cambiarFiltro('odontologo', e.target.value)}
+            >
+              <option value="">Todos</option>
+              {opcionesOdontologo.map((o) => (
+                <option key={o.id} value={String(o.id)}>
+                  {o.nombre}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Estado como botones de color en lugar de un dropdown: se ve de un
@@ -176,7 +224,7 @@ const HistorialCitas = ({ idPaciente }) => {
 
       {cargando ? (
         <Loader />
-      ) : citas.length === 0 ? (
+      ) : citasVisibles.length === 0 ? (
         <EmptyState
           icon={
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -204,7 +252,7 @@ const HistorialCitas = ({ idPaciente }) => {
             </tr>
           </thead>
           <tbody>
-            {citas.map((cita) => (
+            {citasVisibles.map((cita) => (
               <tr key={cita.idCita}>
                 <td>
                   <div className="hc-fecha" title={formatDate(cita.fecha)}>

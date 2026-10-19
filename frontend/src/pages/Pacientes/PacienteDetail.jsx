@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useNotification } from '../../hooks/useNotification';
 import { pacientesService } from '../../services/pacientes.service';
 import { historiaMedicaService } from '../../services/historia-medica.service';
 import { calcularEdadTexto } from '../../utils/edad';
@@ -19,6 +20,7 @@ import RecetarioTab from './RecetarioTab';
 import FotosPanoramicasTab from './FotosPanoramicasTab';
 import ConsentimientosTab from './ConsentimientosTab';
 import ConstanciasTab from './ConstanciasTab';
+import AyudaSeccion from './AyudaSeccion';
 import '../../styles/page-header.css';
 import './PacienteDetail.css';
 
@@ -112,6 +114,9 @@ const ICONOS_TAB = {
 
 // Pestañas agrupadas por tema, para que al abrir el expediente se ubique
 // rápido cada sección (antes eran 12 pestañas sueltas en dos renglones).
+// hideFor: roles que no ven la pestaña. SCRUM-288: la asistente no ve la
+// información clínica y financiera que solo le corresponde al odontólogo (el
+// backend también se lo niega). Un grupo sin pestañas visibles no se muestra.
 const GRUPOS_TABS = [
   {
     id: 'paciente',
@@ -127,28 +132,28 @@ const GRUPOS_TABS = [
     label: 'Tratamientos',
     tabs: [
       { id: 'plan', label: 'Plan de tratamiento' },
-      { id: 'historial-planes', label: 'Historial de planes' },
-      { id: 'pendientes', label: 'Tratamiento pendiente' },
-      { id: 'historial', label: 'Historial de tratamientos' },
+      { id: 'pendientes', label: 'Tratamiento pendiente', hideFor: ['Asistente'] },
       { id: 'endodoncia', label: 'Endodoncia y restauración' },
+      { id: 'historial-planes', label: 'Historial de planes', hideFor: ['Asistente'] },
+      { id: 'historial', label: 'Historial de tratamientos', hideFor: ['Asistente'] },
     ],
   },
   {
     id: 'documentos',
     label: 'Documentos',
     tabs: [
-      { id: 'fotos', label: 'Radiografías/Panorámicas' },
+      { id: 'fotos', label: 'Radiografías/Panorámicas', hideFor: ['Asistente'] },
       { id: 'recetario', label: 'Recetario', hideFor: ['Asistente'] },
       { id: 'consentimientos', label: 'Consentimientos', hideFor: ['Asistente'] },
-      { id: 'constancias', label: 'Constancias', hideFor: ['Asistente'] },
+      { id: 'constancias', label: 'Constancias odontológicas', hideFor: ['Asistente'] },
     ],
   },
   {
     id: 'finanzas',
     label: 'Finanzas',
     tabs: [
-      { id: 'presupuesto', label: 'Presupuesto' },
-      { id: 'saldo', label: 'Saldo y abonos' },
+      { id: 'presupuesto', label: 'Presupuesto', hideFor: ['Asistente'] },
+      { id: 'saldo', label: 'Saldo y abonos', hideFor: ['Asistente'] },
     ],
   },
 ];
@@ -202,6 +207,12 @@ const ICONOS_DATO = {
     <>
       <rect x="3" y="5.5" width="18" height="13" rx="2" />
       <path d="m3.5 7 8.5 6 8.5-6" />
+    </>
+  ),
+  recordatorios: (
+    <>
+      <path d="M4 18.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7.5L4 18.5z" />
+      <path d="m8.5 10 2.2 2.2L15.5 7.5" />
     </>
   ),
   direccion: (
@@ -294,6 +305,11 @@ const DatosTab = ({ paciente, idPaciente }) => {
           )}
           <Dato icono="correo" label="Correo" valor={paciente.correo} vacio="Sin correo" />
           <Dato icono="direccion" label="Dirección" valor={paciente.direccion} vacio="Sin dirección" />
+          <Dato
+            icono="recordatorios"
+            label="Recordatorios por WhatsApp"
+            valor={paciente.aceptaRecordatoriosWhatsApp ? 'Sí' : 'No'}
+          />
         </section>
 
         {paciente.encargadoNombre && (
@@ -499,14 +515,32 @@ const PacienteDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // El recetario, los consentimientos y las constancias no están disponibles
-  // para asistentes (igual que en el menú lateral; SCRUM-256, SCRUM-297).
+  const { notify } = useNotification();
+
+  // Pestañas que el rol no ve (hideFor): recetario, consentimientos y
+  // constancias (SCRUM-256, SCRUM-297) y las secciones de SCRUM-288.
   const visibleTabs = useMemo(
     () => TABS.filter((tab) => !tab.hideFor?.includes(user?.rol)),
     [user?.rol],
   );
 
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'datos');
+  // SCRUM-290: si se entra por URL (?tab=...) a una sección que el rol no ve, se
+  // abre "Datos y contacto" desde el primer render, sin llegar a montar la
+  // pestaña restringida (que pediría sus datos al servidor).
+  const tabSolicitada = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(() =>
+    tabSolicitada && visibleTabs.some((tab) => tab.id === tabSolicitada) ? tabSolicitada : 'datos',
+  );
+
+  useEffect(() => {
+    const existe = TABS.some((tab) => tab.id === tabSolicitada);
+    const visible = visibleTabs.some((tab) => tab.id === tabSolicitada);
+    if (existe && !visible) {
+      notify('No tienes acceso a esa sección del expediente.');
+    }
+    // Solo al abrir el expediente con la URL indicada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!visibleTabs.some((tab) => tab.id === activeTab)) {
@@ -514,14 +548,16 @@ const PacienteDetail = () => {
     }
   }, [visibleTabs, activeTab]);
 
-  // Referencia al tab de "Plan de tratamiento": cuando estamos parados ahí y el
-  // usuario pide otra pestaña, le preguntamos a él en vez de cambiar directo, para
-  // que pueda avisar si hay cambios sin guardar (SCRUM-283).
-  const planTabRef = useRef(null);
+  // Referencia a la pestaña abierta cuando puede tener cambios sin guardar
+  // ("Plan de tratamiento" y "Endodoncia y restauración"): al pedir otra
+  // pestaña le preguntamos a ella en vez de cambiar directo, para que pueda
+  // avisar si hay cambios sin guardar (SCRUM-283). Solo hay una pestaña montada
+  // a la vez, así que alcanza con una ref.
+  const tabConAvisoRef = useRef(null);
 
   const manejarClickTab = (idTabDestino) => {
-    if (activeTab === 'plan' && idTabDestino !== 'plan' && planTabRef.current) {
-      planTabRef.current.intentarCambiarTab(idTabDestino);
+    if (idTabDestino !== activeTab && tabConAvisoRef.current) {
+      tabConAvisoRef.current.intentarCambiarTab(idTabDestino);
     } else {
       setActiveTab(idTabDestino);
     }
@@ -631,16 +667,25 @@ const PacienteDetail = () => {
             })}
           </nav>
 
+          {/* SCRUM-200: ayuda de la pestaña activa. */}
+          <AyudaSeccion
+            key={activeTab}
+            tabId={activeTab}
+            titulo={TABS.find((tab) => tab.id === activeTab)?.label ?? ''}
+          />
+
           {activeTab === 'datos' && <DatosTab paciente={paciente} idPaciente={id} />}
           {activeTab === 'historia' && (
             <HistoriaTab historia={historia} cargando={cargandoHistoria} error={errorHistoria} idPaciente={id} />
           )}
           {activeTab === 'citas' && <HistorialCitas idPaciente={id} />}
           {activeTab === 'plan' && (
-            <PlanTratamientoTab idPaciente={id} ref={planTabRef} onCambiarTab={setActiveTab} />
+            <PlanTratamientoTab idPaciente={id} ref={tabConAvisoRef} onCambiarTab={setActiveTab} />
           )}
           {activeTab === 'historial-planes' && <HistorialPlanesTab idPaciente={id} />}
-          {activeTab === 'endodoncia' && <EndodonciaTab idPaciente={id} />}
+          {activeTab === 'endodoncia' && (
+            <EndodonciaTab idPaciente={id} ref={tabConAvisoRef} onCambiarTab={setActiveTab} />
+          )}
           {activeTab === 'pendientes' && <TratamientoPendienteTab idPaciente={id} />}
           {activeTab === 'historial' && <HistorialTratamientosTab idPaciente={id} />}
           {activeTab === 'presupuesto' && <PresupuestoTab idPaciente={id} />}

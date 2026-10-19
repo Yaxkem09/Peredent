@@ -18,6 +18,11 @@ public class PlanTratamientoController : ControllerBase
     private const string EstadoCompletado = "Completado";
     private const int ObservacionesLongitudMaxima = 1000;
 
+    // SCRUM-288: "Tratamiento pendiente", "Historial de tratamientos",
+    // "Historial de planes" y "Presupuesto" son solo del odontólogo. El plan de
+    // tratamiento en sí (ver, guardar y finalizar) sigue abierto a la asistente.
+    private const string RolOdontologo = "Odontologo";
+
     // SCRUM-80: leyenda de conformidad del presupuesto. Fuente única del texto,
     // se envía en el DTO para que la vista y el PDF muestren lo mismo.
     private const string LeyendaConformidad =
@@ -57,6 +62,7 @@ public class PlanTratamientoController : ControllerBase
     }
 
     [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/historial")]
+    [Authorize(Roles = RolOdontologo)]
     public async Task<ActionResult<IEnumerable<PlanTratamientoDto>>> GetHistorial(int pacienteId)
     {
         var paciente = await _db.Pacientes.FindAsync(pacienteId);
@@ -80,6 +86,7 @@ public class PlanTratamientoController : ControllerBase
     // a la más antigua. El filtrado por pieza y por rango de fechas lo aplica el
     // frontend sobre esta lista.
     [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/historial-tratamientos")]
+    [Authorize(Roles = RolOdontologo)]
     public async Task<ActionResult<IEnumerable<HistorialTratamientoDto>>> GetHistorialTratamientos(int pacienteId)
     {
         var paciente = await _db.Pacientes.FindAsync(pacienteId);
@@ -113,6 +120,7 @@ public class PlanTratamientoController : ControllerBase
     // (el activo, o el último cerrado si ya no hay activo), así que cualquier
     // cambio guardado en el plan queda reflejado en la siguiente consulta.
     [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/presupuesto")]
+    [Authorize(Roles = RolOdontologo)]
     public async Task<ActionResult<PresupuestoDto>> GetPresupuesto(int pacienteId)
     {
         var paciente = await _db.Pacientes.FindAsync(pacienteId);
@@ -126,6 +134,7 @@ public class PlanTratamientoController : ControllerBase
 
     // SCRUM-78: el mismo presupuesto exportado como PDF descargable.
     [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/presupuesto/pdf")]
+    [Authorize(Roles = RolOdontologo)]
     public async Task<IActionResult> GetPresupuestoPdf(int pacienteId)
     {
         var paciente = await _db.Pacientes.FindAsync(pacienteId);
@@ -257,6 +266,7 @@ public class PlanTratamientoController : ControllerBase
     }
 
     [HttpGet("api/pacientes/{pacienteId:int}/plan-tratamiento/pendientes")]
+    [Authorize(Roles = RolOdontologo)]
     public async Task<ActionResult<IEnumerable<TratamientoPendienteDto>>> GetPendientes(int pacienteId)
     {
         var resultado = await _planTratamientoService.ObtenerPendientesPorPacienteAsync(pacienteId);
@@ -269,6 +279,7 @@ public class PlanTratamientoController : ControllerBase
     }
 
     [HttpPut("api/pacientes/{pacienteId:int}/plan-tratamiento/pendientes/{pieza}/completar")]
+    [Authorize(Roles = RolOdontologo)]
     public async Task<ActionResult<IEnumerable<TratamientoPendienteDto>>> MarcarCompletado(int pacienteId, string pieza)
     {
         var resultado = await _planTratamientoService.MarcarComoCompletadoAsync(pacienteId, pieza);

@@ -22,6 +22,58 @@ namespace Peredent.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Peredent.Api.Models.AbonoPaciente", b =>
+                {
+                    b.Property<int>("IdAbonoPaciente")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_AbonoPaciente");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdAbonoPaciente"));
+
+                    b.Property<bool>("Anulado")
+                        .HasColumnType("bit")
+                        .HasColumnName("Anulado");
+
+                    b.Property<DateTime>("FechaAbono")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaAbono");
+
+                    b.Property<DateTime?>("FechaAnulacion")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaAnulacion");
+
+                    b.Property<int>("IdMetodoPago")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_MetodoPago");
+
+                    b.Property<int>("IdPresupuestoPlan")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_PresupuestoPlan");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Usuario");
+
+                    b.Property<int?>("IdUsuarioAnulacion")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_UsuarioAnulacion");
+
+                    b.Property<decimal>("MontoAbono")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("MontoAbono");
+
+                    b.Property<string>("MotivoAnulacion")
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("MotivoAnulacion");
+
+                    b.HasKey("IdAbonoPaciente");
+
+                    b.HasIndex("IdMetodoPago");
+
+                    b.ToTable("AbonoPaciente", (string)null);
+                });
+
             modelBuilder.Entity("Peredent.Api.Models.BloqueoAgenda", b =>
                 {
                     b.Property<int>("IdBloqueoAgenda")
@@ -90,6 +142,30 @@ namespace Peredent.Api.Migrations
                         .HasColumnType("nvarchar(500)")
                         .HasColumnName("NotasAdicionales");
 
+                    b.Property<DateTime?>("RecordatorioEnviadoEn")
+                        .HasColumnType("datetime")
+                        .HasColumnName("RecordatorioEnviadoEn");
+
+                    b.Property<string>("RecordatorioError")
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("RecordatorioError");
+
+                    b.Property<string>("RecordatorioMessageId")
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("RecordatorioMessageId");
+
+                    b.Property<string>("RespuestaMessageId")
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("RespuestaMessageId");
+
+                    b.Property<string>("RespuestaPaciente")
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("RespuestaPaciente");
+
+                    b.Property<DateTime?>("RespuestaPacienteEn")
+                        .HasColumnType("datetime")
+                        .HasColumnName("RespuestaPacienteEn");
+
                     b.HasKey("IdCita");
 
                     b.HasIndex("IdEstadoCita");
@@ -119,6 +195,224 @@ namespace Peredent.Api.Migrations
                     b.HasKey("IdCondicion");
 
                     b.ToTable("Condicion", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.ConsentimientoExodoncia", b =>
+                {
+                    b.Property<int>("IdConsentimiento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Consentimiento");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdConsentimiento"));
+
+                    b.Property<string>("ColegiadoDoctor")
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("ColegiadoDoctor");
+
+                    b.Property<string>("DocumentoPaciente")
+                        .IsRequired()
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("DocumentoPaciente");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("Estado");
+
+                    b.Property<DateTime>("FechaConsentimiento")
+                        .HasColumnType("date")
+                        .HasColumnName("FechaConsentimiento");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaCreacion");
+
+                    b.Property<DateTime?>("FechaModificacion")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaModificacion");
+
+                    b.Property<int>("IdPaciente")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Paciente");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Usuario");
+
+                    b.Property<string>("Lugar")
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("Lugar");
+
+                    b.Property<string>("NombreDoctor")
+                        .IsRequired()
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("NombreDoctor");
+
+                    b.Property<string>("NombrePaciente")
+                        .IsRequired()
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("NombrePaciente");
+
+                    b.Property<string>("NombreRepresentante")
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("NombreRepresentante");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("Observaciones");
+
+                    b.Property<string>("Procedimiento")
+                        .IsRequired()
+                        .HasColumnType("varchar(300)")
+                        .HasColumnName("Procedimiento");
+
+                    b.Property<string>("RiesgosEspecificos")
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("RiesgosEspecificos");
+
+                    b.HasKey("IdConsentimiento");
+
+                    b.ToTable("ConsentimientoExodoncia", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.ConsentimientoImpresion", b =>
+                {
+                    b.Property<int>("IdConsentimientoImpresion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_ConsentimientoImpresion");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdConsentimientoImpresion"));
+
+                    b.Property<DateTime>("FechaImpresion")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaImpresion");
+
+                    b.Property<int>("IdConsentimiento")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Consentimiento");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Usuario");
+
+                    b.HasKey("IdConsentimientoImpresion");
+
+                    b.HasIndex("IdConsentimiento");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.ToTable("ConsentimientoImpresion", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.ConstanciaMedica", b =>
+                {
+                    b.Property<int>("IdConstanciaMedica")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_ConstanciaMedica");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdConstanciaMedica"));
+
+                    b.Property<int>("DiasReposo")
+                        .HasColumnType("int")
+                        .HasColumnName("DiasReposo");
+
+                    b.Property<DateTime>("FechaAtencionConstancia")
+                        .HasColumnType("date")
+                        .HasColumnName("FechaAtencionConstancia");
+
+                    b.Property<DateTime>("FechaEmisionConstancia")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaEmisionConstancia");
+
+                    b.Property<int>("IdPaciente")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Paciente");
+
+                    b.Property<int>("IdTipoConstanciaMedica")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_TipoConstanciaMedica");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Usuario");
+
+                    b.Property<string>("LugarEmisionConstancia")
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("LugarEmisionConstancia");
+
+                    b.Property<string>("TratamientoRealizadoConstancia")
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("TratamientoRealizadoConstancia");
+
+                    b.HasKey("IdConstanciaMedica");
+
+                    b.HasIndex("IdPaciente");
+
+                    b.HasIndex("IdTipoConstanciaMedica");
+
+                    b.ToTable("ConstanciaMedica", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.DatosRecetario", b =>
+                {
+                    b.Property<int>("IdDatosRecetario")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_DatosRecetario");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdDatosRecetario"));
+
+                    b.Property<string>("ApellidosOdontologo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ApellidosOdontologo");
+
+                    b.Property<string>("ColegiadoOdontologo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ColegiadoOdontologo");
+
+                    b.Property<string>("CorreoOdontologo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("CorreoOdontologo");
+
+                    b.Property<string>("DireccionOdontologo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("DireccionOdontologo");
+
+                    b.Property<string>("FirmaKeyR2")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("Firma_KeyR2");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Usuario");
+
+                    b.Property<string>("NombresOdontologo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("NombresOdontologo");
+
+                    b.Property<string>("TelefonoOdontologo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("TelefonoOdontologo");
+
+                    b.HasKey("IdDatosRecetario");
+
+                    b.ToTable("DatosRecetario", (string)null);
                 });
 
             modelBuilder.Entity("Peredent.Api.Models.Endodoncia", b =>
@@ -159,16 +453,6 @@ namespace Peredent.Api.Migrations
                         .HasColumnType("int")
                         .HasColumnName("MM4");
 
-                    b.Property<string>("ObservacionesEndodoncia")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("ObservacionesEndodoncia");
-
-                    b.Property<string>("ObservacionesTxPeriodontal")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasColumnName("ObservacionesTxPeriodontal");
-
                     b.Property<bool>("Obturacion")
                         .HasColumnType("bit")
                         .HasColumnName("Obturacion");
@@ -179,13 +463,34 @@ namespace Peredent.Api.Migrations
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("Pieza");
 
+                    b.HasKey("IdEndodoncia");
+
+                    b.ToTable("Endodoncia", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.EndodonciaPaciente", b =>
+                {
+                    b.Property<int>("IdPaciente")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Paciente");
+
+                    b.Property<string>("ObservacionesEndodoncia")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("ObservacionesEndodoncia");
+
+                    b.Property<string>("ObservacionesTxPeriodontal")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("ObservacionesTxPeriodontal");
+
                     b.Property<bool>("TxPeriodontal")
                         .HasColumnType("bit")
                         .HasColumnName("TxPeriodontal");
 
-                    b.HasKey("IdEndodoncia");
+                    b.HasKey("IdPaciente");
 
-                    b.ToTable("Endodoncia", (string)null);
+                    b.ToTable("EndodonciaPaciente", (string)null);
                 });
 
             modelBuilder.Entity("Peredent.Api.Models.EstadoCita", b =>
@@ -286,6 +591,63 @@ namespace Peredent.Api.Migrations
                     b.ToTable("Historia_Medica", (string)null);
                 });
 
+            modelBuilder.Entity("Peredent.Api.Models.MedicamentoReceta", b =>
+                {
+                    b.Property<int>("IdMedicamentosReceta")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_MedicamentosReceta");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMedicamentosReceta"));
+
+                    b.Property<int>("IdRecetario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Recetario");
+
+                    b.Property<string>("IndicacionesReceta")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("IndicacionesReceta");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("MedicamentoReceta");
+
+                    b.Property<string>("PresentacionReceta")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("PresentacionReceta");
+
+                    b.HasKey("IdMedicamentosReceta");
+
+                    b.HasIndex("IdRecetario");
+
+                    b.ToTable("MedicamentosReceta", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.MetodoPago", b =>
+                {
+                    b.Property<int>("IdMetodoPago")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_MetodoPago");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMetodoPago"));
+
+                    b.Property<string>("NombreMetodoPago")
+                        .IsRequired()
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("NombreMetodoPago");
+
+                    b.HasKey("IdMetodoPago");
+
+                    b.ToTable("MetodoPago", (string)null);
+                });
+
             modelBuilder.Entity("Peredent.Api.Models.Paciente", b =>
                 {
                     b.Property<int>("IdPaciente")
@@ -294,6 +656,12 @@ namespace Peredent.Api.Migrations
                         .HasColumnName("ID_Paciente");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPaciente"));
+
+                    b.Property<bool>("AceptaRecordatoriosWhatsApp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("AceptaRecordatoriosWhatsApp");
 
                     b.Property<string>("Apellidos")
                         .IsRequired()
@@ -318,6 +686,11 @@ namespace Peredent.Api.Migrations
                     b.Property<DateTime>("FechaRegistro")
                         .HasColumnType("datetime2")
                         .HasColumnName("Fecha_Registro");
+
+                    b.Property<string>("Nit")
+                        .IsRequired()
+                        .HasColumnType("varchar(15)")
+                        .HasColumnName("NIT");
 
                     b.Property<string>("NombreEncargado")
                         .HasMaxLength(100)
@@ -345,6 +718,11 @@ namespace Peredent.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasColumnName("Telefono_Encargado");
+
+                    b.Property<string>("TelefonoSecundario")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Telefono_Secundario");
 
                     b.HasKey("IdPaciente");
 
@@ -463,6 +841,10 @@ namespace Peredent.Api.Migrations
                         .HasColumnType("int")
                         .HasColumnName("ID_Paciente");
 
+                    b.Property<string>("ObservacionesGenerales")
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("ObservacionesGenerales");
+
                     b.HasKey("IdPresupuestoPlan");
 
                     b.HasIndex("IdPaciente")
@@ -470,6 +852,118 @@ namespace Peredent.Api.Migrations
                         .HasFilter("[FechaCierre] IS NULL");
 
                     b.ToTable("PresupuestoPlan", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.Protesis", b =>
+                {
+                    b.Property<int>("IdPaciente")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Paciente");
+
+                    b.Property<string>("ObservacionesProtesis")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("ObservacionesProtesis");
+
+                    b.Property<bool>("PPF")
+                        .HasColumnType("bit")
+                        .HasColumnName("PPF");
+
+                    b.Property<bool>("PPRInf")
+                        .HasColumnType("bit")
+                        .HasColumnName("PPR_inf");
+
+                    b.Property<bool>("PPRSup")
+                        .HasColumnType("bit")
+                        .HasColumnName("PPR_sup");
+
+                    b.Property<bool>("PTInf")
+                        .HasColumnType("bit")
+                        .HasColumnName("PT_inf");
+
+                    b.Property<bool>("PTSup")
+                        .HasColumnType("bit")
+                        .HasColumnName("PT_sup");
+
+                    b.HasKey("IdPaciente");
+
+                    b.ToTable("Protesis", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.Recetario", b =>
+                {
+                    b.Property<int>("IdRecetario")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Recetario");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdRecetario"));
+
+                    b.Property<DateTime>("FechaEmisionRecetario")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("FechaEmisionRecetario");
+
+                    b.Property<int>("IdDatosRecetario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_DatosRecetario");
+
+                    b.Property<int>("IdPaciente")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Paciente");
+
+                    b.Property<string>("NotasAdicionalesRecetario")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("NotasAdicionalesRecetario");
+
+                    b.HasKey("IdRecetario");
+
+                    b.HasIndex("IdDatosRecetario");
+
+                    b.HasIndex("IdPaciente");
+
+                    b.ToTable("Recetario", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.ResetPassword", b =>
+                {
+                    b.Property<int>("IdTokenPassword")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_TokenPassword");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTokenPassword"));
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaCreacion");
+
+                    b.Property<DateTime>("FechaExpiracion")
+                        .HasColumnType("datetime")
+                        .HasColumnName("FechaExpiracion");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int")
+                        .HasColumnName("ID_Usuario");
+
+                    b.Property<string>("TokenRestablecer")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("TokenRestablecer");
+
+                    b.Property<bool>("TokenUsado")
+                        .HasColumnType("bit")
+                        .HasColumnName("TokenUsado");
+
+                    b.HasKey("IdTokenPassword");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.HasIndex("TokenRestablecer")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_ResetPassword_Token");
+
+                    b.ToTable("ResetPassword", (string)null);
                 });
 
             modelBuilder.Entity("Peredent.Api.Models.Rol", b =>
@@ -492,6 +986,25 @@ namespace Peredent.Api.Migrations
                     b.ToTable("Rol", (string)null);
                 });
 
+            modelBuilder.Entity("Peredent.Api.Models.TipoConstanciaMedica", b =>
+                {
+                    b.Property<int>("IdTipoConstanciaMedica")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ID_TipoConstanciaMedica");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdTipoConstanciaMedica"));
+
+                    b.Property<string>("NombreConstancia")
+                        .IsRequired()
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("NombreConstancia");
+
+                    b.HasKey("IdTipoConstanciaMedica");
+
+                    b.ToTable("TipoConstanciaMedica", (string)null);
+                });
+
             modelBuilder.Entity("Peredent.Api.Models.Usuario", b =>
                 {
                     b.Property<int>("IdUsuario")
@@ -506,6 +1019,10 @@ namespace Peredent.Api.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)")
                         .HasColumnName("Contrasena_Hash");
+
+                    b.Property<string>("CorreoUsuario")
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("CorreoUsuario");
 
                     b.Property<bool>("EsAdmin")
                         .HasColumnType("bit")
@@ -540,6 +1057,16 @@ namespace Peredent.Api.Migrations
                     b.HasIndex("IdRol");
 
                     b.ToTable("Usuario", (string)null);
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.AbonoPaciente", b =>
+                {
+                    b.HasOne("Peredent.Api.Models.MetodoPago", null)
+                        .WithMany()
+                        .HasForeignKey("IdMetodoPago")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("FK_AbonoPaciente_MetodoPago");
                 });
 
             modelBuilder.Entity("Peredent.Api.Models.BloqueoAgenda", b =>
@@ -580,6 +1107,42 @@ namespace Peredent.Api.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("Peredent.Api.Models.ConsentimientoImpresion", b =>
+                {
+                    b.HasOne("Peredent.Api.Models.ConsentimientoExodoncia", null)
+                        .WithMany("Impresiones")
+                        .HasForeignKey("IdConsentimiento")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Peredent.Api.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.ConstanciaMedica", b =>
+                {
+                    b.HasOne("Peredent.Api.Models.Paciente", "Paciente")
+                        .WithMany()
+                        .HasForeignKey("IdPaciente")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Peredent.Api.Models.TipoConstanciaMedica", "TipoConstanciaMedica")
+                        .WithMany()
+                        .HasForeignKey("IdTipoConstanciaMedica")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Paciente");
+
+                    b.Navigation("TipoConstanciaMedica");
+                });
+
             modelBuilder.Entity("Peredent.Api.Models.HistoriaCondicion", b =>
                 {
                     b.HasOne("Peredent.Api.Models.Condicion", "Condicion")
@@ -595,6 +1158,15 @@ namespace Peredent.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Condicion");
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.MedicamentoReceta", b =>
+                {
+                    b.HasOne("Peredent.Api.Models.Recetario", null)
+                        .WithMany("Medicamentos")
+                        .HasForeignKey("IdRecetario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Peredent.Api.Models.Panoramica", b =>
@@ -626,6 +1198,35 @@ namespace Peredent.Api.Migrations
                     b.Navigation("EstadoTratamiento");
                 });
 
+            modelBuilder.Entity("Peredent.Api.Models.Recetario", b =>
+                {
+                    b.HasOne("Peredent.Api.Models.DatosRecetario", "DatosRecetario")
+                        .WithMany()
+                        .HasForeignKey("IdDatosRecetario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Peredent.Api.Models.Paciente", "Paciente")
+                        .WithMany()
+                        .HasForeignKey("IdPaciente")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DatosRecetario");
+
+                    b.Navigation("Paciente");
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.ResetPassword", b =>
+                {
+                    b.HasOne("Peredent.Api.Models.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ResetPassword_Usuario");
+                });
+
             modelBuilder.Entity("Peredent.Api.Models.Usuario", b =>
                 {
                     b.HasOne("Peredent.Api.Models.Rol", "Rol")
@@ -633,6 +1234,11 @@ namespace Peredent.Api.Migrations
                         .HasForeignKey("IdRol");
 
                     b.Navigation("Rol");
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.ConsentimientoExodoncia", b =>
+                {
+                    b.Navigation("Impresiones");
                 });
 
             modelBuilder.Entity("Peredent.Api.Models.HistoriaMedica", b =>
@@ -643,6 +1249,11 @@ namespace Peredent.Api.Migrations
             modelBuilder.Entity("Peredent.Api.Models.PresupuestoPlan", b =>
                 {
                     b.Navigation("Piezas");
+                });
+
+            modelBuilder.Entity("Peredent.Api.Models.Recetario", b =>
+                {
+                    b.Navigation("Medicamentos");
                 });
 #pragma warning restore 612, 618
         }

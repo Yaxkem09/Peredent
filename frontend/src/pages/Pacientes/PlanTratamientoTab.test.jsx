@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Link, RouterProvider, createMemoryRouter } from 'react-router-dom';
 import PlanTratamientoTab from './PlanTratamientoTab';
 import { planTratamientoService } from '../../services/plan-tratamiento.service';
 import { NotificationContext } from '../../context/NotificationContext';
@@ -41,10 +42,23 @@ const Harness = () => {
       <button type="button" onClick={irAOtraPestana}>
         Ir a otra pestaña
       </button>
+      <Link to="/otra-pantalla">Ir a otra pantalla</Link>
       <div data-testid="tab-actual">{tab}</div>
       {tab === 'plan' && <PlanTratamientoTab idPaciente={1} ref={ref} onCambiarTab={setTab} />}
     </NotificationContext.Provider>
   );
+};
+
+// useBlocker necesita un data router, igual que en App (createBrowserRouter).
+const renderHarness = () => {
+  const router = createMemoryRouter(
+    [
+      { path: '/', element: <Harness /> },
+      { path: '/otra-pantalla', element: <div>Otra pantalla</div> },
+    ],
+    { initialEntries: ['/'] },
+  );
+  return render(<RouterProvider router={router} />);
 };
 
 const esperarCarga = async () => screen.findByLabelText('Observaciones generales');
@@ -62,7 +76,7 @@ describe('PlanTratamientoTab - aviso de cambios sin guardar (SCRUM-283)', () => 
   });
 
   it('SCRUM-284: con cambios sin guardar, al intentar cambiar de pestaña aparece el aviso y la pestaña no cambia', async () => {
-    render(<Harness />);
+    renderHarness();
     await marcarComoSucio();
 
     fireEvent.click(screen.getByText('Ir a otra pestaña'));
@@ -75,7 +89,7 @@ describe('PlanTratamientoTab - aviso de cambios sin guardar (SCRUM-283)', () => 
 
   it('SCRUM-285: "Guardar y salir" guarda con el servicio y luego cambia de pestaña', async () => {
     planTratamientoService.guardar.mockResolvedValue(planVacio);
-    render(<Harness />);
+    renderHarness();
     await marcarComoSucio('Observación importante');
 
     fireEvent.click(screen.getByText('Ir a otra pestaña'));
@@ -90,7 +104,7 @@ describe('PlanTratamientoTab - aviso de cambios sin guardar (SCRUM-283)', () => 
   });
 
   it('SCRUM-285: "Cancelar" no pierde lo escrito ni cambia de pestaña', async () => {
-    render(<Harness />);
+    renderHarness();
     const observaciones = await marcarComoSucio('No se debe perder esto');
 
     fireEvent.click(screen.getByText('Ir a otra pestaña'));
@@ -106,7 +120,7 @@ describe('PlanTratamientoTab - aviso de cambios sin guardar (SCRUM-283)', () => 
 
   it('si el guardado falla, "Guardar y salir" no cierra el aviso ni cambia de pestaña, y deja el error visible', async () => {
     planTratamientoService.guardar.mockRejectedValue(new Error('el servidor rechazó el guardado'));
-    render(<Harness />);
+    renderHarness();
     const observaciones = await marcarComoSucio('Esto no se debe perder si falla el guardado');
 
     fireEvent.click(screen.getByText('Ir a otra pestaña'));
@@ -127,8 +141,53 @@ describe('PlanTratamientoTab - aviso de cambios sin guardar (SCRUM-283)', () => 
     ).toBeInTheDocument();
   });
 
+  it('SCRUM-284: con cambios sin guardar, salir a otra pantalla (menú lateral, volver) muestra el aviso y no navega', async () => {
+    renderHarness();
+    await marcarComoSucio();
+
+    fireEvent.click(screen.getByText('Ir a otra pantalla'));
+
+    expect(
+      await screen.findByText('Tiene cambios sin guardar. ¿Desea guardarlos antes de salir?'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Otra pantalla')).not.toBeInTheDocument();
+  });
+
+  it('SCRUM-285: al salir a otra pantalla, "Guardar y salir" guarda y luego navega', async () => {
+    planTratamientoService.guardar.mockResolvedValue(planVacio);
+    renderHarness();
+    await marcarComoSucio();
+
+    fireEvent.click(screen.getByText('Ir a otra pantalla'));
+    fireEvent.click(await screen.findByRole('button', { name: /guardar y salir/i }));
+
+    await waitFor(() => expect(planTratamientoService.guardar).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('Otra pantalla')).toBeInTheDocument();
+  });
+
+  it('SCRUM-285: al salir a otra pantalla, "Cancelar" se queda en el plan sin perder lo escrito', async () => {
+    renderHarness();
+    const observaciones = await marcarComoSucio('No se pierde');
+
+    fireEvent.click(screen.getByText('Ir a otra pantalla'));
+    fireEvent.click(await screen.findByRole('button', { name: /^cancelar$/i }));
+
+    expect(planTratamientoService.guardar).not.toHaveBeenCalled();
+    expect(screen.queryByText('Otra pantalla')).not.toBeInTheDocument();
+    expect(observaciones).toHaveValue('No se pierde');
+  });
+
+  it('SCRUM-287: sin cambios pendientes, salir a otra pantalla no muestra aviso', async () => {
+    renderHarness();
+    await esperarCarga();
+
+    fireEvent.click(screen.getByText('Ir a otra pantalla'));
+
+    expect(await screen.findByText('Otra pantalla')).toBeInTheDocument();
+  });
+
   it('SCRUM-287: sin cambios pendientes, cambiar de pestaña no muestra ningún aviso', async () => {
-    render(<Harness />);
+    renderHarness();
     await esperarCarga();
 
     fireEvent.click(screen.getByText('Ir a otra pestaña'));
@@ -144,7 +203,7 @@ describe('PlanTratamientoTab - aviso de cambios sin guardar (SCRUM-283)', () => 
     const removeSpy = vi.spyOn(window, 'removeEventListener');
     planTratamientoService.guardar.mockResolvedValue(planVacio);
 
-    render(<Harness />);
+    renderHarness();
     await esperarCarga();
     expect(addSpy).not.toHaveBeenCalledWith('beforeunload', expect.any(Function));
 
@@ -175,7 +234,7 @@ describe('PlanTratamientoTab - guardar tratamiento sin valor (subtarea de Rodrig
       observacionesGenerales: '',
       fechaInicio: '2026-01-10',
     });
-    render(<Harness />);
+    renderHarness();
     await esperarCarga();
 
     expect(within(filaDe('16')).getByText('Pendiente de precio')).toBeInTheDocument();
@@ -189,7 +248,7 @@ describe('PlanTratamientoTab - guardar tratamiento sin valor (subtarea de Rodrig
       observacionesGenerales: '',
       fechaInicio: '2026-01-10',
     });
-    render(<Harness />);
+    renderHarness();
     await esperarCarga();
 
     const tratamiento = within(filaDe('16')).getByPlaceholderText('Tratamiento');

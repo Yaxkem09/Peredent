@@ -155,6 +155,12 @@ const Configuracion = () => {
       }
     }
 
+    // El correo no se puede dejar vacío: es con lo que se inicia sesión.
+    if (correoCambio && correo.trim() === '') {
+      setErrorDatos('El correo es obligatorio: con él inicias sesión.');
+      return;
+    }
+
     abrirConfirmacion('datos');
   };
 
@@ -276,7 +282,8 @@ const Configuracion = () => {
               <div>
                 <h3>Datos de la cuenta</h3>
                 <p className="configuracion-nota">
-                  Puedes iniciar sesión con tu usuario o con tu correo. El correo también sirve para recuperar la contraseña.
+                  Inicias sesión con tu correo, que también sirve para recuperar la contraseña. El nombre de usuario es
+                  el que se muestra en el sistema.
                 </p>
               </div>
             </div>

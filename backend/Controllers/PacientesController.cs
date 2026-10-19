@@ -102,6 +102,7 @@ public class PacientesController : ControllerBase
             NombreEncargado = request.EncargadoNombre,
             TelefonoEncargado = NormalizarTelefono(request.EncargadoTelefono),
             FechaRegistro = DateTime.UtcNow,
+            AceptaRecordatoriosWhatsApp = request.AceptaRecordatoriosWhatsApp ?? false,
         };
 
         _db.Pacientes.Add(paciente);
@@ -140,6 +141,12 @@ public class PacientesController : ControllerBase
         paciente.Direccion = request.Direccion;
         paciente.NombreEncargado = request.EncargadoNombre;
         paciente.TelefonoEncargado = NormalizarTelefono(request.EncargadoTelefono);
+
+        // Sin el campo en el request se conserva el consentimiento actual.
+        if (request.AceptaRecordatoriosWhatsApp is not null)
+        {
+            paciente.AceptaRecordatoriosWhatsApp = request.AceptaRecordatoriosWhatsApp.Value;
+        }
 
         await _db.SaveChangesAsync();
         return Ok(ToDto(paciente));
@@ -230,5 +237,6 @@ public class PacientesController : ControllerBase
         EncargadoNombre = paciente.NombreEncargado,
         EncargadoTelefono = paciente.TelefonoEncargado,
         FechaRegistro = paciente.FechaRegistro,
+        AceptaRecordatoriosWhatsApp = paciente.AceptaRecordatoriosWhatsApp,
     };
 }

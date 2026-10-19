@@ -1,9 +1,11 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { PIEZAS_DENTALES } from '../../utils/piezasDentales';
 import { formatCurrency } from '../../utils/formatters';
 import { planTratamientoService } from '../../services/plan-tratamiento.service';
 import { Alert, Loader, Modal } from '../../components/common';
+import AvisoCambiosSinGuardar from '../../components/common/AvisoCambiosSinGuardar';
 import { useNotification } from '../../hooks/useNotification';
+import { useAvisoCambiosSinGuardar } from '../../hooks/useAvisoCambiosSinGuardar';
 import './PlanTratamiento.css';
 
 const filaInicial = (pieza) => ({
@@ -47,40 +49,6 @@ const PlanTratamientoTab = forwardRef(({ idPaciente, onCambiarTab }, ref) => {
   const [existePlanActivo, setExistePlanActivo] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
   const [mostrarConfirmarFinalizar, setMostrarConfirmarFinalizar] = useState(false);
-  const [tabPendiente, setTabPendiente] = useState(null);
-  const [mostrarCambiosSinGuardar, setMostrarCambiosSinGuardar] = useState(false);
-
-  // PacienteDetail controla el cambio de pestaña, pero antes de moverse fuera de "plan"
-  // nos pregunta a través de esta ref: si no hay cambios sin guardar dejamos pasar de
-  // inmediato, si los hay mostramos nuestro propio aviso en vez de perder lo escrito.
-  useImperativeHandle(
-    ref,
-    () => ({
-      intentarCambiarTab: (destino) => {
-        if (guardado) {
-          onCambiarTab?.(destino);
-        } else {
-          setTabPendiente(destino);
-          setMostrarCambiosSinGuardar(true);
-        }
-      },
-    }),
-    [guardado, onCambiarTab],
-  );
-
-  // Repito el mismo aviso para el cierre/recarga del navegador (SCRUM-286): registro
-  // el listener de beforeunload solo mientras haya cambios sin guardar, y lo quito en
-  // cuanto guardo o se desmonta el componente.
-  useEffect(() => {
-    if (guardado) return undefined;
-
-    const onBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [guardado]);
 
   useEffect(() => {
     let activo = true;
@@ -171,24 +139,9 @@ const PlanTratamientoTab = forwardRef(({ idPaciente, onCambiarTab }, ref) => {
     }
   };
 
-  // "Guardar y salir" del aviso de cambios sin guardar: intento guardar con la misma
-  // función de siempre; solo si tuvo éxito cierro el aviso y confirmo el cambio de
-  // pestaña pendiente. Si falla, dejo el aviso abierto y el error visible (arriba, en
-  // el Alert ya existente) para que el usuario pueda corregir sin perder lo escrito.
-  const guardarYSalirDeTab = async () => {
-    const exito = await guardar();
-    if (exito) {
-      setMostrarCambiosSinGuardar(false);
-      onCambiarTab?.(tabPendiente);
-      setTabPendiente(null);
-    }
-  };
-
-  // "Cancelar" del mismo aviso: nos quedamos en "plan" sin perder lo escrito.
-  const cancelarCambioTab = () => {
-    setMostrarCambiosSinGuardar(false);
-    setTabPendiente(null);
-  };
+  // SCRUM-283: aviso de cambios sin guardar al cambiar de pestaña, salir del
+  // expediente o cerrar el navegador. "Guardar y salir" usa el mismo guardar().
+  const aviso = useAvisoCambiosSinGuardar({ ref, hayCambios: !guardado, guardar, onCambiarTab });
 
   const confirmarFinalizarPlan = async () => {
     setMostrarConfirmarFinalizar(false);
@@ -414,27 +367,7 @@ const PlanTratamientoTab = forwardRef(({ idPaciente, onCambiarTab }, ref) => {
         nuevo en blanco.
       </Modal>
 
-      <Modal
-        open={mostrarCambiosSinGuardar}
-        onClose={cancelarCambioTab}
-        title="Tiene cambios sin guardar. ¿Desea guardarlos antes de salir?"
-        icon={
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 9v4M12 16.5h.01" />
-            <path d="M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" />
-          </svg>
-        }
-        footer={
-          <>
-            <button type="button" className="btn btn-secondary btn-md" onClick={cancelarCambioTab} disabled={guardando}>
-              Cancelar
-            </button>
-            <button type="button" className="btn btn-primary btn-md" onClick={guardarYSalirDeTab} disabled={guardando}>
-              {guardando ? 'Guardando…' : 'Guardar y salir'}
-            </button>
-          </>
-        }
-      />
+      <AvisoCambiosSinGuardar {...aviso} />
     </div>
   );
 });

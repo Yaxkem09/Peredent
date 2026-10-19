@@ -6,6 +6,8 @@ import { Alert, Button, EmptyState, Loader, Modal, PoliticaContrasena } from '..
 import { validarPoliticaContrasena } from '../../utils/politicaContrasena';
 import '../../styles/page-header.css';
 import './AdministracionUsuarios.css';
+import BotonGuia from '../../components/common/BotonGuia';
+import { GUIA_ADMINISTRACION } from '../guiasPantallas';
 
 const FORM_INICIAL = { nombreUsuario: '', correo: '', clave: '', idRol: '', esAdmin: false };
 
@@ -20,6 +22,18 @@ const FILTROS = [
   { id: 'inactivos', label: 'Inactivos' },
   { id: 'admins', label: 'Administradores' },
 ];
+
+// SCRUM-267: fecha y hora del último inicio de sesión. El backend la manda en
+// hora de Guatemala sin zona ("2026-10-12T09:30:00"), así que se lee como local.
+const formatearUltimoAcceso = (valor) => {
+  if (!valor) return null;
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return null;
+  return {
+    fecha: fecha.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    hora: fecha.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }),
+  };
+};
 
 const inicialesDe = (nombre) => (nombre || '?').slice(0, 2).toUpperCase();
 
@@ -269,17 +283,20 @@ const AdministracionUsuarios = () => {
   }, [usuarios, busqueda, filtro]);
 
   return (
-    <div className="page-block">
+    <div className="page-block admin-page">
       <div className="page-head">
         <div>
           <div className="eyebrow">Solo administradores</div>
           <h2>Administración de usuarios</h2>
           <p>Creá cuentas para el personal y gestioná quién puede acceder al sistema.</p>
         </div>
-        <Button variant="primary" className="admin-nuevo" onClick={abrirModal}>
-          <Icono>{ICONOS.mas}</Icono>
-          Nuevo usuario
-        </Button>
+        <div className="page-head-acciones">
+          <BotonGuia pasos={GUIA_ADMINISTRACION} className="btn btn-md btn-head-sec" />
+          <Button variant="primary" className="admin-nuevo" onClick={abrirModal}>
+            <Icono>{ICONOS.mas}</Icono>
+            Nuevo usuario
+          </Button>
+        </div>
       </div>
 
       {errorAccion && <Alert type="error">{errorAccion}</Alert>}
@@ -343,13 +360,14 @@ const AdministracionUsuarios = () => {
                   <th>Rol</th>
                   <th>Estado</th>
                   <th>Admin</th>
+                  <th>Último acceso</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {usuariosFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="users-table-sin-resultados">
+                    <td colSpan={7} className="users-table-sin-resultados">
                       Ningún usuario coincide con la búsqueda.
                     </td>
                   </tr>
@@ -358,6 +376,7 @@ const AdministracionUsuarios = () => {
                   const esActual = esUsuarioActual(usuario);
                   const procesando = accionEnCurso === usuario.id;
                   const tituloBloqueo = esActual ? 'No podés modificar tu propio usuario.' : undefined;
+                  const ultimoAcceso = formatearUltimoAcceso(usuario.ultimoAcceso);
 
                   return (
                     <tr key={usuario.id} className={usuario.estado ? undefined : 'fila-inactiva'}>
@@ -392,6 +411,16 @@ const AdministracionUsuarios = () => {
                           </span>
                         ) : (
                           <span className="users-table-vacio">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {ultimoAcceso ? (
+                          <span className="users-ultimo-acceso">
+                            <span>{ultimoAcceso.fecha}</span>
+                            <span className="users-ultimo-acceso-hora">{ultimoAcceso.hora}</span>
+                          </span>
+                        ) : (
+                          <span className="users-table-vacio">Nunca</span>
                         )}
                       </td>
                       <td>

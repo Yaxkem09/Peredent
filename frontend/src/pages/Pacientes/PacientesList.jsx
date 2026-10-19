@@ -5,6 +5,8 @@ import { formatDate } from '../../utils/formatters';
 import { Alert, EmptyState, Loader } from '../../components/common';
 import { ROUTES } from '../../routes/routes';
 import '../../styles/page-header.css';
+import BotonGuia from '../../components/common/BotonGuia';
+import { GUIA_PACIENTES } from '../guiasPantallas';
 import './Pacientes.css';
 
 const inicialesDe = (nombres, apellidos) =>
@@ -39,19 +41,22 @@ useEffect(() => {
   };
 }, [termino]);
 return (
-    <div className="page-block">
+    <div className="page-block pacientes-page">
       <div className="page-head">
         <div>
           <div className="eyebrow">Base de pacientes</div>
           <h2>Pacientes</h2>
           <p>Busca, registra y da seguimiento a cada expediente.</p>
         </div>
+        <div className="page-head-acciones">
+        <BotonGuia pasos={GUIA_PACIENTES} className="btn btn-md btn-head-sec" />
         <Link className="btn btn-primary pacientes-nuevo" to={ROUTES.PACIENTE_NUEVO}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
           </svg>
           Nuevo paciente
         </Link>
+        </div>
       </div>
 
       <div className="pacientes-buscador">
