@@ -51,4 +51,62 @@ public class RespuestaRecordatorioWhatsAppTests
         Assert.True(RespuestaRecordatorioWhatsApp.RespuestaConfirmo.Length <= 20);
         Assert.True(RespuestaRecordatorioWhatsApp.RespuestaModificar.Length <= 20);
     }
+
+    // ---------- Antigüedad de la respuesta ----------
+
+    private static readonly DateTimeOffset Ahora = new(2026, 10, 28, 12, 0, 0, TimeSpan.Zero);
+
+    private static string Unix(DateTimeOffset momento) =>
+        momento.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    [Fact]
+    public void Antiguedad_CalculaDesdeElTimestampUnix()
+    {
+        Assert.Equal(TimeSpan.FromMinutes(90), RespuestaRecordatorioWhatsApp.Antiguedad(Unix(Ahora.AddMinutes(-90)), Ahora));
+    }
+
+    [Fact]
+    public void Antiguedad_TimestampEnElFuturo_CuentaComoCero()
+    {
+        Assert.Equal(TimeSpan.Zero, RespuestaRecordatorioWhatsApp.Antiguedad(Unix(Ahora.AddMinutes(3)), Ahora));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" 1760290000")]
+    [InlineData("abc")]
+    [InlineData("-60")]
+    [InlineData("1760290000.5")]
+    [InlineData("99999999999999999999")]
+    public void Antiguedad_TimestampAusenteOIlegible_DevuelveNull(string? timestamp)
+    {
+        Assert.Null(RespuestaRecordatorioWhatsApp.Antiguedad(timestamp, Ahora));
+    }
+
+    [Fact]
+    public void EsRespuestaTardia_SoloSiSuperaElLimite()
+    {
+        var limite = RespuestaRecordatorioWhatsApp.AntiguedadMaximaParaResponder;
+
+        Assert.False(RespuestaRecordatorioWhatsApp.EsRespuestaTardia(null));
+        Assert.False(RespuestaRecordatorioWhatsApp.EsRespuestaTardia(limite));
+        Assert.True(RespuestaRecordatorioWhatsApp.EsRespuestaTardia(limite + TimeSpan.FromSeconds(1)));
+        Assert.Equal(TimeSpan.FromMinutes(60), limite);
+    }
+
+    [Fact]
+    public void HoraDelToque_ConvierteElTimestampAHoraDeGuatemala()
+    {
+        // 2026-10-28 12:00 UTC = 06:00 en Guatemala (UTC-6).
+        Assert.Equal(new DateTime(2026, 10, 28, 6, 0, 0), RespuestaRecordatorioWhatsApp.HoraDelToque(Unix(Ahora)));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("abc")]
+    public void HoraDelToque_TimestampInvalido_DevuelveNull(string? timestamp)
+    {
+        Assert.Null(RespuestaRecordatorioWhatsApp.HoraDelToque(timestamp));
+    }
 }

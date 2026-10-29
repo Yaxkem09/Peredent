@@ -108,25 +108,61 @@ public class WhatsAppWebhookService : IWhatsAppWebhookService
             return;
         }
 
-        var respuesta = await AplicarReglasAsync(cita, opcion.Value, mensaje.Id, ct);
+        var ahora = FechaHoraGuatemala.Ahora();
+
+        // a. La cita ya empezó o pasó (o está Atendida / No Asistió): no se
+        // cambia nada ni se le contesta al paciente, llegue cuando llegue.
+        if (EsCitaPasada(cita, ahora))
+        {
+            _logger.LogInformation(
+                "Respuesta {Opcion} a la cita {IdCita} ignorada: la cita ya empezó o pasó (sin cambios ni mensaje)",
+                opcion.Value, cita.IdCita);
+            return;
+        }
+
+        // Orden de llegada: Meta puede entregar tarde un botón tocado ANTES que
+        // la respuesta ya registrada (p. ej. tras una caída del webhook); esa
+        // respuesta vieja no reemplaza a la más reciente. Si falta alguna de las
+        // dos horas, se procesa como siempre.
+        var horaDelToque = RespuestaRecordatorioWhatsApp.HoraDelToque(mensaje.Timestamp);
+        if (horaDelToque is not null && cita.RespuestaPacienteEn is not null && horaDelToque < cita.RespuestaPacienteEn)
+        {
+            _logger.LogInformation(
+                "Respuesta {MessageId} de la cita {IdCita} ignorada: es anterior a la respuesta ya registrada (sin cambios ni mensaje)",
+                WamidWhatsApp.Enmascarar(mensaje.Id), cita.IdCita);
+            return;
+        }
+
+        // Las reglas se aplican igual aunque la respuesta llegue tarde; solo
+        // cambia si se contesta. Se guarda la hora del toque cuando se conoce.
+        var respuesta = await AplicarReglasAsync(cita, opcion.Value, mensaje.Id, horaDelToque ?? ahora, ct);
+
+        var antiguedad = RespuestaRecordatorioWhatsApp.Antiguedad(mensaje.Timestamp, DateTimeOffset.UtcNow);
+        if (RespuestaRecordatorioWhatsApp.EsRespuestaTardia(antiguedad))
+        {
+            _logger.LogInformation(
+                "Respuesta tardía de la cita {IdCita} ({Minutos:0} min de antigüedad), sin mensaje de vuelta",
+                cita.IdCita, antiguedad!.Value.TotalMinutes);
+            return;
+        }
+
         await ResponderAsync(mensaje.From, cita.IdCita, respuesta, ct);
     }
 
-    // Aplica las reglas y devuelve el mensaje de vuelta para el paciente.
-    private async Task<string> AplicarReglasAsync(Cita cita, OpcionRespuestaRecordatorio opcion, string? idMensaje, CancellationToken ct)
+    // Una cita que ya empezó, o que está Atendida o No Asistió, ya no admite respuesta.
+    private static bool EsCitaPasada(Cita cita, DateTime ahora)
     {
-        var ahora = FechaHoraGuatemala.Ahora();
         var estado = cita.EstadoCita.TipoEstadoCita;
-
-        // a. La cita ya empezó o pasó: no se cambia nada. Una cita Atendida o
-        // No Asistió también se trata como pasada (ya no admite respuesta).
-        var esCitaPasada = cita.FechaInicio <= ahora
+        return cita.FechaInicio <= ahora
             || (estado != EstadoPendiente && estado != EstadoConfirmada && estado != EstadoCancelada);
-        if (esCitaPasada)
-        {
-            _logger.LogInformation("Respuesta {Opcion} a la cita {IdCita} sin cambios: la cita ya pasó", opcion, cita.IdCita);
-            return RespuestaRecordatorioWhatsApp.MensajeCitaPasada;
-        }
+    }
+
+    // Aplica las reglas (la cita no ha pasado) y devuelve el mensaje de vuelta.
+    // `momentoRespuesta` es la hora del toque (o la de procesamiento si no se conoce).
+    private async Task<string> AplicarReglasAsync(
+        Cita cita, OpcionRespuestaRecordatorio opcion, string? idMensaje, DateTime momentoRespuesta, CancellationToken ct)
+    {
+        var estado = cita.EstadoCita.TipoEstadoCita;
 
         if (opcion == OpcionRespuestaRecordatorio.Confirmar)
         {
@@ -149,7 +185,7 @@ public class WhatsAppWebhookService : IWhatsAppWebhookService
         // c. Modificar no cambia el estado: solo se registra la solicitud.
         // En b y c la última respuesta válida reemplaza a la anterior.
         cita.RespuestaPaciente = RespuestaRecordatorioWhatsApp.ValorGuardado(opcion);
-        cita.RespuestaPacienteEn = ahora;
+        cita.RespuestaPacienteEn = momentoRespuesta;
         cita.RespuestaMessageId = idMensaje;
 
         // Se guarda antes de responder: si el envío falla, el cambio se conserva.

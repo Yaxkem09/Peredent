@@ -113,15 +113,22 @@ Por cada mensaje de tipo `button`:
 1. Busca la cita cuyo `RecordatorioMessageId` es el `context.id`. Si no hay, se ignora (advertencia en el log).
 2. Si `RespuestaMessageId` ya es el id de este mensaje, es un webhook duplicado y se ignora.
 3. Si el botón no es ninguno de los dos, se ignora (advertencia en el log).
-4. Aplica la regla y responde al paciente con texto libre:
+4. Si la cita ya empezó o pasó (o está Atendida / No Asistió), se ignora **sin
+   cambios ni mensaje** (solo queda en el log), llegue la respuesta cuando llegue.
+5. Si la respuesta es **anterior** a la ya registrada en la cita, se ignora sin
+   cambios ni mensaje (ver [Orden de llegada](#orden-de-llegada)).
+6. Aplica la regla y responde al paciente con texto libre (salvo que la respuesta
+   sea [tardía](#respuestas-tardías)):
 
 | Situación | Estado de la cita | Se registra la respuesta | Mensaje al paciente |
 |---|---|---|---|
-| La cita ya empezó o pasó (o está Atendida / No Asistió) | Sin cambios | No | Cita pasada |
+| La cita ya empezó o pasó (o está Atendida / No Asistió) | Sin cambios | No | **Ninguno** |
+| La respuesta es anterior a la ya registrada | Sin cambios | No | **Ninguno** |
 | "Sí asistiré" con la cita Pendiente | Pasa a **Confirmada** | Sí (`Confirmo`) | Confirmó |
 | "Sí asistiré" con la cita Confirmada | Sin cambios | Sí (`Confirmo`) | Confirmó |
 | "Sí asistiré" con la cita Cancelada | Sin cambios (no se reactiva) | No | Cita cancelada |
 | "Modificar mi cita" | Sin cambios | Sí (`Modificar`) | Modificar (teléfono y horario) |
+| Cualquiera de las anteriores, si la respuesta es tardía (más de 60 min) | Igual que en su fila | Igual que en su fila | **Ninguno** |
 
 Mensajes (con `{telefono}` = `CLINICA_TELEFONO` y `{horario}` = `CLINICA_HORARIO`):
 
@@ -129,14 +136,18 @@ Mensajes (con `{telefono}` = `CLINICA_TELEFONO` y `{horario}` = `CLINICA_HORARIO
 |---|---|
 | Confirmó | ¡Gracias por confirmar! Le esperamos en su cita. |
 | Modificar | Para modificar su cita, llámenos al {telefono}. *Horario de atención:* {horario} |
-| Cita pasada | Esta cita ya pasó. Si necesita una nueva cita, llámenos al {telefono}. |
 | Cita cancelada | Esta cita fue cancelada. Si desea reagendar, llámenos al {telefono}. |
 
-- Cuando se registra, se guardan `RespuestaPaciente`, `RespuestaPacienteEn` (hora
-  de Guatemala) y `RespuestaMessageId`. Si el paciente toca un botón y luego el
-  otro, **la última respuesta válida reemplaza a la anterior** (confirmar después
-  de "Modificar" pasa la cita a Confirmada; "Modificar" después de confirmar no
-  cambia el estado).
+A una cita que ya empezó o pasó **no se le envía ningún mensaje** (antes existía
+"Esta cita ya pasó…", que se eliminó).
+
+- Cuando se registra, se guardan `RespuestaPaciente`, `RespuestaPacienteEn` y
+  `RespuestaMessageId`. `RespuestaPacienteEn` es **la hora en que el paciente tocó
+  el botón** (el `timestamp` del mensaje en hora de Guatemala); si el `timestamp`
+  falta o no se puede leer, es la hora de procesamiento. Si el paciente toca un
+  botón y luego el otro, **la última respuesta válida reemplaza a la anterior**
+  (confirmar después de "Modificar" pasa la cita a Confirmada; "Modificar"
+  después de confirmar no cambia el estado).
 - El cambio se guarda **antes** de responder: si el mensaje de vuelta falla, se
   registra en el log y la cita no se revierte.
 - El mensaje de vuelta es texto libre, que Meta solo permite dentro de las 24 h
@@ -150,6 +161,41 @@ Mensajes (con `{telefono}` = `CLINICA_TELEFONO` y `{horario}` = `CLINICA_HORARIO
   panel lateral del Mes) aparece un **ícono ámbar de teléfono** junto al nombre
   del paciente mientras la respuesta sea "Modificar", la cita **no haya pasado**
   y **no esté Cancelada** (`IndicadorModificar.jsx`).
+
+### Respuestas tardías
+
+Si el webhook estuvo caído, Meta **reintenta las notificaciones durante horas o
+días**. Una respuesta que llega mucho después de que el paciente tocó el botón
+no debe contestarse: un mensaje a las 6:00 a. m. por un botón que tocó días
+antes solo confunde.
+
+- La antigüedad se calcula con el `timestamp` del mensaje (segundos Unix: la
+  hora en que el paciente tocó el botón), no con la hora en que llega al webhook.
+- Si tiene **más de 60 minutos**, la respuesta **se aplica igual a la cita** (las
+  reglas de la tabla de arriba ya protegen las citas pasadas y canceladas), pero
+  **no se envía mensaje de vuelta**; queda en el log como
+  `Respuesta tardía de la cita N (X min de antigüedad), sin mensaje de vuelta`.
+- Si el `timestamp` falta o no se puede leer, se procesa como una respuesta normal
+  (con mensaje de vuelta). Un `timestamp` en el futuro (diferencia de relojes)
+  cuenta como recién tocado.
+- El límite está en un solo lugar: `RespuestaRecordatorioWhatsApp.AntiguedadMaximaParaResponder`.
+
+### Orden de llegada
+
+Meta no garantiza el orden: tras una caída puede entregar **después** un botón
+que el paciente tocó **antes** que la respuesta ya registrada (p. ej. tocó
+"Modificar" y luego "Sí asistiré", y el "Modificar" llega al final). Para que la
+respuesta vieja no reemplace a la más reciente:
+
+- Si la hora del toque (el `timestamp` en hora de Guatemala) es **anterior** a
+  `RespuestaPacienteEn` de la cita, la respuesta se ignora: no cambia la cita ni
+  se envía mensaje; queda en el log como `... es anterior a la respuesta ya registrada`.
+- Si el mensaje no trae un `timestamp` válido, o la cita todavía no tiene
+  `RespuestaPacienteEn`, se procesa como siempre (gana la última que llega).
+- `RespuestaPacienteEn` de respuestas registradas antes de este cambio (o sin
+  `timestamp`) es la hora de procesamiento, unos instantes posterior al toque;
+  un toque nuevo del mismo paciente en ese mismo segundo se vería como anterior.
+  En la práctica entre dos toques pasan varios segundos.
 
 ### Reprogramar una cita
 
