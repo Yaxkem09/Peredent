@@ -98,13 +98,20 @@ public class WhatsAppWebhookServiceTests
     }
 
     // Notificación con un toque a un botón de respuesta rápida de la plantilla.
+    // Segundos Unix (como texto, igual que Meta) de hace `hace`.
+    private static string TimestampDeHace(TimeSpan hace) =>
+        DateTimeOffset.UtcNow.Subtract(hace).ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    // Por defecto el paciente toca el botón "ahora"; `hace` simula una respuesta
+    // que Meta entrega tarde y `timestamp` permite un valor crudo (ausente o ilegible).
     private static WhatsAppWebhookPayload Boton(
-        string texto, string? contextoId = WamidRecordatorio, string id = "wamid.RESPUESTA1", string? payload = null) =>
+        string texto, string? contextoId = WamidRecordatorio, string id = "wamid.RESPUESTA1", string? payload = null,
+        TimeSpan? hace = null, bool timestampCrudo = false, string? timestamp = null) =>
         ConMensajes(new WhatsAppWebhookMessage
         {
             From = TelefonoPaciente,
             Id = id,
-            Timestamp = "1760290000",
+            Timestamp = timestampCrudo ? timestamp : TimestampDeHace(hace ?? TimeSpan.Zero),
             Type = "button",
             Context = contextoId is null ? null : new WhatsAppWebhookContext { From = "15550000000", Id = contextoId },
             Button = new WhatsAppWebhookButton { Text = texto, Payload = payload ?? texto },
@@ -262,7 +269,7 @@ public class WhatsAppWebhookServiceTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task CitaQueYaEmpezo_NoCambiaNadaYRespondeCitaPasada(bool confirmar)
+    public async Task CitaQueYaEmpezo_Reciente_NoCambiaNadaNiResponde(bool confirmar)
     {
         using var db = CrearContexto();
         var cita = await SembrarCitaAsync(db, IdPendiente, fechaInicio: FechaHoraGuatemala.Ahora().AddMinutes(-5));
@@ -273,13 +280,13 @@ public class WhatsAppWebhookServiceTests
         var guardada = Releer(db, cita.IdCita);
         Assert.Equal(IdPendiente, guardada.IdEstadoCita);
         AssertSinRespuesta(guardada);
-        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeCitaPasada), Assert.Single(whatsApp.Textos).Texto);
+        Assert.Empty(whatsApp.Textos);
     }
 
     [Theory]
     [InlineData(IdAtendida)]
     [InlineData(IdNoAsistio)]
-    public async Task CitaAtendidaONoAsistio_SeTrataComoPasada(int idEstado)
+    public async Task CitaAtendidaONoAsistio_SeTrataComoPasadaSinMensaje(int idEstado)
     {
         using var db = CrearContexto();
         var cita = await SembrarCitaAsync(db, idEstado);
@@ -290,7 +297,7 @@ public class WhatsAppWebhookServiceTests
         var guardada = Releer(db, cita.IdCita);
         Assert.Equal(idEstado, guardada.IdEstadoCita);
         AssertSinRespuesta(guardada);
-        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeCitaPasada), Assert.Single(whatsApp.Textos).Texto);
+        Assert.Empty(whatsApp.Textos);
     }
 
     // ---------- Cambio de respuesta y duplicados ----------
@@ -502,5 +509,200 @@ public class WhatsAppWebhookServiceTests
         var cita = await db.Citas.SingleAsync();
         Assert.Equal(WamidsDePrueba.Recordatorio, cita.RecordatorioMessageId);
         Assert.Equal(WamidsDePrueba.Desconocido, cita.RespuestaMessageId);
+    }
+
+    // ---------- Respuestas tardías (Meta reintenta después de una caída) ----------
+
+    [Fact]
+    public async Task RespuestaReciente_AplicaLasReglasYRespondeAlPaciente()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar, hace: TimeSpan.FromMinutes(5)));
+
+        Assert.Equal(IdConfirmada, Releer(db, cita.IdCita).IdEstadoCita);
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeConfirmado), Assert.Single(whatsApp.Textos).Texto);
+    }
+
+    [Fact]
+    public async Task RespuestaJustoDentroDelLimite_TodaviaResponde()
+    {
+        using var db = CrearContexto();
+        await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar, hace: RespuestaRecordatorioWhatsApp.AntiguedadMaximaParaResponder - TimeSpan.FromMinutes(1)));
+
+        Assert.Single(whatsApp.Textos);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RespuestaDeHaceDosHoras_AplicaLasReglasPeroNoResponde(bool confirmar)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+        var logger = new LoggerCapturado<WhatsAppWebhookService>();
+
+        await CrearServicio(db, whatsApp, logger: logger)
+            .ProcesarAsync(Boton(confirmar ? Confirmar : Modificar, hace: TimeSpan.FromHours(2)), CancellationToken.None);
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(confirmar ? IdConfirmada : IdPendiente, guardada.IdEstadoCita);
+        Assert.Equal(confirmar ? "Confirmo" : "Modificar", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.RESPUESTA1", guardada.RespuestaMessageId);
+        Assert.Empty(whatsApp.Textos);
+        Assert.Contains("Respuesta tardía", logger.TodoElTexto);
+        Assert.Contains("sin mensaje de vuelta", logger.TodoElTexto);
+    }
+
+    [Fact]
+    public async Task RespuestaTardiaSobreCitaPasada_NoCambiaNadaNiResponde()
+    {
+        using var db = CrearContexto();
+        // El caso del bug: el botón se tocó antes de la cita, pero llegó días después.
+        var cita = await SembrarCitaAsync(db, IdPendiente, fechaInicio: FechaHoraGuatemala.Ahora().AddDays(-2));
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar, hace: TimeSpan.FromDays(3)));
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdPendiente, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        Assert.Empty(whatsApp.Textos);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("no-es-un-numero")]
+    [InlineData("-60")]
+    [InlineData("99999999999999999999")]
+    public async Task TimestampAusenteOIlegible_SeComportaComoHoy(string? timestamp)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+
+        await Procesar(db, whatsApp, Boton(Confirmar, timestampCrudo: true, timestamp: timestamp));
+
+        Assert.Equal(IdConfirmada, Releer(db, cita.IdCita).IdEstadoCita);
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeConfirmado), Assert.Single(whatsApp.Textos).Texto);
+    }
+
+    // ---------- Cita pasada: sin mensaje, reciente o tardía ----------
+
+    [Theory]
+    [InlineData(0)]    // reciente
+    [InlineData(180)]  // tardía (3 h)
+    public async Task CitaPasada_NoCambiaNadaNiEnviaMensaje_RecienteOTardia(int minutosDeAntiguedad)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdConfirmada, fechaInicio: FechaHoraGuatemala.Ahora().AddHours(-1));
+        var whatsApp = new FakeWhatsAppService();
+        var logger = new LoggerCapturado<WhatsAppWebhookService>();
+
+        await CrearServicio(db, whatsApp, logger: logger)
+            .ProcesarAsync(Boton(Modificar, hace: TimeSpan.FromMinutes(minutosDeAntiguedad)), CancellationToken.None);
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdConfirmada, guardada.IdEstadoCita);
+        AssertSinRespuesta(guardada);
+        Assert.Empty(whatsApp.Textos);
+        Assert.Contains("la cita ya empezó o pasó", logger.TodoElTexto);
+    }
+
+    // ---------- Orden de llegada ----------
+
+    [Fact]
+    public async Task RespuestaViejaQueLlegaDespuesDeUnaMasReciente_SeIgnora()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+        var logger = new LoggerCapturado<WhatsAppWebhookService>();
+        var servicio = CrearServicio(db, whatsApp, logger: logger);
+
+        // El paciente tocó "Modificar" hace 20 min y "Sí asistiré" hace 5 min,
+        // pero Meta entrega primero la más reciente y después la vieja.
+        await servicio.ProcesarAsync(Boton(Confirmar, id: "wamid.NUEVA", hace: TimeSpan.FromMinutes(5)), CancellationToken.None);
+        await servicio.ProcesarAsync(Boton(Modificar, id: "wamid.VIEJA", hace: TimeSpan.FromMinutes(20)), CancellationToken.None);
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(IdConfirmada, guardada.IdEstadoCita);
+        Assert.Equal("Confirmo", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.NUEVA", guardada.RespuestaMessageId);
+        Assert.Equal(Mensaje(RespuestaRecordatorioWhatsApp.MensajeConfirmado), Assert.Single(whatsApp.Textos).Texto);
+        Assert.Contains("es anterior a la respuesta ya registrada", logger.TodoElTexto);
+    }
+
+    [Fact]
+    public async Task RespuestaMasRecienteQueLaRegistrada_SiReemplaza()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+        var servicio = CrearServicio(db, whatsApp);
+
+        await servicio.ProcesarAsync(Boton(Confirmar, id: "wamid.A", hace: TimeSpan.FromMinutes(20)), CancellationToken.None);
+        await servicio.ProcesarAsync(Boton(Modificar, id: "wamid.B", hace: TimeSpan.FromMinutes(5)), CancellationToken.None);
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal("Modificar", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.B", guardada.RespuestaMessageId);
+        Assert.Equal(2, whatsApp.Textos.Count);
+    }
+
+    [Fact]
+    public async Task OrdenDeLlegada_SinTimestampValido_SeProcesaComoHoy()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var whatsApp = new FakeWhatsAppService();
+        var servicio = CrearServicio(db, whatsApp);
+
+        await servicio.ProcesarAsync(Boton(Confirmar, id: "wamid.A", hace: TimeSpan.FromMinutes(5)), CancellationToken.None);
+        // Sin timestamp no se puede saber si es más vieja: gana, como antes, la última que llega.
+        await servicio.ProcesarAsync(Boton(Modificar, id: "wamid.B", timestampCrudo: true, timestamp: null), CancellationToken.None);
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal("Modificar", guardada.RespuestaPaciente);
+        Assert.Equal("wamid.B", guardada.RespuestaMessageId);
+    }
+
+    // ---------- RespuestaPacienteEn ----------
+
+    [Fact]
+    public async Task RespuestaPacienteEn_GuardaLaHoraDelToqueEnHoraDeGuatemala()
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var payload = Boton(Confirmar, hace: TimeSpan.FromMinutes(30));
+        var timestamp = payload.Entry[0].Changes[0].Value!.Messages[0].Timestamp!;
+        var esperada = FechaHoraGuatemala.DesdeUtc(DateTimeOffset.FromUnixTimeSeconds(long.Parse(timestamp)));
+
+        await Procesar(db, new FakeWhatsAppService(), payload);
+
+        var guardada = Releer(db, cita.IdCita);
+        Assert.Equal(esperada, guardada.RespuestaPacienteEn);
+        Assert.InRange(FechaHoraGuatemala.Ahora() - guardada.RespuestaPacienteEn!.Value, TimeSpan.FromMinutes(29), TimeSpan.FromMinutes(31));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("no-es-un-numero")]
+    public async Task RespuestaPacienteEn_SinTimestampValido_UsaLaHoraDeProcesamiento(string? timestamp)
+    {
+        using var db = CrearContexto();
+        var cita = await SembrarCitaAsync(db, IdPendiente);
+        var antes = FechaHoraGuatemala.Ahora();
+
+        await Procesar(db, new FakeWhatsAppService(), Boton(Confirmar, timestampCrudo: true, timestamp: timestamp));
+
+        Assert.InRange(Releer(db, cita.IdCita).RespuestaPacienteEn!.Value, antes.AddSeconds(-1), FechaHoraGuatemala.Ahora().AddSeconds(1));
     }
 }
