@@ -1,7 +1,8 @@
 # Recordatorios de citas por WhatsApp — Peredent
 
-Un día antes de cada cita, el sistema envía al paciente un mensaje de WhatsApp
-con la plantilla aprobada `recordatorio_cita` de la WhatsApp Cloud API de Meta.
+Un día antes de cada cita (las del **lunes, el viernes**), el sistema envía al
+paciente un mensaje de WhatsApp con la plantilla aprobada `recordatorio_cita` de
+la WhatsApp Cloud API de Meta (ver [Qué citas reciben recordatorio](#qué-citas-reciben-recordatorio)).
 La plantilla tiene dos botones de respuesta rápida ("Sí asistiré" y "Modificar
 mi cita"); la respuesta del paciente llega por un webhook, se registra en la
 cita y se le contesta automáticamente (ver [Respuestas del paciente](#respuestas-del-paciente)).
@@ -12,14 +13,16 @@ cita y se le contesta automáticamente (ver [Respuestas del paciente](#respuesta
 GitHub Actions (cron)            Backend (Somee)                         Meta
 9:07 a. m. y 5:07 p. m.  ──►  POST /api/recordatorios/enviar  ──►  WhatsApp Cloud API
 hora de Guatemala              header X-Api-Key                    plantilla recordatorio_cita
-                               citas de mañana sin recordatorio
+                               citas de las fechas objetivo
+                               (mañana; viernes: sáb. y lunes)
 ```
 
 1. **Cron.** El workflow `.github/workflows/recordatorios-whatsapp.yml` corre
    todos los días a las **9:07 a. m.** y a las **5:07 p. m.** de Guatemala
    (`7 15 * * *` y `7 23 * * *` en UTC; Guatemala es UTC-6 todo el año). La
-   corrida de la tarde cubre las citas de mañana agendadas después de la de la
-   mañana y reintenta las que fallaron. No se usa un BackgroundService dentro de
+   corrida de la tarde cubre las citas agendadas después de la de la mañana
+   (también las del lunes agendadas durante el viernes) y reintenta las que
+   fallaron. No se usa un BackgroundService dentro de
    la app porque Somee (hosting compartido) puede dormir o reciclar el proceso.
 2. **Endpoint.** `POST /api/recordatorios/enviar?dryRun=false`
    (`RecordatoriosController`). No usa JWT porque lo llama un proceso, no un
@@ -29,9 +32,14 @@ hora de Guatemala              header X-Api-Key                    plantilla rec
      van en `fallidas`, no como error HTTP.
    - `401` sin cuerpo: falta la key, es incorrecta o el servidor no tiene una configurada.
    - `409`: ya había una ejecución en curso (candado en memoria; la app corre en una sola instancia).
-3. **Citas de mañana.** `RecordatorioService` calcula "mañana" con la hora de
-   Guatemala (`FechaHoraGuatemala.Ahora()`). `Citas.Fecha_Inicio` se guarda en
-   hora local de Guatemala, así que filtra el rango `[mañana 00:00, pasado mañana 00:00)`.
+3. **Fechas objetivo.** `RecordatorioService` toma el día actual en hora de
+   Guatemala (`FechaHoraGuatemala`, a partir de un `TimeProvider` que las pruebas
+   pueden fijar) y obtiene las fechas de las citas a recordar con
+   `CalendarioRecordatorios.FechasObjetivo` (ver la tabla de
+   [Qué citas reciben recordatorio](#qué-citas-reciben-recordatorio)).
+   `Citas.Fecha_Inicio` se guarda en hora local de Guatemala, así que por cada
+   fecha filtra el rango `[fecha 00:00, día siguiente 00:00)`. El resumen trae la
+   lista en `fechasObjetivo` (vacía el domingo).
 4. **WhatsApp.** `WhatsAppService` envía la plantilla con 3 variables en el cuerpo:
 
    | Variable | Contenido | Ejemplo |
@@ -50,7 +58,33 @@ vuelve a enviar, así que ejecutar el workflow varias veces el mismo día es seg
 
 ## Qué citas reciben recordatorio
 
-Se toman las citas de **mañana** que:
+Cada cita recibe **un solo** recordatorio, el día anterior; las del **lunes**, el
+**viernes** (decisión de la clínica). La regla está en un solo lugar,
+`CalendarioRecordatorios.FechasObjetivo`:
+
+| Día en que corre el workflow | Fechas de las citas que se recuerdan |
+|---|---|
+| Lunes a jueves | El día siguiente |
+| Viernes | **Sábado y lunes** |
+| Sábado | Domingo (por si hubiera citas en domingo) |
+| Domingo | **Ninguna**: las del lunes ya se recordaron el viernes |
+
+- Una cita del lunes agendada **durante el viernes** después de la corrida de las
+  9:07 a. m. la toma la corrida de las **5:07 p. m.** del viernes.
+- Una cita del lunes agendada **después de las corridas del viernes** (p. ej. el
+  sábado) **no recibe recordatorio**.
+- La regla inversa, `CalendarioRecordatorios.DiaDeEnvio` (lunes → viernes
+  anterior; resto → día anterior), da el día de envío de cada cita. `CitaDto` lo
+  expone como `diaEnvioRecordatorio`, y el modal de la cita muestra **"No aplica"**
+  en lugar de "Pendiente" si la cita no tiene recordatorio enviado y **hoy ya es
+  posterior a ese día**: p. ej. una cita del lunes vista el sábado o el domingo,
+  o una cita agendada para el mismo día. Se suma a las otras razones de "No
+  aplica": Cancelada, Atendida, No Asistió o cita que ya pasó.
+- El texto de la plantilla dice "su cita **el** {{2}}" (antes "mañana"), así que
+  sirve tanto para el día siguiente como para el lunes; el código solo envía las
+  variables (`{{2}}` = "lunes 2 de noviembre").
+
+De las fechas objetivo se toman las citas que:
 
 - están en estado **Pendiente** o **Confirmada** (buscados por nombre en el catálogo `EstadoCita`), y
 - todavía no tienen `RecordatorioEnviadoEn`.
@@ -205,7 +239,8 @@ se limpian `RecordatorioEnviadoEn`, `RecordatorioMessageId`, `RecordatorioError`
 `RespuestaPaciente`, `RespuestaPacienteEn` y `RespuestaMessageId`:
 
 - La cita vuelve a recibir un recordatorio para su nueva fecha, o para el nuevo
-  paciente (si queda para mañana, entra en la siguiente corrida del workflow).
+  paciente (entra en la siguiente corrida cuya fecha objetivo sea la nueva fecha;
+  una cita movida a un lunes después de las corridas del viernes ya no lo recibe).
 - La respuesta anterior se descarta, así que el aviso y el ícono de "Modificar"
   desaparecen: la reprogramación es justamente la atención que pedía el paciente,
   y la respuesta de otro paciente no aplica a la cita.
@@ -289,7 +324,8 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:5199/api/recordatorios/env
 Remove-Variable key
 ```
 
-Para que aparezca algo, hace falta una cita de mañana (hora de Guatemala) en
+Para que aparezca algo, hace falta una cita de una fecha objetivo de hoy (normalmente
+mañana; el viernes, también el lunes; hora de Guatemala) en
 estado Pendiente o Confirmada, de un paciente con `AceptaRecordatoriosWhatsApp = 1`.
 
 > En Development, si el endpoint devuelve 500, la página de error repite los
@@ -394,7 +430,8 @@ programadas, avisa a quien modificó por última vez la línea `cron` del workfl
 2. **Reejecuta manualmente ese mismo día** (Run workflow, sin marcar dry_run):
    solo se reintentan las citas que fallaron; las ya enviadas no se reenvían. La
    corrida de las 5:07 p. m. también las reintenta. Después de la medianoche de
-   Guatemala "mañana" cambia y esas citas ya no se toman.
+   Guatemala las fechas objetivo cambian y esas citas ya no se toman (si falla
+   el viernes, las del lunes no se reintentan el sábado ni el domingo).
 3. Un `409` solo es un aviso (había otra ejecución en curso) y termina en verde.
 
 El workflow no imprime nombres ni teléfonos de pacientes (solo id de cita y error):

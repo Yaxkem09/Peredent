@@ -17,6 +17,7 @@ public class PlantillaRecordatorioTests
 
     [Theory]
     [InlineData(2026, 9, 28, "lunes 28 de septiembre")]
+    [InlineData(2026, 11, 2, "lunes 2 de noviembre")] // {{2}} tras el cambio de la plantilla ("mañana" -> "el")
     [InlineData(2026, 10, 3, "sábado 3 de octubre")]
     [InlineData(2027, 1, 1, "viernes 1 de enero")]
     public void Fecha_DiaSemanaDiaYMesEnMinusculas(int anio, int mes, int dia, string esperado)
