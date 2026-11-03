@@ -24,33 +24,41 @@ public class RecordatorioService : IRecordatorioService
     private readonly ApplicationDbContext _db;
     private readonly IWhatsAppService _whatsApp;
     private readonly ILogger<RecordatorioService> _logger;
+    private readonly TimeProvider _reloj;
 
-    public RecordatorioService(ApplicationDbContext db, IWhatsAppService whatsApp, ILogger<RecordatorioService> logger)
+    // `reloj` permite fijar "hoy" en las pruebas (la regla depende del día de
+    // la semana); en la app es TimeProvider.System.
+    public RecordatorioService(
+        ApplicationDbContext db, IWhatsAppService whatsApp, ILogger<RecordatorioService> logger, TimeProvider? reloj = null)
     {
         _db = db;
         _whatsApp = whatsApp;
         _logger = logger;
+        _reloj = reloj ?? TimeProvider.System;
     }
 
     public async Task<RecordatorioResumenDto> EnviarRecordatoriosDeMananaAsync(bool dryRun, CancellationToken ct)
     {
-        var manana = DateOnly.FromDateTime(FechaHoraGuatemala.Ahora()).AddDays(1);
+        // Qué fechas se recuerdan hoy (viernes: sábado y lunes; domingo: ninguna
+        // para el lunes...). Ver CalendarioRecordatorios.
+        var hoy = DateOnly.FromDateTime(FechaHoraGuatemala.DesdeUtc(_reloj.GetUtcNow()));
+        var fechas = CalendarioRecordatorios.FechasObjetivo(hoy);
 
         if (dryRun)
         {
-            return await ProcesarAsync(manana, dryRun: true, ct);
+            return await ProcesarAsync(fechas, dryRun: true, ct);
         }
 
         // Sin espera: si ya hay una ejecución en curso, esta no envía nada.
         if (!await EjecucionEnCurso.WaitAsync(0, ct))
         {
-            _logger.LogWarning("Recordatorios de {Fecha}: ya hay una ejecución en curso, se ignora esta llamada", manana);
-            return new RecordatorioResumenDto { FechaObjetivo = manana, EjecucionEnCurso = true };
+            _logger.LogWarning("Recordatorios de {Fechas}: ya hay una ejecución en curso, se ignora esta llamada", Texto(fechas));
+            return new RecordatorioResumenDto { FechasObjetivo = fechas.ToList(), EjecucionEnCurso = true };
         }
 
         try
         {
-            return await ProcesarAsync(manana, dryRun: false, ct);
+            return await ProcesarAsync(fechas, dryRun: false, ct);
         }
         finally
         {
@@ -58,10 +66,10 @@ public class RecordatorioService : IRecordatorioService
         }
     }
 
-    private async Task<RecordatorioResumenDto> ProcesarAsync(DateOnly manana, bool dryRun, CancellationToken ct)
+    private async Task<RecordatorioResumenDto> ProcesarAsync(IReadOnlyList<DateOnly> fechas, bool dryRun, CancellationToken ct)
     {
-        var resumen = new RecordatorioResumenDto { FechaObjetivo = manana, DryRun = dryRun };
-        var citas = await ObtenerCitasSinRecordatorioAsync(manana, dryRun, ct);
+        var resumen = new RecordatorioResumenDto { FechasObjetivo = fechas.ToList(), DryRun = dryRun };
+        var citas = await ObtenerCitasSinRecordatorioAsync(fechas, dryRun, ct);
         resumen.TotalEncontradas = citas.Count;
 
         foreach (var cita in citas)
@@ -102,18 +110,23 @@ public class RecordatorioService : IRecordatorioService
         }
 
         _logger.LogInformation(
-            "Recordatorios de {Fecha} (dryRun={DryRun}): {Total} encontradas, {Enviadas} enviadas, {Fallidas} fallidas, {Omitidas} omitidas, {PorEnviar} por enviar",
-            manana, dryRun, resumen.TotalEncontradas, resumen.Enviadas, resumen.Fallidas, resumen.Omitidas, resumen.PorEnviar);
+            "Recordatorios de {Fechas} (dryRun={DryRun}): {Total} encontradas, {Enviadas} enviadas, {Fallidas} fallidas, {Omitidas} omitidas, {PorEnviar} por enviar",
+            Texto(fechas), dryRun, resumen.TotalEncontradas, resumen.Enviadas, resumen.Fallidas, resumen.Omitidas, resumen.PorEnviar);
 
         return resumen;
     }
 
-    // FechaInicio se guarda en hora local de Guatemala, así que "mañana" es el
-    // rango [mañana 00:00, pasado mañana 00:00) directamente sobre esa columna.
-    private async Task<List<Cita>> ObtenerCitasSinRecordatorioAsync(DateOnly manana, bool soloLectura, CancellationToken ct)
+    // FechaInicio se guarda en hora local de Guatemala, así que cada fecha es el
+    // rango [fecha 00:00, día siguiente 00:00) directamente sobre esa columna.
+    // Las fechas objetivo son a lo sumo dos y no contiguas (viernes: sábado y
+    // lunes), así que se consulta cada una por separado y se juntan en orden.
+    private async Task<List<Cita>> ObtenerCitasSinRecordatorioAsync(IReadOnlyList<DateOnly> fechas, bool soloLectura, CancellationToken ct)
     {
-        var inicio = manana.ToDateTime(TimeOnly.MinValue);
-        var finExclusivo = inicio.AddDays(1);
+        var citas = new List<Cita>();
+        if (fechas.Count == 0)
+        {
+            return citas;
+        }
 
         // Por nombre contra el catálogo (igual que CitaService), nunca por ID fijo.
         var idsEstados = await _db.EstadosCita
@@ -121,18 +134,29 @@ public class RecordatorioService : IRecordatorioService
             .Select(e => e.IdEstadoCita)
             .ToListAsync(ct);
 
-        var query = _db.Citas
-            .Include(c => c.Paciente)
-            .Where(c => c.FechaInicio >= inicio && c.FechaInicio < finExclusivo
-                && idsEstados.Contains(c.IdEstadoCita)
-                && c.RecordatorioEnviadoEn == null)
-            .OrderBy(c => c.FechaInicio)
-            .ThenBy(c => c.IdCita);
+        foreach (var fecha in fechas.Order())
+        {
+            var inicio = fecha.ToDateTime(TimeOnly.MinValue);
+            var finExclusivo = inicio.AddDays(1);
 
-        return soloLectura
-            ? await query.AsNoTracking().ToListAsync(ct)
-            : await query.ToListAsync(ct);
+            var query = _db.Citas
+                .Include(c => c.Paciente)
+                .Where(c => c.FechaInicio >= inicio && c.FechaInicio < finExclusivo
+                    && idsEstados.Contains(c.IdEstadoCita)
+                    && c.RecordatorioEnviadoEn == null)
+                .OrderBy(c => c.FechaInicio)
+                .ThenBy(c => c.IdCita);
+
+            citas.AddRange(soloLectura
+                ? await query.AsNoTracking().ToListAsync(ct)
+                : await query.ToListAsync(ct));
+        }
+
+        return citas;
     }
+
+    private static string Texto(IReadOnlyList<DateOnly> fechas) =>
+        fechas.Count == 0 ? "(ninguna fecha)" : string.Join(", ", fechas.Select(f => f.ToString("yyyy-MM-dd")));
 
     private async Task EnviarAsync(Cita cita, string telefono, RecordatorioDetalleDto detalle, RecordatorioResumenDto resumen, CancellationToken ct)
     {

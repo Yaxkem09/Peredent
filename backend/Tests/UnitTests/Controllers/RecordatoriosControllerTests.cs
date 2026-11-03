@@ -121,7 +121,7 @@ public class RecordatoriosControllerTests
         Assert.Null(EjecutarFiltro(ApiKey, ApiKey));
         var servicio = new FakeRecordatorioService
         {
-            Resumen = new RecordatorioResumenDto { FechaObjetivo = new DateOnly(2026, 9, 28), TotalEncontradas = 3, PorEnviar = 2, Omitidas = 1 },
+            Resumen = new RecordatorioResumenDto { FechasObjetivo = { new DateOnly(2026, 9, 28) }, TotalEncontradas = 3, PorEnviar = 2, Omitidas = 1 },
         };
 
         var resultado = await new RecordatoriosController(servicio).Enviar(dryRun: true);

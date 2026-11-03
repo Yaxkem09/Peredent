@@ -29,6 +29,10 @@ public class CitaDto
 
     public string? RecordatorioError { get; set; }
 
+    // Día en que se envía (o se envió) el recordatorio de esta cita: el día
+    // anterior, o el viernes si la cita es lunes (CalendarioRecordatorios).
+    public DateOnly DiaEnvioRecordatorio { get; set; }
+
     // "Confirmo" o "Modificar" (botones del recordatorio); null = sin respuesta.
     public string? RespuestaPaciente { get; set; }
 

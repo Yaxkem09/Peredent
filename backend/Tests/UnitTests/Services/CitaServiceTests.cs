@@ -1011,4 +1011,25 @@ public class CitaServiceTests
         db.ChangeTracker.Clear();
         AssertRecordatorioConservado(await db.Citas.SingleAsync(c => c.IdCita == cita.IdCita));
     }
+
+    // ---------- Día de envío del recordatorio en el DTO ----------
+
+    [Theory]
+    [InlineData(DayOfWeek.Monday, -3)]    // lunes: el viernes anterior
+    [InlineData(DayOfWeek.Wednesday, -1)] // resto: el día anterior
+    [InlineData(DayOfWeek.Sunday, -1)]
+    public async Task ToDto_IncluyeElDiaDeEnvioDelRecordatorio(DayOfWeek diaCita, int diasAntes)
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var paciente = await CrearPacienteAsync(db);
+        var dentista = await CrearDentistaAsync(db);
+        var fecha = FechaFutura.AddDays(((int)diaCita - (int)FechaFutura.DayOfWeek + 7) % 7);
+        var cita = await SembrarCitaAsync(db, paciente.IdPaciente, dentista.IdUsuario, fecha, new TimeOnly(9, 0));
+
+        var dto = await new CitaService(db).GetByIdAsync(cita.IdCita);
+
+        Assert.Equal(diaCita, dto!.Fecha.DayOfWeek);
+        Assert.Equal(fecha.AddDays(diasAntes), dto.DiaEnvioRecordatorio);
+    }
 }
