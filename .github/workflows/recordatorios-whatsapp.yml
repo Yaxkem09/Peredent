@@ -104,8 +104,16 @@ jobs:
                 exit 1
               fi
 
+              # Fechas de las citas recordadas (viernes: sábado y lunes; domingo:
+              # ninguna). Acepta también el campo anterior fechaObjetivo, por si el
+              # backend desplegado todavía es el de antes.
+              fechas=$(jq -r '
+                (.fechasObjetivo // ([.fechaObjetivo] | map(select(. != null))))
+                | if length == 0 then "ninguna (las citas del lunes se recuerdan el viernes)" else join(", ") end
+              ' "$respuesta")
+
+              echo "Fechas objetivo:  ${fechas}"
               jq -r '
-                "Fecha objetivo:   \(.fechaObjetivo)",
                 "dryRun:           \(.dryRun)",
                 "Encontradas:      \(.totalEncontradas)",
                 "Enviadas:         \(.enviadas)",
@@ -115,7 +123,7 @@ jobs:
               ' "$respuesta"
 
               {
-                echo "### Recordatorios de $(jq -r '.fechaObjetivo' "$respuesta")"
+                echo "### Recordatorios de ${fechas}"
                 echo ""
                 echo "| dryRun | Encontradas | Enviadas | Fallidas | Omitidas | Por enviar |"
                 echo "|---|---|---|---|---|---|"

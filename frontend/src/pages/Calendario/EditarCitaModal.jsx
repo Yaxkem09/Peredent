@@ -9,6 +9,7 @@ import {
   esCitaPasada,
   estaFueraDeHorarioClinica,
   formatearDuracion,
+  hoy,
   horaAMinutos,
   minutosAHora,
   sumarMinutos,
@@ -61,8 +62,15 @@ const RespuestaPaciente = ({ cita }) => {
   return null;
 };
 
-// Estado del recordatorio por WhatsApp del día anterior. recordatorioEnviadoEn
-// viene en hora de Guatemala sin zona, así que new Date() lo toma como hora local.
+// diaEnvioRecordatorio lo calcula el backend (CalendarioRecordatorios: el día
+// anterior, o el viernes si la cita es lunes). Si hoy ya es posterior y la cita
+// no tiene recordatorio, ya no lo recibirá (p. ej. una cita del lunes agendada el
+// sábado). Fechas yyyy-MM-dd: se comparan bien como texto.
+const yaPasoElDiaDeEnvio = (cita) =>
+  Boolean(cita.diaEnvioRecordatorio) && toIsoDate(hoy()) > cita.diaEnvioRecordatorio;
+
+// Estado del recordatorio por WhatsApp. recordatorioEnviadoEn viene en hora de
+// Guatemala sin zona, así que new Date() lo toma como hora local.
 const RecordatorioWhatsApp = ({ cita }) => {
   let estado;
   let clase = '';
@@ -73,7 +81,11 @@ const RecordatorioWhatsApp = ({ cita }) => {
   } else if (cita.recordatorioError) {
     estado = 'Error al enviar';
     clase = ' error';
-  } else if (ESTADOS_SIN_RECORDATORIO.includes(cita.estado) || esCitaPasada(cita.fecha, cita.hora)) {
+  } else if (
+    ESTADOS_SIN_RECORDATORIO.includes(cita.estado) ||
+    esCitaPasada(cita.fecha, cita.hora) ||
+    yaPasoElDiaDeEnvio(cita)
+  ) {
     // Con la fecha/estado guardados de la cita, no con lo que se esté editando en el formulario.
     estado = 'No aplica';
   } else {

@@ -2,7 +2,9 @@ namespace Peredent.Api.DTOs.Response;
 
 public class RecordatorioResumenDto
 {
-    public DateOnly FechaObjetivo { get; set; }
+    // Fechas de las citas que se recuerdan en esta corrida (viernes: sábado y
+    // lunes; domingo: ninguna). Ver CalendarioRecordatorios.
+    public List<DateOnly> FechasObjetivo { get; set; } = new();
 
     public bool DryRun { get; set; }
 

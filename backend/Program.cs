@@ -190,6 +190,10 @@ builder.Services.AddHttpClient<IWhatsAppService, WhatsAppService>(client =>
 // es estático dentro del servicio, no depende de este lifetime.
 builder.Services.AddScoped<IRecordatorioService, RecordatorioService>();
 
+// Reloj del sistema: RecordatorioService lo usa para saber qué día es (la regla
+// de qué citas se recuerdan depende del día de la semana); las pruebas lo fijan.
+builder.Services.AddSingleton(TimeProvider.System);
+
 // Scoped: usa ApplicationDbContext para registrar la respuesta del paciente en la cita.
 builder.Services.AddScoped<IWhatsAppWebhookService, WhatsAppWebhookService>();
 

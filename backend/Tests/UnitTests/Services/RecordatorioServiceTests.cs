@@ -43,7 +43,16 @@ public class RecordatorioServiceTests
             throw new InvalidOperationException("RecordatorioService no debería enviar texto libre.");
     }
 
-    private static DateTime Manana => FechaHoraGuatemala.Ahora().Date.AddDays(1);
+    // "Hoy" fijo en un martes (siempre hoy o en el futuro): la regla de qué citas
+    // se recuerdan depende del día de la semana, y de martes a jueves es "mañana".
+    private static readonly DateTime HoyDePrueba = RelojFijo.Proximo(DayOfWeek.Tuesday);
+
+    private static DateTime Manana => HoyDePrueba.AddDays(1);
+
+    // Corridas del workflow: 9:07 a. m. y 5:07 p. m. (hora de Guatemala).
+    private static DateTime CorridaManana(DateTime dia) => dia.Date.AddHours(9).AddMinutes(7);
+
+    private static DateTime CorridaTarde(DateTime dia) => dia.Date.AddHours(17).AddMinutes(7);
 
     private static ApplicationDbContext CrearContexto(string? nombreDb = null)
     {
@@ -98,11 +107,12 @@ public class RecordatorioServiceTests
         return cita;
     }
 
-    private static RecordatorioService CrearServicio(ApplicationDbContext db, IWhatsAppService whatsApp) =>
-        new(db, whatsApp, NullLogger<RecordatorioService>.Instance);
+    private static RecordatorioService CrearServicio(ApplicationDbContext db, IWhatsAppService whatsApp, TimeProvider? reloj = null) =>
+        new(db, whatsApp, NullLogger<RecordatorioService>.Instance, reloj ?? new RelojFijo(CorridaManana(HoyDePrueba)));
 
-    private static Task<RecordatorioResumenDto> Ejecutar(ApplicationDbContext db, IWhatsAppService whatsApp, bool dryRun = false) =>
-        CrearServicio(db, whatsApp).EnviarRecordatoriosDeMananaAsync(dryRun, CancellationToken.None);
+    private static Task<RecordatorioResumenDto> Ejecutar(
+        ApplicationDbContext db, IWhatsAppService whatsApp, bool dryRun = false, TimeProvider? reloj = null) =>
+        CrearServicio(db, whatsApp, reloj).EnviarRecordatoriosDeMananaAsync(dryRun, CancellationToken.None);
 
     [Fact]
     public async Task SoloTomaCitasDeManana_IncluyendoLas0000YLas2359()
@@ -118,7 +128,7 @@ public class RecordatorioServiceTests
 
         var resumen = await Ejecutar(db, whatsApp);
 
-        Assert.Equal(DateOnly.FromDateTime(Manana), resumen.FechaObjetivo);
+        Assert.Equal(new[] { DateOnly.FromDateTime(Manana) }, resumen.FechasObjetivo);
         Assert.Equal(2, resumen.TotalEncontradas);
         Assert.Equal(2, resumen.Enviadas);
         Assert.Equal(new[] { primeraDeManana.IdCita, ultimaDeManana.IdCita }, resumen.Detalle.Select(d => d.IdCita));
@@ -404,5 +414,147 @@ public class RecordatorioServiceTests
         Assert.Equal(RecordatorioResultados.PorEnviar, detalle.Resultado);
         Assert.Equal("11:00 AM", detalle.Hora);
         Assert.Empty(whatsApp.Llamadas);
+    }
+
+    // ---------- Calendario de envío: el lunes se recuerda el viernes ----------
+
+    private static readonly DateTime Viernes = RelojFijo.Proximo(DayOfWeek.Friday);
+
+    [Fact]
+    public async Task Viernes_EnviaLasCitasDelSabadoYDelLunes()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var sabado = await CrearCitaAsync(db, Viernes.AddDays(1).AddHours(10), telefono: "11111111");
+        var domingo = await CrearCitaAsync(db, Viernes.AddDays(2).AddHours(10), telefono: "22222222");
+        var lunes = await CrearCitaAsync(db, Viernes.AddDays(3).AddHours(10), telefono: "33333333");
+        var martes = await CrearCitaAsync(db, Viernes.AddDays(4).AddHours(10), telefono: "44444444");
+        var whatsApp = new FakeWhatsAppService();
+
+        var resumen = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaManana(Viernes)));
+
+        Assert.Equal(
+            new[] { DateOnly.FromDateTime(Viernes.AddDays(1)), DateOnly.FromDateTime(Viernes.AddDays(3)) },
+            resumen.FechasObjetivo);
+        Assert.Equal(new[] { sabado.IdCita, lunes.IdCita }, resumen.Detalle.Select(d => d.IdCita));
+        Assert.Equal(2, resumen.Enviadas);
+        Assert.Equal(new[] { "50211111111", "50233333333" }, whatsApp.Llamadas.Select(l => l.Telefono));
+        Assert.Null(db.Citas.Single(c => c.IdCita == domingo.IdCita).RecordatorioEnviadoEn);
+        Assert.Null(db.Citas.Single(c => c.IdCita == martes.IdCita).RecordatorioEnviadoEn);
+    }
+
+    [Fact]
+    public async Task Sabado_EnviaLasCitasDelDomingoPeroNoLasDelLunes()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var sabado = Viernes.AddDays(1);
+        var domingo = await CrearCitaAsync(db, sabado.AddDays(1).AddHours(10), telefono: "11111111");
+        await CrearCitaAsync(db, sabado.AddDays(2).AddHours(10), telefono: "22222222");
+        var whatsApp = new FakeWhatsAppService();
+
+        var resumen = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaManana(sabado)));
+
+        Assert.Equal(new[] { DateOnly.FromDateTime(sabado.AddDays(1)) }, resumen.FechasObjetivo);
+        Assert.Equal(domingo.IdCita, Assert.Single(resumen.Detalle).IdCita);
+        Assert.Equal("50211111111", Assert.Single(whatsApp.Llamadas).Telefono);
+    }
+
+    [Fact]
+    public async Task Domingo_NoEnviaLasCitasDelLunes()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var domingo = Viernes.AddDays(2);
+        // Agendada el sábado, después de las corridas del viernes: no recibe recordatorio.
+        var lunes = await CrearCitaAsync(db, domingo.AddDays(1).AddHours(10));
+        var whatsApp = new FakeWhatsAppService();
+
+        var resumen = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaManana(domingo)));
+        var tarde = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaTarde(domingo)));
+
+        Assert.Empty(resumen.FechasObjetivo);
+        Assert.Equal(0, resumen.TotalEncontradas);
+        Assert.Equal(0, tarde.TotalEncontradas);
+        Assert.Empty(whatsApp.Llamadas);
+        Assert.Null(db.Citas.Single(c => c.IdCita == lunes.IdCita).RecordatorioEnviadoEn);
+    }
+
+    [Theory]
+    [InlineData(DayOfWeek.Monday)]
+    [InlineData(DayOfWeek.Tuesday)]
+    [InlineData(DayOfWeek.Wednesday)]
+    [InlineData(DayOfWeek.Thursday)]
+    public async Task LunesAJueves_SoloEnviaLasCitasDelDiaSiguiente(DayOfWeek dia)
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var hoy = RelojFijo.Proximo(dia);
+        var manana = await CrearCitaAsync(db, hoy.AddDays(1).AddHours(10), telefono: "11111111");
+        await CrearCitaAsync(db, hoy.AddDays(2).AddHours(10), telefono: "22222222");
+        var whatsApp = new FakeWhatsAppService();
+
+        var resumen = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaManana(hoy)));
+
+        Assert.Equal(new[] { DateOnly.FromDateTime(hoy.AddDays(1)) }, resumen.FechasObjetivo);
+        Assert.Equal(manana.IdCita, Assert.Single(resumen.Detalle).IdCita);
+        Assert.Single(whatsApp.Llamadas);
+    }
+
+    [Fact]
+    public async Task CitaDelLunesAgendadaElViernesPorLaTarde_SeEnviaEnLaSegundaCorrida()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        var sabado = await CrearCitaAsync(db, Viernes.AddDays(1).AddHours(9), telefono: "11111111");
+        var whatsApp = new FakeWhatsAppService();
+        var reloj = new RelojFijo(CorridaManana(Viernes));
+
+        var primera = await Ejecutar(db, whatsApp, reloj: reloj);
+
+        // La secretaria agenda una cita para el lunes el viernes a mediodía.
+        var lunes = await CrearCitaAsync(db, Viernes.AddDays(3).AddHours(8), telefono: "33333333");
+        reloj.Fijar(CorridaTarde(Viernes));
+        var segunda = await Ejecutar(db, whatsApp, reloj: reloj);
+
+        Assert.Equal(sabado.IdCita, Assert.Single(primera.Detalle).IdCita);
+        Assert.Equal(lunes.IdCita, Assert.Single(segunda.Detalle).IdCita); // el sábado no se reenvía
+        Assert.Equal(new[] { "50211111111", "50233333333" }, whatsApp.Llamadas.Select(l => l.Telefono));
+        Assert.NotNull(db.Citas.Single(c => c.IdCita == lunes.IdCita).RecordatorioEnviadoEn);
+    }
+
+    [Fact]
+    public async Task Idempotencia_ConDosFechasObjetivo_NoReenviaNada()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        await CrearCitaAsync(db, Viernes.AddDays(1).AddHours(10), telefono: "11111111");
+        await CrearCitaAsync(db, Viernes.AddDays(3).AddHours(10), telefono: "33333333");
+        var whatsApp = new FakeWhatsAppService();
+
+        var primera = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaManana(Viernes)));
+        var segunda = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaTarde(Viernes)));
+        var tercera = await Ejecutar(db, whatsApp, reloj: new RelojFijo(CorridaTarde(Viernes)));
+
+        Assert.Equal(2, primera.Enviadas);
+        Assert.Equal(0, segunda.TotalEncontradas);
+        Assert.Equal(0, tercera.TotalEncontradas);
+        Assert.Equal(2, whatsApp.Llamadas.Count);
+    }
+
+    [Fact]
+    public async Task DryRunElViernes_ReportaSabadoYLunesSinEnviar()
+    {
+        using var db = CrearContexto();
+        await SembrarEstadosAsync(db);
+        await CrearCitaAsync(db, Viernes.AddDays(1).AddHours(10), telefono: "11111111");
+        await CrearCitaAsync(db, Viernes.AddDays(3).AddHours(10), telefono: "33333333");
+        var whatsApp = new FakeWhatsAppService();
+
+        var resumen = await Ejecutar(db, whatsApp, dryRun: true, reloj: new RelojFijo(CorridaManana(Viernes)));
+
+        Assert.Equal(2, resumen.PorEnviar);
+        Assert.Empty(whatsApp.Llamadas);
+        Assert.All(db.Citas, c => Assert.Null(c.RecordatorioEnviadoEn));
     }
 }

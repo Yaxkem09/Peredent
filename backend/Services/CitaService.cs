@@ -380,6 +380,7 @@ public class CitaService : ICitaService
         Estado = cita.EstadoCita.TipoEstadoCita,
         RecordatorioEnviadoEn = cita.RecordatorioEnviadoEn,
         RecordatorioError = cita.RecordatorioError,
+        DiaEnvioRecordatorio = CalendarioRecordatorios.DiaDeEnvio(DateOnly.FromDateTime(cita.FechaInicio)),
         RespuestaPaciente = cita.RespuestaPaciente,
         RespuestaPacienteEn = cita.RespuestaPacienteEn,
     };
