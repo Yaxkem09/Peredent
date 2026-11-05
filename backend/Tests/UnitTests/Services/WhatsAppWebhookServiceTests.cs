@@ -230,7 +230,7 @@ public class WhatsAppWebhookServiceTests
         var texto = Assert.Single(whatsApp.Textos).Texto;
         Assert.Equal(
             "Para modificar su cita, llámenos al 7755-1080.\n\n*Horario de atención:*\n"
-            + "Lunes a viernes: 8:00 AM a 1:00 PM y 2:00 PM a 6:00 PM\nSábados: 8:00 AM a 1:00 PM",
+            + "Lunes a viernes: 9:00 AM a 1:00 PM y 3:00 PM a 6:00 PM\nSábados: 8:00 AM a 1:00 PM",
             texto);
     }
 
