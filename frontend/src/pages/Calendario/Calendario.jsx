@@ -55,8 +55,9 @@ const LEYENDA_ESTADOS = [
   { label: 'Confirmada', clase: 'confirmada' },
   { label: 'Atendida', clase: 'atendida' },
   { label: 'No asistió', clase: 'no-asistio', tachado: true },
-  { label: 'Cancelada', clase: 'cancelada', tachado: true },
 ];
+
+const ESTADO_CANCELADA = 'Cancelada';
 
 const Calendario = () => {
   const { user } = useAuth();
@@ -231,7 +232,10 @@ const Calendario = () => {
       Promise.all([citasService.getAll(parametros), bloqueosAgendaService.getAll(parametros)])
         .then(([citasData, bloqueosData]) => {
           if (activo) {
-            setCitas(citasData);
+            // Las canceladas no se pintan en ninguna vista (día/semana/mes): ya
+            // no ocupan el horario y su viñeta podía tapar a la cita nueva
+            // agendada en esa hora. El registro sigue en el historial del paciente.
+            setCitas(citasData.filter((c) => c.estado !== ESTADO_CANCELADA));
             setBloqueos(bloqueosData);
           }
         })
