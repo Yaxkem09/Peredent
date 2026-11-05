@@ -15,7 +15,7 @@ export const GUIA_DASHBOARD = [
 
 export const GUIA_AGENDA = [
   { selector: '.agenda-titulo', titulo: 'Agenda', texto: 'La fecha o el periodo que estás viendo.' },
-  { selector: '.agenda-leyenda', titulo: 'Estados de cita', texto: 'Qué significa cada color. Las citas canceladas aparecen tachadas.' },
+  { selector: '.agenda-leyenda', titulo: 'Estados de cita', texto: 'Qué significa cada color. Las citas canceladas ya no se muestran en la agenda; quedan en el historial del paciente.' },
   { selector: '.view-switch', titulo: 'Día, semana o mes', texto: 'Cambia cómo ves la agenda.' },
   { selector: '.day-nav', titulo: 'Moverte en el calendario', texto: 'Las flechas avanzan o retroceden; “Hoy” regresa al día actual.' },
   { selector: '.odontologo-selector', titulo: 'Agenda del odontólogo', texto: 'Elige de qué odontólogo ves la agenda; las citas nuevas se le agendan a él.' },

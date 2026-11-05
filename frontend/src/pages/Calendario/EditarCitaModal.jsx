@@ -9,9 +9,12 @@ import {
   esCitaPasada,
   estaFueraDeHorarioClinica,
   formatearDuracion,
+  formatearFechaLarga,
+  formatearRangoHora,
   hoy,
   horaAMinutos,
   minutosAHora,
+  parseIsoDate,
   sumarMinutos,
   toIsoDate,
 } from './agenda.utils';
@@ -106,8 +109,11 @@ const RecordatorioWhatsApp = ({ cita }) => {
   );
 };
 
+const ESTADO_CANCELADA = 'Cancelada';
+
 // Para cancelar una cita se elige el estado "Cancelada" en el select y se
-// guarda: no hay botón aparte.
+// guarda: no hay botón aparte. Antes de guardarla se pide confirmación, porque
+// una cita cancelada desaparece de la agenda (solo queda en el historial).
 const EditarCitaModal = ({ open, cita, onClose, onActualizada }) => {
   const { notify } = useNotification();
 
@@ -122,10 +128,12 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada }) => {
 
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmandoCancelacion, setConfirmandoCancelacion] = useState(false);
 
   useEffect(() => {
     if (!open || !cita) return;
 
+    setConfirmandoCancelacion(false);
     setFecha(cita.fecha);
     setHora(cita.hora.slice(0, 5));
     setHoraFin(sumarMinutos(cita.hora, cita.duracionMinutos));
@@ -175,12 +183,28 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada }) => {
   const nuevaCitaTodaviaNoLlega = fecha && hora ? !esCitaPasada(fecha, hora) : false;
   const fueraDeHorario = hora && duracionMinutos > 0 ? estaFueraDeHorarioClinica(hora, duracionMinutos) : false;
 
-  const handleSubmit = async (e) => {
+  // Solo se confirma cuando la cita pasa a Cancelada; si ya lo estaba, guardar
+  // otros cambios (p. ej. las notas) no vuelve a preguntar.
+  const vaACancelarse = nombreEstado === ESTADO_CANCELADA && cita.estado !== ESTADO_CANCELADA;
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
     if (duracionMinutos < INCREMENTO_MINUTOS) {
       return setError(`La hora de fin debe ser al menos ${INCREMENTO_MINUTOS} min después de la de inicio.`);
     }
+    if (vaACancelarse) {
+      setConfirmandoCancelacion(true);
+      return undefined;
+    }
+    return guardar();
+  };
+
+  const cerrarConfirmacion = () => {
+    if (!guardando) setConfirmandoCancelacion(false);
+  };
+
+  const guardar = async () => {
     setGuardando(true);
 
     try {
@@ -193,9 +217,11 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada }) => {
         notasAdicionales: notas.trim() || null,
         idEstadoCita: Number(idEstadoCita),
       });
-      notify('Cita actualizada correctamente.');
+      notify(vaACancelarse ? 'Cita cancelada correctamente.' : 'Cita actualizada correctamente.');
+      setConfirmandoCancelacion(false);
       onActualizada(citaActualizada);
     } catch (err) {
+      setConfirmandoCancelacion(false);
       setError(mensajeError(err));
     } finally {
       setGuardando(false);
@@ -203,7 +229,10 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada }) => {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Modificar cita" wide>
+    <>
+    {/* Con la confirmación abierta, Escape solo debe cerrar esa ventana y no
+        también la de edición que queda debajo. */}
+    <Modal open={open} onClose={confirmandoCancelacion ? undefined : onClose} title="Modificar cita" wide>
       <p className="cita-modal-sub">
         Ajusta la fecha, horario o estado de la cita de <strong>{cita.nombrePaciente}</strong>.
       </p>
@@ -328,6 +357,30 @@ const EditarCitaModal = ({ open, cita, onClose, onActualizada }) => {
         </div>
       </form>
     </Modal>
+
+    <Modal
+      open={open && confirmandoCancelacion}
+      onClose={cerrarConfirmacion}
+      title="¿Cancelar esta cita?"
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={cerrarConfirmacion} disabled={guardando}>
+            No, volver
+          </Button>
+          <Button type="button" variant="danger" onClick={guardar} loading={guardando}>
+            Sí, cancelar cita
+          </Button>
+        </>
+      }
+    >
+      <p>
+        La cita de <strong>{cita.nombrePaciente}</strong> del {formatearFechaLarga(parseIsoDate(fecha))},{' '}
+        {formatearRangoHora(hora, duracionMinutos)}, se marcará como
+        cancelada y <strong>dejará de aparecer en la agenda</strong>. El registro seguirá en el historial de citas del
+        paciente.
+      </p>
+    </Modal>
+    </>
   );
 };
 

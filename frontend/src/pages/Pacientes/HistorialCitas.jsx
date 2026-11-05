@@ -274,6 +274,8 @@ const HistorialCitas = ({ idPaciente }) => {
                 </td>
                 <td className="hc-notas">{cita.notasAdicionales || '—'}</td>
                 <td className="hc-acciones">
+                  {/* Las canceladas no se muestran en la agenda: el botón llevaría a un día donde no aparece. */}
+                  {cita.estado !== 'Cancelada' && (
                   <button type="button" className="hc-ver-agenda" onClick={() => verEnAgenda(cita)}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="3.5" y="5" width="17" height="15" rx="2" />
@@ -282,6 +284,7 @@ const HistorialCitas = ({ idPaciente }) => {
                     </svg>
                     Ver en agenda
                   </button>
+                  )}
                 </td>
               </tr>
             ))}
